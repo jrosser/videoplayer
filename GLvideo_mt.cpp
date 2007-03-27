@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.2 2007-03-27 15:24:13 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.1 2007-03-27 15:24:13 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -35,43 +35,37 @@
 * or the LGPL.
 * ***** END LICENSE BLOCK ***** */
 
-#include "mainwindow.h"
+#include "GLvideo_mt.h"
 
-#include <QtGui>
-
-MainWindow::MainWindow()
-{
-	//central widget is the 'view'
-	glvideo_mt = new GLvideo_mt();
-	
-	if(qApp->arguments().count() > 1) {
-		const QStringList &args = qApp->arguments();	
-		glvideo_mt->setFileName(args[1]);
-	}
-	else
-		exit(1);
-		
-  	setCentralWidget(glvideo_mt);
-  		
-    //glvideo = new GLvideo();            
-  	//setCentralWidget(glvideo);
-	
-	setWindowTitle("VideoPlayer");
-	
-	//set up menus etc
- 	//createActions();
-    //createMenus();
-    //createStatusBar();
-    //createToolBar();
-  	//setStatusBar(myStatusBar);
-  	//addToolBar(Qt::TopToolBarArea, myToolBar);
-  	//initializeAssistant();
-  			            
-    //signal connections for main window
-
-	//some defaults in the abscence of any settings	
-	
-	//load the settings for this application
+GLvideo_mt::GLvideo_mt(QWidget *parent) 
+	: renderThread(*this)
+{	
+	setAutoBufferSwap(false);
+	renderThread.start();
 }
 
+void GLvideo_mt::resizeGL(int w, int h)
+{
+	renderThread.resizeViewport(w, h);	
+}
 
+void GLvideo_mt::initializeGL()
+{  
+	//handled by the worker thread
+}
+
+void GLvideo_mt::paintGL()
+{
+	//handled by the worker thread	
+}
+
+void GLvideo_mt::paintEvent(QPaintEvent * event)
+{
+	//absorb any paint events - let the worker thread update the window
+	printf("Paint event\n");	
+}
+
+void GLvideo_mt::setFileName(const QString &fileName)
+{
+	renderThread.setFileName(fileName);	
+}

@@ -10,7 +10,8 @@ INCLUDEPATH += . /usr/include
 LIBS += -lGL
 
 QT += opengl
+CONFIG += thread
 
 # Input
-HEADERS = mainwindow.h GLvideo.h 
-SOURCES = main.cpp mainwindow.cpp GLvideo.cpp
+HEADERS = mainwindow.h GLvideo.h GLvideo_mt.h GLvideo_rt.h
+SOURCES = main.cpp mainwindow.cpp GLvideo.cpp GLvideo_mt.cpp GLvideo_rt.cpp

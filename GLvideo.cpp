@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo.cpp,v 1.1 2007-03-23 18:02:22 jrosser Exp $
+* $Id: GLvideo.cpp,v 1.2 2007-03-27 15:24:13 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -40,7 +40,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-char *FProgram=
+static char *FProgram=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
   "void main(void) {\n"
@@ -88,7 +88,7 @@ char *FProgram=
 GLvideo::GLvideo(QWidget *parent)
 {
 	timer = new QTimer();
-	//timer->start(1);
+	timer->start(1);
 	connect(timer, SIGNAL(timeout()), this, SLOT(updateGL()));
 	
 	fp = NULL;
@@ -107,7 +107,6 @@ GLvideo::GLvideo(QWidget *parent)
 void GLvideo::compileFragmentShader()
 {
 	GLint length;			//log length
-	int i;
 	
     shader=glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 

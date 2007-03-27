@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.2 2007-03-27 15:24:13 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.1 2007-03-27 15:24:13 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -35,19 +35,38 @@
 * or the LGPL.
 * ***** END LICENSE BLOCK ***** */
 
-#include "mainwindow.h"
-#include "X11/Xlib.h"
+#ifndef GLVIDEO_MT_H
+#define GLVIDEO_MT_H
 
-#include <QApplication>
+#define GL_GLEXT_PROTOTYPES 1
 
-int main(int argc, char **argv)
+#include <QtGui>
+#include <QGLWidget>
+#include "GLvideo_rt.h"
+
+#include <sys/time.h>
+
+
+class GLvideo_mt : public QGLWidget
 {
-	XInitThreads();	
+    Q_OBJECT
+
+public:
+	GLvideo_mt(QWidget *parent = 0);
+	void setFileName(const QString &fileName);
 	
-    QApplication app(argc, argv);
+protected:
 
-    MainWindow window;
-    window.show();   
+private slots:
+        
+private:
+	int srcwidth;
+	int srcheight;
+	void initializeGL();
+	void resizeGL(int w, int h);
+	void paintGL();
+	void paintEvent(QPaintEvent * event);
+	GLvideo_rt renderThread;
+};
 
-    return app.exec();
-}
+#endif

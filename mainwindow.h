@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.1 2007-03-23 18:02:23 jrosser Exp $
+* $Id: mainwindow.h,v 1.2 2007-03-27 15:24:13 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -42,6 +42,7 @@
 #include <QtGui>
 
 #include "GLvideo.h"
+#include "GLvideo_mt.h"
 
 class MainWindow : public QMainWindow
 {
@@ -55,6 +56,7 @@ private slots:
         
 private:
 	GLvideo *glvideo;
+	GLvideo_mt *glvideo_mt;
 
 };
 
