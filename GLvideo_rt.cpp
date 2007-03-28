@@ -1,5 +1,8 @@
 #include "GLvideo_rt.h"
+#include "GLvideo_mt.h"
 #include "GL/glx.h"
+
+#define DEBUG 0
 
 static char *FProgram=
   "uniform samplerRect Ytex;\n"
@@ -39,9 +42,18 @@ static char *FProgram=
   "  gl_FragColor=vec4(r,g,b,a);\n"
   "}\n";
 
-GLvideo_rt::GLvideo_rt(QGLWidget &gl) 
+GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
 {
+	m_srcwidth = 1920; 
+	m_srcheight = 1080;
+	m_frameRepeats = 2;
+	m_allocateTextures = true;	
+	m_createGLTextures = true;
+	m_doRendering = true;
+	m_doResize = false;
+	m_openFile = false;
+	m_aspectLock = true;
 }
 
 void GLvideo_rt::compileFragmentShader()
@@ -83,7 +95,7 @@ void GLvideo_rt::compileFragmentShader()
     glUseProgramObjectARB(program);
 }
 
-void GLvideo_rt::createTextures()
+void GLvideo_rt::createTextures(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex)
 {
     /* Select texture unit 1 as the active unit and bind the U texture. */
     glActiveTexture(GL_TEXTURE1);
@@ -121,35 +133,53 @@ void GLvideo_rt::createTextures()
     
 void GLvideo_rt::stop()
 {
-	doRendering = false;
+	glw.lockMutex();
+	m_doRendering = false;
+	glw.unlockMutex();
+}
+
+void GLvideo_rt::setAspectLock(bool l)
+{
+	glw.lockMutex();
+
+	if(m_aspectLock != l) {
+		m_aspectLock = l;
+		m_doResize = true;
+	}
+	
+	glw.unlockMutex();	
 }
     
 void GLvideo_rt::resizeViewport(int width, int height)
 {
-	displaywidth = width;
-	displayheight = height;
-	doResize = true;
+	glw.lockMutex();
+	m_displaywidth = width;
+	m_displayheight = height;
+	m_doResize = true;
+	glw.unlockMutex();
 }    
 
 void GLvideo_rt::setFileName(const QString &fn)
 {
-	fileName = fn;
+	glw.lockMutex();
+	m_fileName = fn;
+	glw.unlockMutex();
 }
 
 void GLvideo_rt::setSourceSize(int width, int height)
 {
-	srcwidth = width;
-	srcheight = height;
+	glw.lockMutex();
+	m_srcwidth = width;
+	m_srcheight = height;
 
-	//reallocate the texture buffers in memory
+	//m_allocateTextures = true;
+	//m_createGLTextures = true;
+	//m_updateShaderVars = true;
 	
-	//reallocate the texture buffers on the video board
-	
-	//send the size differences to the fragment shader program
-	
+	glw.unlockMutex();
 }    
 
-void GLvideo_rt::render()
+void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int srcwidth, int srcheight)
 {		
 	glw.makeCurrent();
 
@@ -163,7 +193,7 @@ void GLvideo_rt::render()
 
 	glBindTexture(GL_TEXTURE_RECTANGLE_NV, 3);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 1920, 1080, GL_LUMINANCE, GL_UNSIGNED_BYTE, Ytex);
-		
+			
 	glBegin(GL_QUADS);
 		glTexCoord2i(0,0);
 		glVertex2i(0,0);
@@ -173,22 +203,36 @@ void GLvideo_rt::render()
 		glVertex2i(srcwidth, srcheight);
 		glTexCoord2i(0, srcheight);
 		glVertex2i(0, srcheight);
-	glEnd();
-				
+	glEnd();				
 }
     
 void GLvideo_rt::run()
 {
 	printf("Starting renderthread\n");
-		
-	displaywidth = glw.width();
-	displayheight = glw.height();
-	srcwidth = 1920;
-	srcheight = 1080;
-	frameRepeats = 2;
+
+   	GLubyte *Ytex=NULL, *Utex=NULL, *Vtex=NULL;	//Y,U,V textures
+   	FILE *fp = NULL;				//file pointer
+	int repeats = 0;				//frame repeat counter
 	
-	fp = NULL;
-		
+	//declare shadow variables for the thread worker and initialise them
+	glw.lockMutex();
+	QString fileName = m_fileName;
+	int displaywidth = m_displaywidth;
+	int displayheight = m_displayheight;
+	int srcwidth = m_srcwidth; 
+	int srcheight = m_srcheight;
+	int frameRepeats = m_frameRepeats;
+	bool allocateTextures = m_allocateTextures;	
+	bool createGLTextures = m_createGLTextures;
+	bool doRendering = m_doRendering;
+	bool doResize = m_doResize;
+	bool openFile = m_openFile;
+	bool updateShaderVars = m_updateShaderVars;
+	bool compileShader = m_compileShader;
+	bool aspectLock = m_aspectLock;
+	glw.unlockMutex();
+
+	//initialise OpenGL					
 	glw.makeCurrent();
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -201,15 +245,56 @@ void GLvideo_rt::run()
     
 	compileFragmentShader();		
 	
-	allocateTextures = true;	
-	createGLTextures = true;
-	doRendering = true;
-	doResize = false;
-	openFile = false;
 	
 	while (doRendering) {
+
+		//update shadow variables
+		glw.lockMutex();
+		
+			//values
+			displaywidth = m_displaywidth;
+			displayheight = m_displayheight;
+			srcwidth = m_srcwidth; 
+			srcheight = m_srcheight;
+			frameRepeats = m_frameRepeats;
+			
+			
+			//'one-shot' instructions from another thread
+			allocateTextures = m_allocateTextures;
+			m_allocateTextures = false;
 				
+			createGLTextures = m_createGLTextures;
+			m_createGLTextures = false;
+			
+			openFile = m_openFile;
+			m_openFile = false;
+			
+			updateShaderVars = m_updateShaderVars;
+			m_updateShaderVars = false;
+			
+			compileShader = m_compileShader;
+			m_compileShader = false;
+			
+			doResize = m_doResize;				
+			m_doResize = false;
+						
+			//boolean flags
+			doRendering = m_doRendering;
+
+		glw.unlockMutex();
+
+		if(compileShader) {
+			printf("Compiling fragment shader\n");
+			compileShader = false;	
+		}
+		
+		if(updateShaderVars) {
+			printf("Updating fragment shader variables\n");
+			updateShaderVars = false;	
+		}	
+					
 		if(allocateTextures) {
+			printf("Allocating textures\n");
 			//allocate or change the allocation of the memory that the textures are read into	
 			if(Ytex) free(Ytex);
 			if(Utex) free(Utex);
@@ -223,15 +308,37 @@ void GLvideo_rt::run()
 		}
 		
 		if(createGLTextures) {
+			printf("Creating GL textures\n");
 			//create the textures on the GPU
-			createTextures();
+			createTextures(Ytex, Utex, Vtex);
 			createGLTextures = false;
 		}			
 					
 		if(doResize){
 			//resize the viewport
-			printf("Resizing to %d, %d\n", displaywidth, displayheight);			
-			glViewport(0, 0, displaywidth, displayheight);
+			printf("Resizing to %d, %d\n", displaywidth, displayheight);
+			glw.makeCurrent();
+			
+			float sourceAspect = (float)srcwidth / (float)srcheight;
+			float displayAspect = (float)displaywidth / (float)displayheight;
+			
+			if(sourceAspect == displayAspect || aspectLock == false) {
+				glViewport(0, 0, displaywidth, displayheight);				
+			}
+			else {
+				if(displayAspect > sourceAspect) {
+					//window is wider than image should be
+					int width = (int)(displayheight*sourceAspect);
+					int offset = (displaywidth - width) / 2;
+					glViewport(offset,0, width, displayheight);
+				}
+				else {
+					int height = (int)(displaywidth/sourceAspect);
+					int offset = (displayheight - height) / 2;								
+					glViewport(0, offset, displaywidth, height);
+				}
+			}
+
 			doResize = false;
 		}
 
@@ -245,7 +352,8 @@ void GLvideo_rt::run()
 		}
 		
 		//open a new file, close the old one and set file pointer to NULL
-		if(openFile) {	
+		if(openFile) {
+			printf("Closing current file\n");
 			if(fp) fclose(fp);
 			fp = NULL;
 			openFile = false;	
@@ -253,6 +361,7 @@ void GLvideo_rt::run()
 		
 		//open input
 		if(fp == NULL) {
+			printf("Opening file\n");
 			fp = fopen(fileName.toLatin1().data(), "rb");		
 			//fp = fopen("/video/crocs_5851_19.86Mbps_9.0.yuv", "rb");
 			printf("Opening input file, fp=%p\n", fp);		
@@ -266,6 +375,7 @@ void GLvideo_rt::run()
 		//read frame data
 		repeats++;	
 		if(repeats == frameRepeats) {
+			if(DEBUG) printf("Reading picture data\n");
 			fread(Ytex, 1, srcwidth*srcheight,fp);
 			fread(Utex, 1, srcwidth*srcheight/4,fp);
 			fread(Vtex, 1, srcwidth*srcheight/4,fp);
@@ -273,8 +383,8 @@ void GLvideo_rt::run()
 		}
        		
 		//render       		
-		printf("Rendering...\n");			
-		render();
+		if(DEBUG) printf("Rendering...\n");			
+		render(Ytex, Utex, Vtex, srcwidth, srcheight);
        			
 		//wait for VSYNC - must have __GL_SYNC_TO_VBLANK=1 environment variable set....
 		glw.swapBuffers();

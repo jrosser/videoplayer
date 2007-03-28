@@ -6,7 +6,6 @@ TEMPLATE = app
 TARGET = 
 DEPENDPATH += . attic tests/hardlines
 INCLUDEPATH += . /usr/include
-
 LIBS += -lGL
 
 QT += opengl

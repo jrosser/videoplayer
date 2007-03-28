@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.2 2007-03-27 15:24:13 jrosser Exp $
+* $Id: mainwindow.h,v 1.3 2007-03-28 13:58:25 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -49,7 +49,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     MainWindow();
-
+	int heightForWidth ( int w ) const;
 protected:
 
 private slots:

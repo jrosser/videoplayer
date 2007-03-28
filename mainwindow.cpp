@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.2 2007-03-27 15:24:13 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.3 2007-03-28 13:58:25 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -58,6 +58,10 @@ MainWindow::MainWindow()
 	
 	setWindowTitle("VideoPlayer");
 	
+	QSizePolicy newPolicy(sizePolicy());
+	newPolicy.setHeightForWidth(true); 
+	setSizePolicy(newPolicy);	
+	
 	//set up menus etc
  	//createActions();
     //createMenus();
@@ -74,4 +78,7 @@ MainWindow::MainWindow()
 	//load the settings for this application
 }
 
-
+int MainWindow::heightForWidth ( int w ) const
+{
+	return( (w * 9) / 16);	
+}

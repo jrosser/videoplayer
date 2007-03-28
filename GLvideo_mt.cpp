@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.1 2007-03-27 15:24:13 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.2 2007-03-28 13:58:25 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -68,4 +68,14 @@ void GLvideo_mt::paintEvent(QPaintEvent * event)
 void GLvideo_mt::setFileName(const QString &fileName)
 {
 	renderThread.setFileName(fileName);	
+}
+
+void GLvideo_mt::lockMutex()
+{
+	mutex.lock();	
+}
+
+void GLvideo_mt::unlockMutex()
+{
+	mutex.unlock();
 }

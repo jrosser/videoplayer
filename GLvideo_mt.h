@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.1 2007-03-27 15:24:13 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.2 2007-03-28 13:58:25 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -54,19 +54,21 @@ class GLvideo_mt : public QGLWidget
 public:
 	GLvideo_mt(QWidget *parent = 0);
 	void setFileName(const QString &fileName);
-	
+	void lockMutex();
+	void unlockMutex();
+		
 protected:
 
 private slots:
         
 private:
-	int srcwidth;
-	int srcheight;
 	void initializeGL();
 	void resizeGL(int w, int h);
 	void paintGL();
 	void paintEvent(QPaintEvent * event);
 	GLvideo_rt renderThread;
+	QMutex mutex;	
+	
 };
 
 #endif
