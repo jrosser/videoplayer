@@ -2,6 +2,13 @@
 #include "GLvideo_mt.h"
 #include "GL/glx.h"
 
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+
 #define DEBUG 0
 
 static char *FProgram=
@@ -210,9 +217,12 @@ void GLvideo_rt::run()
 {
 	printf("Starting renderthread\n");
 
+	void *textureMemory=NULL;
    	GLubyte *Ytex=NULL, *Utex=NULL, *Vtex=NULL;	//Y,U,V textures
-   	FILE *fp = NULL;				//file pointer
+   	int fd = 0;
+   	//FILE *fp = NULL;				//file pointer
 	int repeats = 0;				//frame repeat counter
+	int eof = 0;
 	
 	//declare shadow variables for the thread worker and initialise them
 	glw.lockMutex();
@@ -297,13 +307,17 @@ void GLvideo_rt::run()
 			printf("Allocating textures\n");
 			//allocate or change the allocation of the memory that the textures are read into	
 			if(Ytex) free(Ytex);
-			if(Utex) free(Utex);
-			if(Vtex) free(Vtex);
-									
-    		Ytex=(GLubyte *)malloc(srcwidth*srcheight);
-    		Utex=(GLubyte *)malloc(srcwidth*srcheight/4);
-    		Vtex=(GLubyte *)malloc(srcwidth*srcheight/4);
-    		
+			if(Ytex) free(Utex);
+			if(Ytex) free(Vtex);			
+			
+			//this looks really ugly, but we want aligned memory for O_DIRECT,
+			//and for 4:2:0 video the chroma may not be a multiple of 512 bytes as required for O_DIRECT
+			//the whole frame is read at once into Ytex, then Utex and Vtex point correctly to the planar chroma
+			posix_memalign(&textureMemory, 4096, srcwidth*srcheight*3);	//enough for 4:4:4		
+			Ytex = (GLubyte*)textureMemory;			
+			Utex = Ytex + srcwidth*srcheight;			
+			Vtex = Utex + srcwidth*srcheight/4;
+					    		
     		allocateTextures = false;			
 		}
 		
@@ -341,53 +355,43 @@ void GLvideo_rt::run()
 
 			doResize = false;
 		}
-
-		//loop at EOF
-		if(fp != NULL) {
-			if(feof(fp)) {
-				printf("End of file...\n");		
-				fclose(fp);
-				fp = NULL;
-			}
-		}
 		
-		//open a new file, close the old one and set file pointer to NULL
-		if(openFile) {
-			printf("Closing current file\n");
-			if(fp) fclose(fp);
-			fp = NULL;
-			openFile = false;	
+		//open a new file, close the old one
+		if(openFile || eof) {								
+			if(fd) close(fd);
+			fd = 0;
+			eof = 0;	
 		}
 		
 		//open input
-		if(fp == NULL) {
-			printf("Opening file\n");
-			fp = fopen(fileName.toLatin1().data(), "rb");		
-			//fp = fopen("/video/crocs_5851_19.86Mbps_9.0.yuv", "rb");
-			printf("Opening input file, fp=%p\n", fp);		
+		if(fd == 0) {						
+			fd = open(fileName.toLatin1().data(), O_RDONLY | O_DIRECT);					
 			repeats = 0;
 		}
-			
-		//oh no - could not open input file
-		if(fp == NULL)	
-			printf("Could not open input video\n");
-	
+								
 		//read frame data
 		repeats++;	
 		if(repeats == frameRepeats) {
 			if(DEBUG) printf("Reading picture data\n");
-			fread(Ytex, 1, srcwidth*srcheight,fp);
-			fread(Utex, 1, srcwidth*srcheight/4,fp);
-			fread(Vtex, 1, srcwidth*srcheight/4,fp);
-			repeats = 0;		
+
+			int ret;
+			
+			ret = read(fd, Ytex, srcwidth*srcheight*3/2);			
+			
+			if(ret == 0) 
+				eof = 1;
+			else 
+				eof = 0;
+						
+			repeats = 0;			
 		}
-       		
+       	
+		//wait for VSYNC - must have __GL_SYNC_TO_VBLANK=1 environment variable set....	
 		//render       		
 		if(DEBUG) printf("Rendering...\n");			
 		render(Ytex, Utex, Vtex, srcwidth, srcheight);
-       			
-		//wait for VSYNC - must have __GL_SYNC_TO_VBLANK=1 environment variable set....
-		glw.swapBuffers();
+		glw.swapBuffers();       	
 		glFlush();
+		
 	}
 }
