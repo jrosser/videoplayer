@@ -1,0 +1,273 @@
+/* ***** BEGIN LICENSE BLOCK *****
+*
+* $Id: videoRead.cpp,v 1.1 2007-04-03 16:55:29 jrosser Exp $
+*
+* Version: MPL 1.1/GPL 2.0/LGPL 2.1
+*
+* The contents of this file are subject to the Mozilla Public License
+* Version 1.1 (the "License"); you may not use this file except in compliance
+* with the License. You may obtain a copy of the License at
+* http://www.mozilla.org/MPL/
+*
+* Software distributed under the License is distributed on an "AS IS" basis,
+* WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for
+* the specific language governing rights and limitations under the License.
+*
+* The Original Code is BBC Research and Development code.
+*
+* The Initial Developer of the Original Code is the British Broadcasting
+* Corporation.
+* Portions created by the Initial Developer are Copyright (C) 2004.
+* All Rights Reserved.
+*
+* Contributor(s): Jonathan Rosser (Original Author)
+*
+* Alternatively, the contents of this file may be used under the terms of
+* the GNU General Public License Version 2 (the "GPL"), or the GNU Lesser
+* Public License Version 2.1 (the "LGPL"), in which case the provisions of
+* the GPL or the LGPL are applicable instead of those above. If you wish to
+* allow use of your version of this file only under the terms of the either
+* the GPL or LGPL and not to allow others to use your version of this file
+* under the MPL, indicate your decision by deleting the provisions above
+* and replace them with the notice and other provisions required by the GPL
+* or LGPL. If you do not delete the provisions above, a recipient may use
+* your version of this file under the terms of any one of the MPL, the GPL
+* or the LGPL.
+* ***** END LICENSE BLOCK ***** */
+
+#include "videoRead.h"
+#include "videoData.h"
+
+VideoRead::VideoRead() 
+	: readThread(*this)
+{	
+	lastTransportStatus = Fwd1;
+	currentFrameNum=0;
+	firstFrameNum=0;
+	lastFrameNum=0;
+		
+	displayFrame = NULL;
+	frameMutex.lock();	//required for QWaitCondition
+	readThread.start();
+	
+	transportMutex.lock();
+	transportStatus = Fwd1;
+	transportMutex.unlock();	
+}
+
+void VideoRead::setFileName(const QString &fn)
+{
+	fileName = fn;
+	
+	QFileInfo info(fn);
+	
+	lastFrameNum = info.size() / ((1920 * 1080 * 3) / 2);
+	lastFrameNum--; 	
+}
+
+//called from the openGL display widget to get frame data for display
+VideoData* VideoRead::getNextFrame()
+{
+	//get the status of the transport
+	QMutexLocker transportLocker(&transportMutex);
+	TransportControls ts = transportStatus;
+	transportLocker.unlock();
+
+	//jog forward
+	if(ts == JogFwd) {
+		currentFrameNum++;
+		if(currentFrameNum > lastFrameNum) currentFrameNum = firstFrameNum;
+			
+		if(futureFrames.size() == 0)
+			printf("Dropped frame - no future frame available\n");
+		else
+		{
+			//playing forward
+			if(displayFrame != NULL)
+				pastFrames.prepend(displayFrame);
+				
+			displayFrame = futureFrames.takeFirst();
+		}		
+
+		transportMutex.lock();
+		transportStatus = Stop;			
+		transportMutex.unlock();
+	}
+	
+	//jog reverse
+	if(ts == JogRev) {
+		
+		currentFrameNum--;
+		if(currentFrameNum < 0) currentFrameNum = lastFrameNum;
+								
+		if(pastFrames.size() == 0)
+			printf("Dropped frame - no past frame available\n");
+		else {
+			//playing backward
+			if(displayFrame != NULL)
+				futureFrames.prepend(displayFrame);
+							
+			displayFrame = pastFrames.takeFirst();				
+		}
+				
+		transportMutex.lock();
+		transportStatus = Stop;
+		transportMutex.unlock();
+	}
+	
+	//playing
+	if((ts != Stop && ts != Pause) || displayFrame == NULL) {
+
+		//get the last item off the frame list
+		QMutexLocker listLocker(&listMutex);
+				
+		if(ts == Fwd1) {
+			
+			currentFrameNum++;
+			if(currentFrameNum > lastFrameNum) currentFrameNum = firstFrameNum;
+			
+			if(futureFrames.size() == 0)
+				printf("Dropped frame - no future frame available\n");
+			else
+			{
+				//playing forward
+				if(displayFrame != NULL)
+					pastFrames.prepend(displayFrame);
+				
+				displayFrame = futureFrames.takeFirst();
+			}		
+		}
+		
+		if(ts == Rev1) {
+			
+			currentFrameNum--;
+			if(currentFrameNum < 0) currentFrameNum = lastFrameNum;
+									
+			if(pastFrames.size() == 0)
+				printf("Dropped frame - no past frame available\n");
+			else {
+				//playing backward
+				if(displayFrame != NULL)
+					futureFrames.prepend(displayFrame);
+								
+				displayFrame = pastFrames.takeFirst();				
+			}
+		}
+			
+		listLocker.unlock();
+	}
+	
+	//wake the reader thread - done each time as jogging may move the frame number
+	frameConsumed.wakeOne();
+	
+	//if(displayFrame == NULL)
+	//	printf("displayFrame is NULL!\n");	
+	
+	return displayFrame;
+}
+
+void VideoRead::transportFwd100() {transportController(Fwd100);}
+void VideoRead::transportFwd50() {transportController(Fwd50);}
+void VideoRead::transportFwd20() {transportController(Fwd20);}
+void VideoRead::transportFwd10() {transportController(Fwd10);}
+void VideoRead::transportFwd5() {transportController(Fwd5);}
+void VideoRead::transportFwd2() {transportController(Fwd2);}
+void VideoRead::transportFwd1() {transportController(Fwd1);}
+void VideoRead::transportStop() {transportController(Stop);}
+void VideoRead::transportRev1() {transportController(Rev1);}
+void VideoRead::transportRev2() {transportController(Rev2);}
+void VideoRead::transportRev5() {transportController(Rev5);}
+void VideoRead::transportRev10() {transportController(Rev10);}
+void VideoRead::transportRev20() {transportController(Rev20);}
+void VideoRead::transportRev50() {transportController(Rev50);}
+void VideoRead::transportRev100() {transportController(Rev100);}
+void VideoRead::transportJogFwd() {transportController(JogFwd);}
+void VideoRead::transportJogRev() {transportController(JogRev);}
+void VideoRead::transportPlayPause() {transportController(PlayPause);}
+void VideoRead::transportPause() {transportController(Pause);}
+
+void VideoRead::transportController(TransportControls in)
+{
+	TransportControls newStatus = Unknown;
+	TransportControls currentStatus;
+	
+	transportMutex.lock();
+	currentStatus = transportStatus;
+	transportMutex.unlock();
+	
+	switch(in) {
+		case Stop:
+			newStatus = Stop;
+			lastTransportStatus = Fwd1;	//after 'Stop', unpausing makes us play forwards
+			break;
+			
+		case JogFwd:
+			if(currentStatus == Stop || currentStatus == Pause) {
+				newStatus = JogFwd; //do jog forward	
+			}
+			break;
+			
+		case JogRev:
+			if(currentStatus == Stop || currentStatus == Pause) {
+				newStatus = JogRev; //do jog backward	
+			}
+			break;
+			
+		case Pause:
+ 			//when not stopped or paused we can pause, remebering what were doing		
+			if(currentStatus != Stop || currentStatus == Pause) {
+				lastTransportStatus = currentStatus;
+				newStatus = Pause;	
+			}
+			break;
+			
+		case PlayPause:
+		 	//PlayPause toggles between stop and playing, and paused and playing. It
+ 			//remembers the direction and speed were going
+ 			if(currentStatus == Stop || currentStatus == Pause) {
+ 								
+ 				if(lastTransportStatus == Stop)
+ 					newStatus = Fwd1;
+ 				else
+ 					newStatus = lastTransportStatus;
+ 					
+ 			} else { 				
+ 				lastTransportStatus = currentStatus;
+ 				newStatus = Pause;	
+ 			}
+ 			break;
+ 			
+ 		case Fwd100:
+ 		case Fwd50:
+ 		case Fwd20:
+ 		case Fwd10:
+ 		case Fwd5:
+ 		case Fwd2:
+ 		case Fwd1:
+ 		case Rev1:
+ 		case Rev2:
+ 		case Rev5:
+ 		case Rev10:
+ 		case Rev20:
+ 		case Rev50:
+ 		case Rev100:
+ 			//we can change from any state to a 'shuttle' or play
+ 			newStatus = in;
+ 			break;	
+ 			
+ 		default:
+ 			//oh-no!
+			break;
+	}
+	
+	//if we have determined a new transport status, set it
+	if(newStatus != Unknown) {
+		transportMutex.lock();
+		transportStatus = newStatus;
+		transportMutex.unlock();
+		printf("Changed transport state to %d\n", (int)currentStatus);		
+	}
+	
+
+	
+}

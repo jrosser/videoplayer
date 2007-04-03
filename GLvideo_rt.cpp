@@ -1,6 +1,10 @@
+#define GL_GLEXT_PROTOTYPES 1
+
 #include "GLvideo_rt.h"
 #include "GLvideo_mt.h"
 #include "GL/glx.h"
+
+#include "FTGL/FTGLPolygonFont.h"
 
 #include <unistd.h>
 #include <stdio.h>
@@ -14,39 +18,28 @@
 static char *FProgram=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
+  "uniform float Yheight, CHsubsample, CVsubsample;\n"
+  "uniform mat3 colorMatrix;\n"
+  "uniform vec3 yuvOffset;\n"
+        
   "void main(void) {\n"
-  "  float nx,ny,r,g,b,a,y,u,v;\n"
-  "  vec4 txl,ux,vx;"
-  "  nx=gl_TexCoord[0].x;\n"
-  "  ny=1080.0-gl_TexCoord[0].y;\n"
-  "  y=textureRect(Ytex,vec2(nx,ny)).r;\n"
-  "  u=textureRect(Utex,vec2(nx/2.0,ny/2.0)).r;\n"
-  "  v=textureRect(Vtex,vec2(nx/2.0,ny/2.0)).r;\n"
-
-  "  y=1.1643*(y-0.0625);\n"
-  "  u=u-0.5;\n"
-  "  v=v-0.5;\n"
-
-  "  r=y+1.5958*v;\n"
-  "  g=y-0.39173*u-0.81290*v;\n"
-  "  b=y+2.017*u;\n"
-  "	 a=1.0;\n"
+  "  float nx,ny,a;\n"
+  "  vec3 yuv;\n"
+  "  vec3 rgb;\n"
   
-//  " if(y > 235.0/255.0) {\n"
-//  "    r=1.0;\n"
-//  "    g=0.0;\n"
-//  "    b=0.0;\n"
-//  "    r=1.0 - 1.0 * ((20.0/255.0)/(y-(235.0/255.0)));\n"  
-//  "  }\n"
+  "  nx=gl_TexCoord[0].x;\n"
+  "  ny=Yheight-gl_TexCoord[0].y;\n"
+  
+  "  yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
+  "  yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+  "  yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
 
-//  " if(y < 16.0/255.0) {\n"
-//  "    r=0.0;\n"
-//  "    g=0.0;\n"
-//  "    b=1.0;\n"
-// "    b=1.0 - 1.0 * (16.0/y);\n"  
-//  "  }\n"
+  "  yuv = yuv + yuvOffset;\n"  
+  "  rgb = yuv * colorMatrix;\n"
+
+  "	 a=1.0;\n"
       
-  "  gl_FragColor=vec4(r,g,b,a);\n"
+  "  gl_FragColor=vec4(rgb ,a);\n"
   "}\n";
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
@@ -54,9 +47,9 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 {
 	m_srcwidth = 1920; 
 	m_srcheight = 1080;
-	m_frameRepeats = 2;
-	m_allocateTextures = true;	
+	m_frameRepeats = 2;	
 	m_createGLTextures = true;
+	m_updateShaderVars = true;
 	m_doRendering = true;
 	m_doResize = false;
 	m_openFile = false;
@@ -102,7 +95,7 @@ void GLvideo_rt::compileFragmentShader()
     glUseProgramObjectARB(program);
 }
 
-void GLvideo_rt::createTextures(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex)
+void GLvideo_rt::createTextures(int Ywidth, int Yheight, int Cwidth, int Cheight)
 {
     /* Select texture unit 1 as the active unit and bind the U texture. */
     glActiveTexture(GL_TEXTURE1);
@@ -112,9 +105,9 @@ void GLvideo_rt::createTextures(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex)
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_NV,0,GL_LUMINANCE,960,540,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,Utex);
-
+    //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, Cwidth , Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+    
     /* Select texture unit 2 as the active unit and bind the V texture. */
     glActiveTexture(GL_TEXTURE2);
     i=glGetUniformLocationARB(program, "Vtex");
@@ -123,8 +116,8 @@ void GLvideo_rt::createTextures(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex)
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_NV,0,GL_LUMINANCE,960,540,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,Vtex);
+    //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, Cwidth , Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 
     /* Select texture unit 0 as the active unit and bind the Y texture. */
     glActiveTexture(GL_TEXTURE0);
@@ -134,8 +127,19 @@ void GLvideo_rt::createTextures(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex)
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_NV,0,GL_LUMINANCE,1920,1080,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,Ytex);	
+    //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, Ywidth , Yheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+
+	//create buffer objects that are used to transfer the texture data to the card
+	//this is much faster than using glTexSubImage2D() later on to replace the texture data
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, Cwidth * Cheight, NULL, GL_STREAM_DRAW);    
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, Cheight * Cwidth, NULL, GL_STREAM_DRAW);    
+    
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
+	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, Yheight * Ywidth, NULL, GL_STREAM_DRAW);    
 }
     
 void GLvideo_rt::stop()
@@ -179,37 +183,54 @@ void GLvideo_rt::setSourceSize(int width, int height)
 	m_srcwidth = width;
 	m_srcheight = height;
 
-	//m_allocateTextures = true;
 	//m_createGLTextures = true;
 	//m_updateShaderVars = true;
 	
 	glw.unlockMutex();
 }    
 
-void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int srcwidth, int srcheight)
+void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth, int Yheight, int Cwidth, int Cheight, bool ChromaTextures)
 {		
-	glw.makeCurrent();
-
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glBindTexture(GL_TEXTURE_RECTANGLE_NV, 1);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 960, 540, GL_LUMINANCE, GL_UNSIGNED_BYTE, Utex);
+	void *ioMem;
 
-	glBindTexture(GL_TEXTURE_RECTANGLE_NV, 2);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 960, 540, GL_LUMINANCE, GL_UNSIGNED_BYTE, Vtex);	
+	if(ChromaTextures) {
+		
+		glBindTexture(GL_TEXTURE_RECTANGLE_NV, 1);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
+		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+		memcpy(ioMem, Utex, Cwidth * Cheight);
+		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, Cwidth, Cheight, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 
+		glBindTexture(GL_TEXTURE_RECTANGLE_NV, 2);	
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
+		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+		memcpy(ioMem, Vtex, Cwidth * Cheight);
+		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, Cwidth, Cheight, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);	
+	}
+	
 	glBindTexture(GL_TEXTURE_RECTANGLE_NV, 3);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_NV, 0, 0, 0, 1920, 1080, GL_LUMINANCE, GL_UNSIGNED_BYTE, Ytex);
-			
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
+	ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+	memcpy(ioMem, Ytex, Ywidth * Yheight);
+	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, Ywidth, Yheight, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+	
 	glBegin(GL_QUADS);
 		glTexCoord2i(0,0);
 		glVertex2i(0,0);
-		glTexCoord2i(srcwidth,0);
-		glVertex2i(srcwidth,0);
-		glTexCoord2i(srcwidth, srcheight);
-		glVertex2i(srcwidth, srcheight);
-		glTexCoord2i(0, srcheight);
-		glVertex2i(0, srcheight);
+		glTexCoord2i(Ywidth,0);
+		glVertex2i(Ywidth,0);
+		glTexCoord2i(Ywidth, Yheight);
+		glVertex2i(Ywidth, Yheight);
+		glTexCoord2i(0, Yheight);
+		glVertex2i(0, Yheight);
 	glEnd();				
 }
     
@@ -217,12 +238,30 @@ void GLvideo_rt::run()
 {
 	printf("Starting renderthread\n");
 
-	void *textureMemory=NULL;
-   	GLubyte *Ytex=NULL, *Utex=NULL, *Vtex=NULL;	//Y,U,V textures
-   	int fd = 0;
-   	//FILE *fp = NULL;				//file pointer
-	int repeats = 0;				//frame repeat counter
-	int eof = 0;
+	glw.lockMutex();
+	bool valid = glw.isValid();
+	glw.unlockMutex();
+	
+	while(valid == false) {
+		glw.lockMutex();
+		valid = glw.isValid();
+		glw.unlockMutex();
+		
+		printf("RenderThread : Waiting for valid openGL context\n");
+		usleep(100000);
+	}
+
+	VideoData *videoData = NULL;
+    
+	timeval last;
+	
+	int (*glXWaitVideoSyncSGI)(int , int , unsigned int *) = NULL;
+	int (*glXGetVideoSyncSGI)(unsigned int *) = NULL;
+		
+	glXGetVideoSyncSGI = (int (*)(unsigned int *))glXGetProcAddress((GLubyte *)"glXGetVideoSyncSGI");
+	glXWaitVideoSyncSGI = (int (*)(int, int, unsigned int *))glXGetProcAddress((GLubyte *)"glXWaitVideoSyncSGI");	
+	
+	printf("pget=%p pwait=%p\n", glXGetVideoSyncSGI, glXWaitVideoSyncSGI);
 	
 	//declare shadow variables for the thread worker and initialise them
 	glw.lockMutex();
@@ -231,8 +270,7 @@ void GLvideo_rt::run()
 	int displayheight = m_displayheight;
 	int srcwidth = m_srcwidth; 
 	int srcheight = m_srcheight;
-	int frameRepeats = m_frameRepeats;
-	bool allocateTextures = m_allocateTextures;	
+	int frameRepeats = m_frameRepeats;	
 	bool createGLTextures = m_createGLTextures;
 	bool doRendering = m_doRendering;
 	bool doResize = m_doResize;
@@ -242,19 +280,33 @@ void GLvideo_rt::run()
 	bool aspectLock = m_aspectLock;
 	glw.unlockMutex();
 
+  	FTGLPolygonFont font((const char *)"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf");    
+    if(font.Error()) {
+    	printf("Failed to open font file\n");
+    	fflush(stdout);
+    }
+
+	font.FaceSize(144);
+	font.CharMap(ft_encoding_unicode);
+        	
 	//initialise OpenGL					
 	glw.makeCurrent();
+    glGenBuffers(3, io_buf);	
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, srcwidth ,0 , srcheight, -1 ,1);
     glViewport(0,0, displayheight, displaywidth);
     glClearColor(0, 0, 0, 0);
-    glColor3f(0.0, 0.0, 0.0);
     glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
-    
+
+	// Set up lighting.
+    //float light1_ambient[4]  = { 1.0, 1.0, 1.0, 1.0 };
+   // glLightfv(GL_LIGHT1, GL_AMBIENT,  light1_ambient);
+    //glEnable(GL_LIGHT1);
+
+
 	compileFragmentShader();		
-	
 	
 	while (doRendering) {
 
@@ -268,11 +320,6 @@ void GLvideo_rt::run()
 			srcheight = m_srcheight;
 			frameRepeats = m_frameRepeats;
 			
-			
-			//'one-shot' instructions from another thread
-			allocateTextures = m_allocateTextures;
-			m_allocateTextures = false;
-				
 			createGLTextures = m_createGLTextures;
 			m_createGLTextures = false;
 			
@@ -300,38 +347,38 @@ void GLvideo_rt::run()
 		
 		if(updateShaderVars) {
 			printf("Updating fragment shader variables\n");
+			
+		    int i=glGetUniformLocationARB(program, "Yheight");
+    		glUniform1fARB(i, 1080.0);
+
+		    i=glGetUniformLocationARB(program, "CHsubsample");
+    		glUniform1fARB(i, 2.0);
+
+		    i=glGetUniformLocationARB(program, "CVsubsample");
+    		glUniform1fARB(i, 2.0);
+
+		    i=glGetUniformLocationARB(program, "colorMatrix");
+		    float matrix[9] = {1.0, 0.0, 1.5958, 1.0, -0.39173, -0.8129, 1.0, 2.017, 0.0};	    
+    		glUniformMatrix3fvARB(i, 1, false, &matrix[0]);
+
+		    i=glGetUniformLocationARB(program, "yuvOffset");
+    		glUniform3fARB(i, 0.0, -0.5, -0.5);
+			
+			printf("i is %d\n", i);
+						
 			updateShaderVars = false;	
 		}	
-					
-		if(allocateTextures) {
-			printf("Allocating textures\n");
-			//allocate or change the allocation of the memory that the textures are read into	
-			if(Ytex) free(Ytex);
-			if(Ytex) free(Utex);
-			if(Ytex) free(Vtex);			
-			
-			//this looks really ugly, but we want aligned memory for O_DIRECT,
-			//and for 4:2:0 video the chroma may not be a multiple of 512 bytes as required for O_DIRECT
-			//the whole frame is read at once into Ytex, then Utex and Vtex point correctly to the planar chroma
-			posix_memalign(&textureMemory, 4096, srcwidth*srcheight*3);	//enough for 4:4:4		
-			Ytex = (GLubyte*)textureMemory;			
-			Utex = Ytex + srcwidth*srcheight;			
-			Vtex = Utex + srcwidth*srcheight/4;
-					    		
-    		allocateTextures = false;			
-		}
-		
+							
 		if(createGLTextures) {
 			printf("Creating GL textures\n");
 			//create the textures on the GPU
-			createTextures(Ytex, Utex, Vtex);
+			createTextures(1920, 1080, 960, 540);
 			createGLTextures = false;
 		}			
 					
 		if(doResize){
 			//resize the viewport
 			printf("Resizing to %d, %d\n", displaywidth, displayheight);
-			glw.makeCurrent();
 			
 			float sourceAspect = (float)srcwidth / (float)srcheight;
 			float displayAspect = (float)displaywidth / (float)displayheight;
@@ -355,43 +402,40 @@ void GLvideo_rt::run()
 
 			doResize = false;
 		}
-		
-		//open a new file, close the old one
-		if(openFile || eof) {								
-			if(fd) close(fd);
-			fd = 0;
-			eof = 0;	
-		}
-		
-		//open input
-		if(fd == 0) {						
-			fd = open(fileName.toLatin1().data(), O_RDONLY | O_DIRECT);					
-			repeats = 0;
-		}
-								
+	
+		//wait for some number of extra vertical syncs
+		unsigned int retraceCount;		
+       	glXGetVideoSyncSGI(&retraceCount);
+       	glXWaitVideoSyncSGI(1, (retraceCount+1)%1, &retraceCount);       				
+											
 		//read frame data
-		repeats++;	
-		if(repeats == frameRepeats) {
-			if(DEBUG) printf("Reading picture data\n");
-
-			int ret;
+		videoData = glw.vr.getNextFrame();
+					
+		if(videoData) {
 			
-			ret = read(fd, Ytex, srcwidth*srcheight*3/2);			
+			if(DEBUG) printf("Rendering...\n");
 			
-			if(ret == 0) 
-				eof = 1;
-			else 
-				eof = 0;
-						
-			repeats = 0;			
+			render((GLubyte *)videoData->Ydata, 
+				   (GLubyte *)videoData->Udata, 
+				   (GLubyte *)videoData->Vdata,
+					1920, 1080, 960, 540, true);
+			
+			glColor3f(1.0, 1.0, 1.0);			
+									
+			glPushMatrix();			
+   			font.Render( "Hello World!");
+			glPopMatrix();									
+										   			   
+			glFlush();
+			glw.swapBuffers();
 		}
-       	
-		//wait for VSYNC - must have __GL_SYNC_TO_VBLANK=1 environment variable set....	
-		//render       		
-		if(DEBUG) printf("Rendering...\n");			
-		render(Ytex, Utex, Vtex, srcwidth, srcheight);
-		glw.swapBuffers();       	
-		glFlush();
-		
+
+  		//calculate FPS
+       	timeval now, diff;
+       	gettimeofday(&now, NULL);
+       	timersub(&now, &last, &diff);       	
+       	if(DEBUG)printf("FPS = %f\n", 1000000.0 / diff.tv_usec);
+       	last = now;
+       	       	       	       	
 	}
 }

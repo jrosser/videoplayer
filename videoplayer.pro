@@ -4,13 +4,13 @@
 
 TEMPLATE = app
 TARGET = 
-DEPENDPATH += . attic tests/hardlines
-INCLUDEPATH += . /usr/include
-LIBS += -lGL
+INCLUDEPATH += . /usr/include  ../include /usr/include/freetype2
+
+LIBS += -lGL -L/project/compression/jrosser/workspace/lib -lftgl
 
 QT += opengl
 CONFIG += thread
 
 # Input
-HEADERS = mainwindow.h GLvideo.h GLvideo_mt.h GLvideo_rt.h
-SOURCES = main.cpp mainwindow.cpp GLvideo.cpp GLvideo_mt.cpp GLvideo_rt.cpp
+HEADERS = mainwindow.h GLvideo.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h
+SOURCES = main.cpp mainwindow.cpp GLvideo.cpp GLvideo_mt.cpp GLvideo_rt.cpp videoRead.cpp readThread.cpp videoData.cpp

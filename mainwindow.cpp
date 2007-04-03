@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.3 2007-03-28 13:58:25 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.4 2007-04-03 16:55:30 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -41,29 +41,26 @@
 
 MainWindow::MainWindow()
 {
-	//central widget is the 'view'
-	glvideo_mt = new GLvideo_mt();
+	setWindowTitle("VideoPlayer");
+	
+	//threaded video reader
+	videoRead = new VideoRead();
+	
+	//central widget is the threaded openGL video widget
+	//which pulls video from the reader
+	glvideo_mt = new GLvideo_mt(*videoRead);
 	
 	if(qApp->arguments().count() > 1) {
 		const QStringList &args = qApp->arguments();	
-		glvideo_mt->setFileName(args[1]);
+		videoRead->setFileName(args[1]);
 	}
 	else
 		exit(1);
 		
   	setCentralWidget(glvideo_mt);
-  		
-    //glvideo = new GLvideo();            
-  	//setCentralWidget(glvideo);
-	
-	setWindowTitle("VideoPlayer");
-	
-	QSizePolicy newPolicy(sizePolicy());
-	newPolicy.setHeightForWidth(true); 
-	setSizePolicy(newPolicy);	
-	
+  				
 	//set up menus etc
- 	//createActions();
+ 	createActions();
     //createMenus();
     //createStatusBar();
     //createToolBar();
@@ -78,7 +75,130 @@ MainWindow::MainWindow()
 	//load the settings for this application
 }
 
-int MainWindow::heightForWidth ( int w ) const
+
+//generate actions for menus and keypress handlers
+void MainWindow::createActions()
+{	
+	viewFullScreenAct = new QAction("View full screen", this);
+	viewFullScreenAct->setShortcut(tr("Ctrl+F"));		
+	addAction(viewFullScreenAct);		
+	connect(viewFullScreenAct, SIGNAL(triggered()), this, SLOT(toggleFullScreen()));	
+    
+    escapeFullScreenAct = new QAction("Escape full screen", this);
+	escapeFullScreenAct->setShortcut(tr("Escape"));    
+    addAction(escapeFullScreenAct);
+    connect(escapeFullScreenAct, SIGNAL(triggered()), this, SLOT(escapeFullScreen()));
+    
+	transportFwd100Act = new QAction("Forward 100x", this);
+	transportFwd100Act->setShortcut(tr(""));
+	addAction(transportFwd100Act);
+	connect(transportFwd100Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd100()));
+	
+	transportFwd50Act = new QAction("Forward 50x", this);
+	transportFwd50Act->setShortcut(tr(""));
+	addAction(transportFwd50Act);
+	connect(transportFwd50Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd50()));
+	
+	transportFwd20Act = new QAction("Forward 20x", this);
+	transportFwd20Act->setShortcut(tr(""));
+	addAction(transportFwd20Act);
+	connect(transportFwd20Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd20()));
+	
+	transportFwd10Act = new QAction("Forward 10x", this);
+	transportFwd10Act->setShortcut(tr(""));
+	addAction(transportFwd10Act);
+	connect(transportFwd10Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd10()));
+	
+	transportFwd5Act = new QAction("Forward 5x", this);
+	transportFwd5Act->setShortcut(tr(""));
+	addAction(transportFwd5Act);
+	connect(transportFwd5Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd5()));
+	
+	transportFwd2Act = new QAction("Forward 2x", this);
+	transportFwd2Act->setShortcut(tr(""));
+	addAction(transportFwd2Act);
+	connect(transportFwd2Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd2()));
+	
+	transportFwd1Act = new QAction("Forward 1x", this);
+	transportFwd1Act->setShortcut(tr("f"));
+	addAction(transportFwd1Act);
+	connect(transportFwd1Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd1()));
+	
+	transportStopAct = new QAction("Stop", this);
+	transportStopAct->setShortcut(tr("s"));
+	addAction(transportStopAct);
+	connect(transportStopAct, SIGNAL(triggered()), videoRead, SLOT(transportStop()));
+	
+	transportRev1Act = new QAction("Reverse 1x", this);
+	transportRev1Act->setShortcut(tr("r"));
+	addAction(transportRev1Act);
+	connect(transportRev1Act, SIGNAL(triggered()), videoRead, SLOT(transportRev1()));
+	
+	transportRev2Act = new QAction("Reverse 2x", this);
+	transportRev2Act->setShortcut(tr(""));
+	addAction(transportRev2Act);
+	connect(transportRev2Act, SIGNAL(triggered()), videoRead, SLOT(transportRev2()));
+	
+	transportRev5Act = new QAction("Reverse 5x", this);
+	transportRev5Act->setShortcut(tr(""));
+	addAction(transportRev5Act);
+	connect(transportRev5Act, SIGNAL(triggered()), videoRead, SLOT(transportRev5()));
+	
+	transportRev10Act = new QAction("Reverse 10x", this);
+	transportRev10Act->setShortcut(tr(""));
+	addAction(transportRev10Act);
+	connect(transportRev10Act, SIGNAL(triggered()), videoRead, SLOT(transportRev10()));
+					
+	transportRev20Act = new QAction("Reverse 20x", this);
+	transportFwd20Act->setShortcut(tr(""));
+	addAction(transportRev20Act);
+	connect(transportRev20Act, SIGNAL(triggered()), videoRead, SLOT(transportRev20()));
+	
+	transportRev50Act = new QAction("Reverse 50x", this);
+	transportRev50Act->setShortcut(tr(""));
+	addAction(transportFwd100Act);
+	connect(transportFwd100Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd100()));
+	
+	transportRev100Act = new QAction("Reverse 100x", this);								
+	transportRev100Act->setShortcut(tr(""));
+	addAction(transportRev100Act);
+	connect(transportRev100Act, SIGNAL(triggered()), videoRead, SLOT(transportRev100()));
+
+	transportPlayPauseAct = new QAction("Play/Pause", this);
+	transportPlayPauseAct->setShortcut(tr("Space"));
+	addAction(transportPlayPauseAct);
+	connect(transportPlayPauseAct, SIGNAL(triggered()), videoRead, SLOT(transportPlayPause()));
+	
+	transportJogFwdAct = new QAction("Jog Forward", this);
+	transportJogFwdAct->setShortcut(tr("."));
+	addAction(transportJogFwdAct);
+	connect(transportJogFwdAct, SIGNAL(triggered()), videoRead, SLOT(transportJogFwd()));
+	
+	transportJogRevAct = new QAction("Jog Reverse", this);
+	transportJogRevAct->setShortcut(tr(","));
+	addAction(transportJogRevAct);
+	connect(transportJogRevAct, SIGNAL(triggered()), videoRead, SLOT(transportJogRev()));    
+}
+
+//slot to receive full screen toggle command
+void MainWindow::toggleFullScreen()
 {
-	return( (w * 9) / 16);	
+	setFullScreen(!isFullScreen());	
+}
+
+void MainWindow::escapeFullScreen()
+{
+	if(isFullScreen())
+		setFullScreen(false);	
+}
+
+//full screen toggle worker
+void MainWindow::setFullScreen(bool fullscreen)
+{
+	if(fullscreen) {
+		showFullScreen();				
+	}
+	else {
+		showNormal();
+	}	
 }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.3 2007-03-28 13:58:25 jrosser Exp $
+* $Id: mainwindow.h,v 1.4 2007-04-03 16:55:30 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -41,21 +41,51 @@
 #include <QtAssistant/QAssistantClient>
 #include <QtGui>
 
-#include "GLvideo.h"
 #include "GLvideo_mt.h"
+#include "videoRead.h"
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
     MainWindow();
-	int heightForWidth ( int w ) const;
+    
 protected:
 
 private slots:
-        
+	void toggleFullScreen();
+	void escapeFullScreen(); 
+	        
 private:
-	GLvideo *glvideo;
+	void createActions(void);
+
+	//display actions
+	QAction *viewFullScreenAct;
+	QAction *escapeFullScreenAct;
+
+	//transport control actions
+	QAction *transportFwd100Act;
+	QAction *transportFwd50Act;
+	QAction *transportFwd20Act;
+	QAction *transportFwd10Act;
+	QAction *transportFwd5Act;
+	QAction *transportFwd2Act;
+	QAction *transportFwd1Act;
+	QAction *transportStopAct;
+	QAction *transportRev1Act;
+	QAction *transportRev2Act;
+	QAction *transportRev5Act;
+	QAction *transportRev10Act;				
+	QAction *transportRev20Act;
+	QAction *transportRev50Act;
+	QAction *transportRev100Act;								
+
+	QAction *transportPlayPauseAct;
+	QAction *transportJogFwdAct;
+	QAction *transportJogRevAct;
+	
+	void setFullScreen(bool);
+	VideoRead *videoRead;
 	GLvideo_mt *glvideo_mt;
 
 };
