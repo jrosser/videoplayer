@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.3 2007-04-03 16:55:29 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.4 2007-04-05 10:11:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -40,7 +40,6 @@
 GLvideo_mt::GLvideo_mt(VideoRead &v) 
 	: vr(v), renderThread(*this)
 {	
-	//setAutoBufferSwap(false);
 	renderThread.start();
 }
 
@@ -62,11 +61,6 @@ void GLvideo_mt::paintGL()
 void GLvideo_mt::paintEvent(QPaintEvent * event)
 {
 	//absorb any paint events - let the worker thread update the window	
-}
-
-void GLvideo_mt::setFileName(const QString &fileName)
-{
-	renderThread.setFileName(fileName);	
 }
 
 void GLvideo_mt::lockMutex()

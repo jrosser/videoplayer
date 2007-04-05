@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.4 2007-04-03 16:55:30 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.5 2007-04-05 10:11:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -90,32 +90,32 @@ void MainWindow::createActions()
     connect(escapeFullScreenAct, SIGNAL(triggered()), this, SLOT(escapeFullScreen()));
     
 	transportFwd100Act = new QAction("Forward 100x", this);
-	transportFwd100Act->setShortcut(tr(""));
+	transportFwd100Act->setShortcut(tr("7"));
 	addAction(transportFwd100Act);
 	connect(transportFwd100Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd100()));
 	
 	transportFwd50Act = new QAction("Forward 50x", this);
-	transportFwd50Act->setShortcut(tr(""));
+	transportFwd50Act->setShortcut(tr("6"));
 	addAction(transportFwd50Act);
 	connect(transportFwd50Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd50()));
 	
 	transportFwd20Act = new QAction("Forward 20x", this);
-	transportFwd20Act->setShortcut(tr(""));
+	transportFwd20Act->setShortcut(tr("5"));
 	addAction(transportFwd20Act);
 	connect(transportFwd20Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd20()));
 	
 	transportFwd10Act = new QAction("Forward 10x", this);
-	transportFwd10Act->setShortcut(tr(""));
+	transportFwd10Act->setShortcut(tr("4"));
 	addAction(transportFwd10Act);
 	connect(transportFwd10Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd10()));
 	
 	transportFwd5Act = new QAction("Forward 5x", this);
-	transportFwd5Act->setShortcut(tr(""));
+	transportFwd5Act->setShortcut(tr("3"));
 	addAction(transportFwd5Act);
 	connect(transportFwd5Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd5()));
 	
 	transportFwd2Act = new QAction("Forward 2x", this);
-	transportFwd2Act->setShortcut(tr(""));
+	transportFwd2Act->setShortcut(tr("2"));
 	addAction(transportFwd2Act);
 	connect(transportFwd2Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd2()));
 	
@@ -150,7 +150,7 @@ void MainWindow::createActions()
 	connect(transportRev10Act, SIGNAL(triggered()), videoRead, SLOT(transportRev10()));
 					
 	transportRev20Act = new QAction("Reverse 20x", this);
-	transportFwd20Act->setShortcut(tr(""));
+	transportRev20Act->setShortcut(tr(""));
 	addAction(transportRev20Act);
 	connect(transportRev20Act, SIGNAL(triggered()), videoRead, SLOT(transportRev20()));
 	

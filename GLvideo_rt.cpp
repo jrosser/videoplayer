@@ -15,6 +15,8 @@
 
 #define DEBUG 0
 
+//shader program for planar video formats
+//should work with all chroma subsamplings
 static char *FProgram=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
@@ -44,16 +46,10 @@ static char *FProgram=
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
-{
-	m_srcwidth = 1920; 
-	m_srcheight = 1080;
+{	
 	m_frameRepeats = 2;	
-	m_createGLTextures = true;
-	m_updateShaderVars = true;
 	m_doRendering = true;
-	m_doResize = false;
-	m_openFile = false;
-	m_aspectLock = true;
+	m_aspectLock = true;		
 }
 
 void GLvideo_rt::compileFragmentShader()
@@ -62,17 +58,16 @@ void GLvideo_rt::compileFragmentShader()
 	
     shader=glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
-	printf("Shader program is %s\n", FProgram);
+	if(DEBUG) printf("Shader program is %s\n", FProgram);
 
     glShaderSourceARB(shader ,1,(const GLcharARB**)&FProgram,NULL);    
 	glCompileShaderARB(shader);
     
     glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
-    glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length); 
-    printf("Compile status is %d, log length is %d\n", compiled, length);   
+    glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);    
     char *s=(char *)malloc(length);
     glGetInfoLogARB(shader, length, &length ,s);
-    printf("Compile Log: (%d) %s\n", length, s);
+    if(DEBUG)printf("Compile Status %d, Log: (%d) %s\n", compiled, length, s);
     free(s);
 
    	/* Set up program objects. */
@@ -83,11 +78,10 @@ void GLvideo_rt::compileFragmentShader()
     /* And print the link log. */
     if(compiled) {
     	glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linked);
-    	glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
-    	printf("Link status is %d, log length is %d\n", linked, length);            
+    	glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);            
     	s=(char *)malloc(length);
     	glGetInfoLogARB(shader, length, &length, s);
-    	printf("Link Log: (%d) %s\n", length, s);
+    	if(DEBUG) printf("Link Status %d, Log: (%d) %s\n", linked, length, s);
     	free(s);
     }
 
@@ -170,25 +164,6 @@ void GLvideo_rt::resizeViewport(int width, int height)
 	glw.unlockMutex();
 }    
 
-void GLvideo_rt::setFileName(const QString &fn)
-{
-	glw.lockMutex();
-	m_fileName = fn;
-	glw.unlockMutex();
-}
-
-void GLvideo_rt::setSourceSize(int width, int height)
-{
-	glw.lockMutex();
-	m_srcwidth = width;
-	m_srcheight = height;
-
-	//m_createGLTextures = true;
-	//m_updateShaderVars = true;
-	
-	glw.unlockMutex();
-}    
-
 void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth, int Yheight, int Cwidth, int Cheight, bool ChromaTextures)
 {		
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -214,6 +189,7 @@ void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth,
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);	
 	}
 	
+	//luminance (or muxed YCbCr) data
 	glBindTexture(GL_TEXTURE_RECTANGLE_NV, 3);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
 	ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
@@ -236,21 +212,8 @@ void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth,
     
 void GLvideo_rt::run()
 {
-	printf("Starting renderthread\n");
-
-	glw.lockMutex();
-	bool valid = glw.isValid();
-	glw.unlockMutex();
+	if(DEBUG) printf("Starting renderthread\n");
 	
-	while(valid == false) {
-		glw.lockMutex();
-		valid = glw.isValid();
-		glw.unlockMutex();
-		
-		printf("RenderThread : Waiting for valid openGL context\n");
-		usleep(100000);
-	}
-
 	VideoData *videoData = NULL;
     
 	timeval last;
@@ -258,28 +221,28 @@ void GLvideo_rt::run()
 	int (*glXWaitVideoSyncSGI)(int , int , unsigned int *) = NULL;
 	int (*glXGetVideoSyncSGI)(unsigned int *) = NULL;
 		
+	//get addresses of VSYNC extensions
 	glXGetVideoSyncSGI = (int (*)(unsigned int *))glXGetProcAddress((GLubyte *)"glXGetVideoSyncSGI");
-	glXWaitVideoSyncSGI = (int (*)(int, int, unsigned int *))glXGetProcAddress((GLubyte *)"glXWaitVideoSyncSGI");	
+	glXWaitVideoSyncSGI = (int (*)(int, int, unsigned int *))glXGetProcAddress((GLubyte *)"glXWaitVideoSyncSGI");		
+	if(DEBUG) printf("pget=%p pwait=%p\n", glXGetVideoSyncSGI, glXWaitVideoSyncSGI);
 	
-	printf("pget=%p pwait=%p\n", glXGetVideoSyncSGI, glXWaitVideoSyncSGI);
-	
+	//flags and status
+	int lastsrcwidth = 0;
+	int lastsrcheight = 0;
+	bool createGLTextures = false;
+	bool updateShaderVars = false;
+
 	//declare shadow variables for the thread worker and initialise them
 	glw.lockMutex();
-	QString fileName = m_fileName;
-	int displaywidth = m_displaywidth;
-	int displayheight = m_displayheight;
-	int srcwidth = m_srcwidth; 
-	int srcheight = m_srcheight;
-	int frameRepeats = m_frameRepeats;	
-	bool createGLTextures = m_createGLTextures;
+	bool aspectLock = m_aspectLock;
 	bool doRendering = m_doRendering;
 	bool doResize = m_doResize;
-	bool openFile = m_openFile;
-	bool updateShaderVars = m_updateShaderVars;
-	bool compileShader = m_compileShader;
-	bool aspectLock = m_aspectLock;
+	int displaywidth = m_displaywidth;
+	int displayheight = m_displayheight;
+	int frameRepeats = m_frameRepeats;	
 	glw.unlockMutex();
 
+	//font rendering
   	FTGLPolygonFont font((const char *)"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf");    
     if(font.Error()) {
     	printf("Failed to open font file\n");
@@ -289,22 +252,15 @@ void GLvideo_rt::run()
 	font.FaceSize(144);
 	font.CharMap(ft_encoding_unicode);
         	
-	//initialise OpenGL					
-	glw.makeCurrent();
+	//initialise OpenGL		
+	glw.makeCurrent();			
     glGenBuffers(3, io_buf);	
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0, srcwidth ,0 , srcheight, -1 ,1);
     glViewport(0,0, displayheight, displaywidth);
     glClearColor(0, 0, 0, 0);
     glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
-
-	// Set up lighting.
-    //float light1_ambient[4]  = { 1.0, 1.0, 1.0, 1.0 };
-   // glLightfv(GL_LIGHT1, GL_AMBIENT,  light1_ambient);
-    //glEnable(GL_LIGHT1);
-
 
 	compileFragmentShader();		
 	
@@ -316,73 +272,79 @@ void GLvideo_rt::run()
 			//values
 			displaywidth = m_displaywidth;
 			displayheight = m_displayheight;
-			srcwidth = m_srcwidth; 
-			srcheight = m_srcheight;
 			frameRepeats = m_frameRepeats;
-			
-			createGLTextures = m_createGLTextures;
-			m_createGLTextures = false;
-			
-			openFile = m_openFile;
-			m_openFile = false;
-			
-			updateShaderVars = m_updateShaderVars;
-			m_updateShaderVars = false;
-			
-			compileShader = m_compileShader;
-			m_compileShader = false;
-			
+												
 			doResize = m_doResize;				
 			m_doResize = false;
 						
 			//boolean flags
 			doRendering = m_doRendering;
-
+			
+			//check for changed aspect ratio lock
+			if(aspectLock != m_aspectLock) {
+				aspectLock = m_aspectLock;
+				doResize = true;
+			}
+			
 		glw.unlockMutex();
 
-		if(compileShader) {
-			printf("Compiling fragment shader\n");
-			compileShader = false;	
+		//read frame data
+		videoData = glw.vr.getNextFrame();
+
+		//check for video dimensions changing
+		if(videoData != NULL) {
+			if(lastsrcwidth != videoData->Ywidth || lastsrcheight != videoData->Yheight) {
+			
+			    glOrtho(0, videoData->Ywidth ,0 , videoData->Yheight, -1 ,1);
+
+				doResize = true;				
+				createGLTextures = true;
+				updateShaderVars = true;
+				
+				lastsrcwidth = videoData->Ywidth;
+				lastsrcheight = videoData->Yheight;
+			}
 		}
+
+		//check for the video format changing - TODO....
+
+		if(createGLTextures) {
+			if(DEBUG) printf("Creating GL textures\n");
+			//create the textures on the GPU
+			createTextures(videoData->Ywidth, videoData->Yheight, videoData->Cwidth, videoData->Cheight);
+			createGLTextures = false;
+		}			
 		
 		if(updateShaderVars) {
-			printf("Updating fragment shader variables\n");
+			if(DEBUG) printf("Updating fragment shader variables\n");
 			
 		    int i=glGetUniformLocationARB(program, "Yheight");
-    		glUniform1fARB(i, 1080.0);
+    		glUniform1fARB(i, videoData->Yheight);
 
 		    i=glGetUniformLocationARB(program, "CHsubsample");
-    		glUniform1fARB(i, 2.0);
+    		glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
 
 		    i=glGetUniformLocationARB(program, "CVsubsample");
-    		glUniform1fARB(i, 2.0);
+    		glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
 
 		    i=glGetUniformLocationARB(program, "colorMatrix");
 		    float matrix[9] = {1.0, 0.0, 1.5958, 1.0, -0.39173, -0.8129, 1.0, 2.017, 0.0};	    
     		glUniformMatrix3fvARB(i, 1, false, &matrix[0]);
 
 		    i=glGetUniformLocationARB(program, "yuvOffset");
-    		glUniform3fARB(i, 0.0, -0.5, -0.5);
+    		glUniform3fARB(i, -0.0625, -0.5, -0.5);
 			
-			printf("i is %d\n", i);
-						
 			updateShaderVars = false;	
 		}	
-							
-		if(createGLTextures) {
-			printf("Creating GL textures\n");
-			//create the textures on the GPU
-			createTextures(1920, 1080, 960, 540);
-			createGLTextures = false;
-		}			
-					
-		if(doResize){
-			//resize the viewport
-			printf("Resizing to %d, %d\n", displaywidth, displayheight);
+												
+		if(doResize && videoData != NULL) {
 			
-			float sourceAspect = (float)srcwidth / (float)srcheight;
+			//resize the viewport, once we have some video
+			if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
+			
+			float sourceAspect = (float)videoData->Ywidth / (float)videoData->Yheight;
 			float displayAspect = (float)displaywidth / (float)displayheight;
-			
+		
 			if(sourceAspect == displayAspect || aspectLock == false) {
 				glViewport(0, 0, displaywidth, displayheight);				
 			}
@@ -398,8 +360,7 @@ void GLvideo_rt::run()
 					int offset = (displayheight - height) / 2;								
 					glViewport(0, offset, displaywidth, height);
 				}
-			}
-
+			}			
 			doResize = false;
 		}
 	
@@ -407,18 +368,16 @@ void GLvideo_rt::run()
 		unsigned int retraceCount;		
        	glXGetVideoSyncSGI(&retraceCount);
        	glXWaitVideoSyncSGI(1, (retraceCount+1)%1, &retraceCount);       				
-											
-		//read frame data
-		videoData = glw.vr.getNextFrame();
-					
+																
 		if(videoData) {
 			
 			if(DEBUG) printf("Rendering...\n");
-			
+						
 			render((GLubyte *)videoData->Ydata, 
 				   (GLubyte *)videoData->Udata, 
 				   (GLubyte *)videoData->Vdata,
-					1920, 1080, 960, 540, true);
+					videoData->Ywidth, videoData->Yheight, videoData->Cwidth, videoData->Cheight,
+					videoData->isPlanar);
 			
 			glColor3f(1.0, 1.0, 1.0);			
 									

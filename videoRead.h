@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.1 2007-04-03 16:55:30 jrosser Exp $
+* $Id: videoRead.h,v 1.2 2007-04-05 10:11:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -71,6 +71,7 @@ public:
 	QMutex frameMutex;		
 
 	TransportControls transportStatus;	//what we are doing now - shared with readThread
+	int transportSpeed;
 	QMutex transportMutex;				//protect the transport status
 
 	QPixmap *osd;

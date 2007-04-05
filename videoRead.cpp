@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.1 2007-04-03 16:55:29 jrosser Exp $
+* $Id: videoRead.cpp,v 1.2 2007-04-05 10:11:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -52,6 +52,7 @@ VideoRead::VideoRead()
 	
 	transportMutex.lock();
 	transportStatus = Fwd1;
+	transportSpeed = 1;
 	transportMutex.unlock();	
 }
 
@@ -75,8 +76,6 @@ VideoData* VideoRead::getNextFrame()
 
 	//jog forward
 	if(ts == JogFwd) {
-		currentFrameNum++;
-		if(currentFrameNum > lastFrameNum) currentFrameNum = firstFrameNum;
 			
 		if(futureFrames.size() == 0)
 			printf("Dropped frame - no future frame available\n");
@@ -87,6 +86,7 @@ VideoData* VideoRead::getNextFrame()
 				pastFrames.prepend(displayFrame);
 				
 			displayFrame = futureFrames.takeFirst();
+			currentFrameNum = displayFrame->frameNum;
 		}		
 
 		transportMutex.lock();
@@ -96,10 +96,7 @@ VideoData* VideoRead::getNextFrame()
 	
 	//jog reverse
 	if(ts == JogRev) {
-		
-		currentFrameNum--;
-		if(currentFrameNum < 0) currentFrameNum = lastFrameNum;
-								
+										
 		if(pastFrames.size() == 0)
 			printf("Dropped frame - no past frame available\n");
 		else {
@@ -107,7 +104,8 @@ VideoData* VideoRead::getNextFrame()
 			if(displayFrame != NULL)
 				futureFrames.prepend(displayFrame);
 							
-			displayFrame = pastFrames.takeFirst();				
+			displayFrame = pastFrames.takeFirst();	
+			currentFrameNum = displayFrame->frameNum;						
 		}
 				
 		transportMutex.lock();
@@ -121,11 +119,8 @@ VideoData* VideoRead::getNextFrame()
 		//get the last item off the frame list
 		QMutexLocker listLocker(&listMutex);
 				
-		if(ts == Fwd1) {
-			
-			currentFrameNum++;
-			if(currentFrameNum > lastFrameNum) currentFrameNum = firstFrameNum;
-			
+		if(ts == Fwd1 || ts == Fwd2 || ts == Fwd5 || ts == Fwd10 || ts == Fwd20 || ts == Fwd50 || ts == Fwd100) {
+						
 			if(futureFrames.size() == 0)
 				printf("Dropped frame - no future frame available\n");
 			else
@@ -135,14 +130,12 @@ VideoData* VideoRead::getNextFrame()
 					pastFrames.prepend(displayFrame);
 				
 				displayFrame = futureFrames.takeFirst();
+				currentFrameNum = displayFrame->frameNum;				
 			}		
 		}
 		
-		if(ts == Rev1) {
-			
-			currentFrameNum--;
-			if(currentFrameNum < 0) currentFrameNum = lastFrameNum;
-									
+		if(ts == Rev1 || ts == Rev2 || ts == Rev5 || ts == Rev10 || ts == Rev20 || ts == Rev50 || ts == Rev100) {
+												
 			if(pastFrames.size() == 0)
 				printf("Dropped frame - no past frame available\n");
 			else {
@@ -150,7 +143,8 @@ VideoData* VideoRead::getNextFrame()
 				if(displayFrame != NULL)
 					futureFrames.prepend(displayFrame);
 								
-				displayFrame = pastFrames.takeFirst();				
+				displayFrame = pastFrames.takeFirst();
+				currentFrameNum = displayFrame->frameNum;								
 			}
 		}
 			
@@ -193,12 +187,14 @@ void VideoRead::transportController(TransportControls in)
 	
 	transportMutex.lock();
 	currentStatus = transportStatus;
+	int newSpeed  = transportSpeed;
 	transportMutex.unlock();
 	
 	switch(in) {
 		case Stop:
 			newStatus = Stop;
 			lastTransportStatus = Fwd1;	//after 'Stop', unpausing makes us play forwards
+			newSpeed = 1;				//at 1x speed
 			break;
 			
 		case JogFwd:
@@ -236,22 +232,47 @@ void VideoRead::transportController(TransportControls in)
  				newStatus = Pause;	
  			}
  			break;
- 			
+
+ 		//we can change from any state to a 'shuttle' or play 			
  		case Fwd100:
+ 		case Rev100:
+ 			newSpeed = 100;
+ 			newStatus = in;
+ 			break;	
+ 			 		
  		case Fwd50:
+ 		case Rev50:
+ 		 	newSpeed = 50;
+ 			newStatus = in;
+ 			break;	
+ 		 		
  		case Fwd20:
+ 		case Rev20:
+ 		 	newSpeed = 20;
+ 			newStatus = in;
+ 			break;	
+ 		 		
  		case Fwd10:
+ 		case Rev10:
+ 		 	newSpeed = 10;
+ 			newStatus = in;
+ 			break;	
+ 		 		
  		case Fwd5:
+ 		case Rev5:
+ 		 	newSpeed = 5;
+ 			newStatus = in;
+ 			break;	
+ 		 		
  		case Fwd2:
+ 		case Rev2:
+ 		 	newSpeed = 2;
+ 			newStatus = in;
+ 			break;	
+ 		 		
  		case Fwd1:
  		case Rev1:
- 		case Rev2:
- 		case Rev5:
- 		case Rev10:
- 		case Rev20:
- 		case Rev50:
- 		case Rev100:
- 			//we can change from any state to a 'shuttle' or play
+			newSpeed = 1;
  			newStatus = in;
  			break;	
  			
@@ -264,8 +285,9 @@ void VideoRead::transportController(TransportControls in)
 	if(newStatus != Unknown) {
 		transportMutex.lock();
 		transportStatus = newStatus;
+		transportSpeed = newSpeed;
 		transportMutex.unlock();
-		printf("Changed transport state to %d\n", (int)currentStatus);		
+		printf("Changed transport state to %d, speed %d\n", (int)transportStatus, transportSpeed);		
 	}
 	
 

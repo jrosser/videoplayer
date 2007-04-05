@@ -9,7 +9,7 @@ INCLUDEPATH += . /usr/include  ../include /usr/include/freetype2
 LIBS += -lGL -L/project/compression/jrosser/workspace/lib -lftgl
 
 QT += opengl
-CONFIG += thread
+CONFIG += thread debug
 
 # Input
 HEADERS = mainwindow.h GLvideo.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h
