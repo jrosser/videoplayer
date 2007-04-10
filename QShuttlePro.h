@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.5 2007-04-10 11:18:52 jrosser Exp $
+* $Id: QShuttlePro.h,v 1.1 2007-04-10 11:18:51 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -20,7 +20,8 @@
 * Portions created by the Initial Developer are Copyright (C) 2004.
 * All Rights Reserved.
 *
-* Contributor(s): Jonathan Rosser (Original Author)
+* Contributor(s): Jonathan Rosser 
+* Inspired by IngexPlayer
 *
 * Alternatively, the contents of this file may be used under the terms of
 * the GNU General Public License Version 2 (the "GPL"), or the GNU Lesser
@@ -35,62 +36,65 @@
 * or the LGPL.
 * ***** END LICENSE BLOCK ***** */
 
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
+#ifndef QSHUTTLEPRO_H
+#define QSHUTTLEPRO_H
 
-#include <QtAssistant/QAssistantClient>
 #include <QtGui>
 
-#include "GLvideo_mt.h"
-#include "videoRead.h"
-#include "QShuttlePro.h"
-
-class MainWindow : public QMainWindow
+class QShuttlePro : public QThread
 {
     Q_OBJECT
-public:
-    MainWindow();
-    
-protected:
 
-private slots:
-	void toggleFullScreen();
-	void escapeFullScreen(); 
+public:
+
+	QShuttlePro();
+			
+signals:
+	void jogForward();
+	void jogBackward();
+	
+	void shuttleChanged(int);
+	void shuttleCenter();
+	void shuttleLeft1();
+	void shuttleLeft2();
+	void shuttleLeft3();
+	void shuttleLeft4();
+	void shuttleLeft5();
+	void shuttleLeft6();
+	void shuttleLeft7();
+	void shuttleRight1();
+	void shuttleRight2();
+	void shuttleRight3();
+	void shuttleRight4();
+	void shuttleRight5();
+	void shuttleRight6();
+	void shuttleRight7();
+
+	void keyPressed(int);
+	void keyReleased(int);
+	void keyChanged(int, int);
 	        
 private:
-	void createActions(void);
 
-	QShuttlePro *shuttle;
+	typedef struct
+	{
+    	short vendor;
+    	short product;
+    	char* name;
+	} ShuttleData;
 
-	//display actions
-	QAction *viewFullScreenAct;
-	QAction *escapeFullScreenAct;
+	int fd;
+	struct timeval lastshuttle;
+	int need_synthetic_shuttle;
+	unsigned int jogvalue;
+	int shuttlevalue;
 
-	//transport control actions
-	QAction *transportFwd100Act;
-	QAction *transportFwd50Act;
-	QAction *transportFwd20Act;
-	QAction *transportFwd10Act;
-	QAction *transportFwd5Act;
-	QAction *transportFwd2Act;
-	QAction *transportFwd1Act;
-	QAction *transportStopAct;
-	QAction *transportRev1Act;
-	QAction *transportRev2Act;
-	QAction *transportRev5Act;
-	QAction *transportRev10Act;				
-	QAction *transportRev20Act;
-	QAction *transportRev50Act;
-	QAction *transportRev100Act;								
-
-	QAction *transportPlayPauseAct;
-	QAction *transportJogFwdAct;
-	QAction *transportJogRevAct;
-	
-	void setFullScreen(bool);
-	VideoRead *videoRead;
-	GLvideo_mt *glvideo_mt;
-
+	void run();
+	int openShuttle();
+	void process_event(struct input_event);
+	void jog(unsigned int value);
+	void shuttle(int value);
+	void check_shuttle_center();
 };
 
 #endif

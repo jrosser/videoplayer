@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.2 2007-04-05 10:11:23 jrosser Exp $
+* $Id: videoRead.cpp,v 1.3 2007-04-10 11:18:51 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -36,7 +36,6 @@
 * ***** END LICENSE BLOCK ***** */
 
 #include "videoRead.h"
-#include "videoData.h"
 
 VideoRead::VideoRead() 
 	: readThread(*this)
@@ -45,7 +44,9 @@ VideoRead::VideoRead()
 	currentFrameNum=0;
 	firstFrameNum=0;
 	lastFrameNum=0;
-		
+	videoWidth = 1920;
+	videoHeight = 1080;
+	
 	displayFrame = NULL;
 	frameMutex.lock();	//required for QWaitCondition
 	readThread.start();
@@ -62,8 +63,56 @@ void VideoRead::setFileName(const QString &fn)
 	
 	QFileInfo info(fn);
 	
-	lastFrameNum = info.size() / ((1920 * 1080 * 3) / 2);
-	lastFrameNum--; 	
+	//fixme - this is a nasty assumption that .yuv is i420
+	if(info.suffix() == "yuv") {
+		dataFormat = VideoData::I420;
+		
+		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
+		lastFrameNum--; 	
+	}
+
+	if(info.suffix() == "i420") {
+		dataFormat = VideoData::I420;
+
+		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
+		lastFrameNum--; 						
+	}
+
+	if(info.suffix() == "yv12") {
+		dataFormat = VideoData::YV12;
+
+		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
+		lastFrameNum--; 			
+	}
+
+	if(info.suffix() == "uyvy") {
+		dataFormat = VideoData::UYVY;
+
+		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
+		lastFrameNum--; 			
+	}
+
+	if(info.suffix() == "V216") {
+		dataFormat = VideoData::V216;
+		
+		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
+		lastFrameNum--; 			
+	}
+
+	if(info.suffix() == "YV16") {
+		dataFormat = VideoData::YV16;
+		
+		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
+		lastFrameNum--; 			
+	}
+
+	if(info.suffix() == "V210") {
+		dataFormat = VideoData::V210;
+
+		lastFrameNum = info.size() / ((videoWidth * videoHeight * 2 * 4) / 3);
+		lastFrameNum--; 			
+	}
+	
 }
 
 //called from the openGL display widget to get frame data for display
@@ -76,6 +125,8 @@ VideoData* VideoRead::getNextFrame()
 
 	//jog forward
 	if(ts == JogFwd) {
+
+		QMutexLocker listLocker(&listMutex);
 			
 		if(futureFrames.size() == 0)
 			printf("Dropped frame - no future frame available\n");
@@ -85,9 +136,11 @@ VideoData* VideoRead::getNextFrame()
 			if(displayFrame != NULL)
 				pastFrames.prepend(displayFrame);
 				
-			displayFrame = futureFrames.takeFirst();
+			displayFrame = futureFrames.takeFirst();						
 			currentFrameNum = displayFrame->frameNum;
 		}		
+
+		listLocker.unlock();
 
 		transportMutex.lock();
 		transportStatus = Stop;			
@@ -96,6 +149,8 @@ VideoData* VideoRead::getNextFrame()
 	
 	//jog reverse
 	if(ts == JogRev) {
+
+		QMutexLocker listLocker(&listMutex);
 										
 		if(pastFrames.size() == 0)
 			printf("Dropped frame - no past frame available\n");
@@ -104,9 +159,11 @@ VideoData* VideoRead::getNextFrame()
 			if(displayFrame != NULL)
 				futureFrames.prepend(displayFrame);
 							
-			displayFrame = pastFrames.takeFirst();	
+			displayFrame = pastFrames.takeFirst();				
 			currentFrameNum = displayFrame->frameNum;						
 		}
+
+		listLocker.unlock();
 				
 		transportMutex.lock();
 		transportStatus = Stop;
@@ -129,7 +186,7 @@ VideoData* VideoRead::getNextFrame()
 				if(displayFrame != NULL)
 					pastFrames.prepend(displayFrame);
 				
-				displayFrame = futureFrames.takeFirst();
+				displayFrame = futureFrames.takeFirst();				
 				currentFrameNum = displayFrame->frameNum;				
 			}		
 		}
@@ -143,7 +200,7 @@ VideoData* VideoRead::getNextFrame()
 				if(displayFrame != NULL)
 					futureFrames.prepend(displayFrame);
 								
-				displayFrame = pastFrames.takeFirst();
+				displayFrame = pastFrames.takeFirst();				
 				currentFrameNum = displayFrame->frameNum;								
 			}
 		}

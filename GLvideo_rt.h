@@ -8,10 +8,14 @@
 
 class GLvideo_mt;
 class FTFont;
+class VideoData;
 
 class GLvideo_rt : public QThread
 {
 public:
+
+	enum ShaderPrograms { shaderPlanar, shaderUYVY, shaderV216, shaderYV16, shaderV210, shaderMax };
+
 	GLvideo_rt(GLvideo_mt &glWidget);
 	void resizeViewport(int w, int h);
 	void setFrameRepeats(int r);
@@ -21,8 +25,9 @@ public:
         
 private:
 	void setUpFonts(const char* fontfile);
-	void compileFragmentShader();
-	void createTextures(int Ywidth, int Yheight, int Cwidth, int Cheight);
+	void compileFragmentShaders();
+	void compileFragmentShader(int n, const char *src);
+	void createTextures(VideoData *videoData, int currentShader);
 	void render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth, int Yheight, int Cwidth, int Cheight, bool ChromaTextures);
 
 	bool m_doRendering;			//set to false to quit thread
@@ -34,8 +39,12 @@ private:
 	
 	int m_frameRepeats;			//number of times each frame is repeated
 	
-	GLuint shader, program;		//handles for the shader and program
-   	GLint compiled, linked;		//flags for success
+	GLuint programs[shaderMax];	//handles for the shaders and programs	
+	GLuint shaders[shaderMax];
+	
+   	GLint compiled[shaderMax];
+   	GLint linked[shaderMax];	//flags for success
+   	
    	GLuint io_buf[3];			//io buffer objects
    	
 	GLvideo_mt &glw;			//parent widget

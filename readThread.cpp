@@ -33,14 +33,9 @@ void ReadThread::run()
 	while(m_doReading) {
 
 		//get the number of frames in the frameList
-		QMutexLocker listLocker(&vr.listMutex);		
-		int numFutureFrames = vr.futureFrames.size();
-		int numPastFrames = vr.pastFrames.size();
-		int currentFrame = vr.currentFrameNum;
-		int firstFrame = vr.firstFrameNum;
-		int lastFrame = vr.lastFrameNum;		
+		QMutexLocker listLocker(&vr.listMutex);
 		listLocker.unlock();
-		
+						
 		//get the transport status
 		QMutexLocker transportLocker(&vr.transportMutex);
 		VideoRead::TransportControls ts = vr.transportStatus;
@@ -57,11 +52,9 @@ void ReadThread::run()
 			}
 		}
 
-
-		 
-		 				
 		if(fd > 0) {
 
+			//------------------------------------------------------------------------------------------------
 			//trash the contents of the frame lists when we change speed
 			//this could be made MUCH cleverer - to keep past and future frames that we need when changing speed
 			if(speed != lastSpeed) {
@@ -86,6 +79,29 @@ void ReadThread::run()
 
 			lastSpeed = speed;
 			
+			//------------------------------------------------------------------------------------------------
+			//get information about the length of the lists
+			listLocker.relock();
+			
+			//info about the lists of frames		
+			int numFutureFrames = vr.futureFrames.size();
+			int numPastFrames = vr.pastFrames.size();
+			int currentFrame = vr.currentFrameNum;
+		
+			//the extents of the sequence
+			int firstFrame = vr.firstFrameNum;
+			int lastFrame = vr.lastFrameNum;
+							
+			//the format and dimensions of the sequence  - which mutex should protect theses properly???
+			VideoData::DataFmt dataFormat = vr.dataFormat;
+			int videoWidth = vr.videoWidth;
+			int videoHeight = vr.videoHeight;
+			
+			listLocker.unlock();
+
+			//------------------------------------------------------------------------------------------------
+			//maintain the list lengths
+			
 			//add extra frames to the future frames list
 			while(numFutureFrames < LISTLEN) {
 				
@@ -99,7 +115,7 @@ void ReadThread::run()
 				wantedFrame %= lastFrame + 1;						//wrap from the end of the file to the start
 								
 				//if(DEBUG) printf("Getting future frame %d\n", wantedFrame);
-				VideoData *newFrame = new VideoData(1920, 1080, VideoData::I420);	//allocate for a new frame
+				VideoData *newFrame = new VideoData(videoWidth, videoHeight, dataFormat);	//allocate for a new frame
 				newFrame->frameNum = wantedFrame;												
 
 				off64_t offset = (off_t)newFrame->dataSize * (off_t)wantedFrame;	//seek to the wanted frame								
@@ -130,7 +146,7 @@ void ReadThread::run()
 				
 				//if(DEBUG) printf("Getting past frame %d\n", wantedFrame);
 												
-				VideoData *newFrame = new VideoData(1920, 1080, VideoData::I420);				
+				VideoData *newFrame = new VideoData(videoWidth, videoHeight, dataFormat);				
 				newFrame->frameNum = wantedFrame;
 								
 				off64_t offset = (off_t)newFrame->dataSize * (off_t)wantedFrame;								

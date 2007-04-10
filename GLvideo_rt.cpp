@@ -15,12 +15,17 @@
 
 #define DEBUG 0
 
+//Texture data types
+//Planar formats	GL_LUMINANCE
+
+//------------------------------------------------------------------------------------------
 //shader program for planar video formats
-//should work with all chroma subsamplings
-static char *FProgram=
+//should work with all planar chroma subsamplings
+static char *shaderPlanarSrc=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
-  "uniform float Yheight, CHsubsample, CVsubsample;\n"
+  "uniform float Yheight, Ywidth;\n" 
+  "uniform float CHsubsample, CVsubsample;\n"
   "uniform mat3 colorMatrix;\n"
   "uniform vec3 yuvOffset;\n"
         
@@ -44,6 +49,59 @@ static char *FProgram=
   "  gl_FragColor=vec4(rgb ,a);\n"
   "}\n";
 
+//------------------------------------------------------------------------------------------
+static char *shaderUYVYSrc=
+  "uniform samplerRect Ytex;\n"
+  "uniform samplerRect Utex,Vtex;\n"
+  "uniform float Yheight, Ywidth;\n" 
+  "uniform float CHsubsample, CVsubsample;\n"
+  "uniform mat3 colorMatrix;\n"
+  "uniform vec3 yuvOffset;\n"
+        
+  "void main(void) {\n"
+  "  float nx,ny,a;\n"
+  "  vec3 yuv;\n"
+
+  " vec4 rgba;\n"
+  //there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
+  //nx and ny should go between 0-1919, 0-1079
+ 
+  " rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"				//sample every other RGBA quad to get luminance
+  " yuv[0] = (fract(nx * Ywidth / 2) < 0.5) ? rgba.g : rgba.a;\n"
+
+  " rgba = textureRect(Ytex, vec2(nx/2), ny));\n"					//sample at and between each RGBA quad to get filtered chrominance
+  " yuv[1] = rgba.r;\n"
+  " yuv[2] = rgba.b;\n"
+
+  "  nx=gl_TexCoord[0].x;\n"
+  "  ny=Yheight-gl_TexCoord[0].y;\n"
+  
+  "  yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
+  "  yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+  "  yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+
+  "  yuv = yuv + yuvOffset;\n"  
+  "  rgb = yuv * colorMatrix;\n"
+
+  "	 a=1.0;\n"
+      
+  "  gl_FragColor=vec4(rgb ,a);\n"
+  "}\n";
+
+//------------------------------------------------------------------------------------------
+//constant blue - unimplemented shader
+static char *shaderNullSrc=
+  "uniform samplerRect Ytex;\n"
+  "uniform samplerRect Utex,Vtex;\n"
+  "uniform float Yheight, Ywidth;\n" 
+  "uniform float CHsubsample, CVsubsample;\n"
+  "uniform mat3 colorMatrix;\n"
+  "uniform vec3 yuvOffset;\n"
+        
+  "void main(void) {\n"
+  "  gl_FragColor=vec4(0.0, 0.0, 1.0 , 0.0);\n"
+  "}\n";
+
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
 {	
@@ -52,88 +110,94 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_aspectLock = true;		
 }
 
-void GLvideo_rt::compileFragmentShader()
+void GLvideo_rt::compileFragmentShaders()
+{
+	compileFragmentShader((int)shaderPlanar, shaderPlanarSrc);
+	compileFragmentShader((int)shaderUYVY,   shaderNullSrc);
+	compileFragmentShader((int)shaderV216,   shaderNullSrc);
+	compileFragmentShader((int)shaderYV16,   shaderNullSrc);
+	compileFragmentShader((int)shaderV210,   shaderNullSrc);					
+}
+
+void GLvideo_rt::compileFragmentShader(int n, const char *src)
 {
 	GLint length;			//log length
 	
-    shader=glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+    shaders[n]=glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
-	if(DEBUG) printf("Shader program is %s\n", FProgram);
+	if(DEBUG) printf("Shader program is %s\n", src);
 
-    glShaderSourceARB(shader ,1,(const GLcharARB**)&FProgram,NULL);    
-	glCompileShaderARB(shader);
+    glShaderSourceARB(shaders[n], 1, (const GLcharARB**)&src, NULL);    
+	glCompileShaderARB(shaders[n]);
     
-    glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
-    glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);    
+    glGetObjectParameterivARB(shaders[n], GL_OBJECT_COMPILE_STATUS_ARB, &compiled[n]);
+    glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);    
     char *s=(char *)malloc(length);
-    glGetInfoLogARB(shader, length, &length ,s);
-    if(DEBUG)printf("Compile Status %d, Log: (%d) %s\n", compiled, length, s);
+    glGetInfoLogARB(shaders[n], length, &length ,s);
+    if(DEBUG)printf("Compile Status %d, Log: (%d) %s\n", compiled[n], length, s);
     free(s);
 
    	/* Set up program objects. */
-    program=glCreateProgramObjectARB();
-    glAttachObjectARB(program, shader);
-    glLinkProgramARB(program);
+    programs[n]=glCreateProgramObjectARB();
+    glAttachObjectARB(programs[n], shaders[n]);
+    glLinkProgramARB(programs[n]);
 
     /* And print the link log. */
-    if(compiled) {
-    	glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linked);
-    	glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);            
+    if(compiled[n]) {
+    	glGetObjectParameterivARB(programs[n], GL_OBJECT_LINK_STATUS_ARB, &linked[n]);
+    	glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);            
     	s=(char *)malloc(length);
-    	glGetInfoLogARB(shader, length, &length, s);
-    	if(DEBUG) printf("Link Status %d, Log: (%d) %s\n", linked, length, s);
+    	glGetInfoLogARB(shaders[n], length, &length, s);
+    	if(DEBUG) printf("Link Status %d, Log: (%d) %s\n", linked[n], length, s);
     	free(s);
     }
-
-    /* Finally, use the program. */
-    glUseProgramObjectARB(program);
 }
 
-void GLvideo_rt::createTextures(int Ywidth, int Yheight, int Cwidth, int Cheight)
+void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
 {
     /* Select texture unit 1 as the active unit and bind the U texture. */
     glActiveTexture(GL_TEXTURE1);
-    int i=glGetUniformLocationARB(program, "Utex");
+    int i=glGetUniformLocationARB(programs[currentShader], "Utex");
     glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
     glBindTexture(GL_TEXTURE_RECTANGLE_NV,1);
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
     //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, Cwidth , Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, videoData->Cwidth , videoData->Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
     
     /* Select texture unit 2 as the active unit and bind the V texture. */
     glActiveTexture(GL_TEXTURE2);
-    i=glGetUniformLocationARB(program, "Vtex");
+    i=glGetUniformLocationARB(programs[currentShader], "Vtex");
     glBindTexture(GL_TEXTURE_RECTANGLE_NV,2);
     glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
     //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, Cwidth , Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, videoData->Cwidth , videoData->Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 
     /* Select texture unit 0 as the active unit and bind the Y texture. */
     glActiveTexture(GL_TEXTURE0);
-    i=glGetUniformLocationARB(program, "Ytex");
+    i=glGetUniformLocationARB(programs[currentShader], "Ytex");
     glUniform1iARB(i,0);  /* Bind Ytex to texture unit 0 */
     glBindTexture(GL_TEXTURE_RECTANGLE_NV,3);
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
     //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, Ywidth , Yheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, videoData->Ywidth , videoData->Yheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
 
 	//create buffer objects that are used to transfer the texture data to the card
 	//this is much faster than using glTexSubImage2D() later on to replace the texture data
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, Cwidth * Cheight, NULL, GL_STREAM_DRAW);    
+	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->UdataSize, NULL, GL_STREAM_DRAW);    
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, Cheight * Cwidth, NULL, GL_STREAM_DRAW);    
+	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->VdataSize, NULL, GL_STREAM_DRAW);    
     
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, Yheight * Ywidth, NULL, GL_STREAM_DRAW);    
+	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->YdataSize, NULL, GL_STREAM_DRAW);    
 }
     
 void GLvideo_rt::stop()
@@ -239,7 +303,8 @@ void GLvideo_rt::run()
 	bool doResize = m_doResize;
 	int displaywidth = m_displaywidth;
 	int displayheight = m_displayheight;
-	int frameRepeats = m_frameRepeats;	
+	int frameRepeats = m_frameRepeats;
+	int currentShader = 0;	
 	glw.unlockMutex();
 
 	//font rendering
@@ -262,8 +327,9 @@ void GLvideo_rt::run()
     glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
 
-	compileFragmentShader();		
-	
+	compileFragmentShaders();		
+    glUseProgramObjectARB(programs[currentShader]);
+    	
 	while (doRendering) {
 
 		//update shadow variables
@@ -291,6 +357,9 @@ void GLvideo_rt::run()
 		//read frame data
 		videoData = glw.vr.getNextFrame();
 
+		//lock the mutex on the current frame data
+		//glw.vr.currentFrameMutex.lock();
+
 		//check for video dimensions changing
 		if(videoData != NULL) {
 			if(lastsrcwidth != videoData->Ywidth || lastsrcheight != videoData->Yheight) {
@@ -306,32 +375,76 @@ void GLvideo_rt::run()
 			}
 		}
 
-		//check for the video format changing - TODO....
+		//check for the shader changing
+		if(videoData) {
+			int newShader = currentShader;
+			
+			switch(videoData->format) {
+				case VideoData::YV12:
+				case VideoData::I420:
+				case VideoData::Planar411:
+				case VideoData::Planar444: 
+					newShader = shaderPlanar;
+					break;
+					
+				case VideoData::UYVY:
+					newShader = shaderUYVY;
+					break;
+					
+				case VideoData::V216:
+					newShader = shaderV216;
+					break;
+					
+				case VideoData::YV16:
+					newShader = shaderYV16;
+					break;
+					
+				case VideoData::V210:
+					newShader = shaderV210;
+					break;	
+					
+				default:
+					//uh-oh!
+					break;
+			}	
+			
+			if(newShader != currentShader) {
+				printf("Changing shader from %d to %d\n", currentShader, newShader);
+				createGLTextures = true;
+				updateShaderVars = true;
+				currentShader = newShader;
+    			glUseProgramObjectARB(programs[currentShader]);					
+			}							
+		}
+
 
 		if(createGLTextures) {
 			if(DEBUG) printf("Creating GL textures\n");
 			//create the textures on the GPU
-			createTextures(videoData->Ywidth, videoData->Yheight, videoData->Cwidth, videoData->Cheight);
+			createTextures(videoData, currentShader);
 			createGLTextures = false;
 		}			
 		
 		if(updateShaderVars) {
 			if(DEBUG) printf("Updating fragment shader variables\n");
 			
-		    int i=glGetUniformLocationARB(program, "Yheight");
+		    int i=glGetUniformLocationARB(programs[currentShader], "Yheight");
     		glUniform1fARB(i, videoData->Yheight);
 
-		    i=glGetUniformLocationARB(program, "CHsubsample");
+		    i=glGetUniformLocationARB(programs[currentShader], "Ywidth");
+    		glUniform1fARB(i, videoData->Ywidth);
+
+		    i=glGetUniformLocationARB(programs[currentShader], "CHsubsample");
     		glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
 
-		    i=glGetUniformLocationARB(program, "CVsubsample");
+		    i=glGetUniformLocationARB(programs[currentShader], "CVsubsample");
     		glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
 
-		    i=glGetUniformLocationARB(program, "colorMatrix");
+		    i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
 		    float matrix[9] = {1.0, 0.0, 1.5958, 1.0, -0.39173, -0.8129, 1.0, 2.017, 0.0};	    
     		glUniformMatrix3fvARB(i, 1, false, &matrix[0]);
 
-		    i=glGetUniformLocationARB(program, "yuvOffset");
+		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset");
     		glUniform3fARB(i, -0.0625, -0.5, -0.5);
 			
 			updateShaderVars = false;	
@@ -363,15 +476,10 @@ void GLvideo_rt::run()
 			}			
 			doResize = false;
 		}
-	
-		//wait for some number of extra vertical syncs
-		unsigned int retraceCount;		
-       	glXGetVideoSyncSGI(&retraceCount);
-       	glXWaitVideoSyncSGI(1, (retraceCount+1)%1, &retraceCount);       				
-																
+																	
 		if(videoData) {
 			
-			if(DEBUG) printf("Rendering...\n");
+			//if(DEBUG) printf("Rendering...\n");
 						
 			render((GLubyte *)videoData->Ydata, 
 				   (GLubyte *)videoData->Udata, 
@@ -389,11 +497,16 @@ void GLvideo_rt::run()
 			glw.swapBuffers();
 		}
 
+		//wait for some number of extra vertical syncs
+		unsigned int retraceCount;		
+       	glXGetVideoSyncSGI(&retraceCount);
+       	glXWaitVideoSyncSGI(1, (retraceCount+1)%1, &retraceCount);       				
+
   		//calculate FPS
        	timeval now, diff;
        	gettimeofday(&now, NULL);
        	timersub(&now, &last, &diff);       	
-       	if(DEBUG)printf("FPS = %f\n", 1000000.0 / diff.tv_usec);
+       	//if(DEBUG)printf("FPS = %f\n", 1000000.0 / diff.tv_usec);
        	last = now;
        	       	       	       	
 	}

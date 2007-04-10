@@ -25,7 +25,6 @@ VideoData::VideoData(int w, int h, DataFmt f)
 	switch(format) {
 	
 		case Planar444:
-		case RGB:
 			Cwidth  = Ywidth;
 			Cheight = Yheight;
 			YdataSize = Ywidth * Yheight;
@@ -111,7 +110,6 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			Udata = Vdata + ((Ywidth * Yheight) / 4);
 			break;
 			
-		case RGB:
 		case UYVY:
 		case V216:
 		case YV16:	

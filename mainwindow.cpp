@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.5 2007-04-05 10:11:23 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.6 2007-04-10 11:18:51 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,6 +43,8 @@ MainWindow::MainWindow()
 {
 	setWindowTitle("VideoPlayer");
 	
+	shuttle = new QShuttlePro();
+	
 	//threaded video reader
 	videoRead = new VideoRead();
 	
@@ -61,6 +63,31 @@ MainWindow::MainWindow()
   				
 	//set up menus etc
  	createActions();
+    
+    
+    //shuttlepro jog wheel
+	connect(shuttle, SIGNAL(jogForward()), videoRead, SLOT(transportJogFwd()));
+	connect(shuttle, SIGNAL(jogBackward()), videoRead, SLOT(transportJogRev()));
+	
+	//shuttlepro shuttle dial	    
+	connect(shuttle, SIGNAL(shuttleRight7()), videoRead, SLOT(transportFwd100()));
+	connect(shuttle, SIGNAL(shuttleRight6()), videoRead, SLOT(transportFwd50()));
+	connect(shuttle, SIGNAL(shuttleRight5()), videoRead, SLOT(transportFwd20()));
+	connect(shuttle, SIGNAL(shuttleRight4()), videoRead, SLOT(transportFwd10()));
+	connect(shuttle, SIGNAL(shuttleRight3()), videoRead, SLOT(transportFwd5()));
+	connect(shuttle, SIGNAL(shuttleRight2()), videoRead, SLOT(transportFwd2()));
+	connect(shuttle, SIGNAL(shuttleRight1()), videoRead, SLOT(transportFwd1()));
+	
+	connect(shuttle, SIGNAL(shuttleLeft7()), videoRead, SLOT(transportRev100()));
+	connect(shuttle, SIGNAL(shuttleLeft6()), videoRead, SLOT(transportRev50()));
+	connect(shuttle, SIGNAL(shuttleLeft5()), videoRead, SLOT(transportRev20()));
+	connect(shuttle, SIGNAL(shuttleLeft4()), videoRead, SLOT(transportRev10()));
+	connect(shuttle, SIGNAL(shuttleLeft3()), videoRead, SLOT(transportRev5()));			
+	connect(shuttle, SIGNAL(shuttleLeft2()), videoRead, SLOT(transportRev2()));
+	connect(shuttle, SIGNAL(shuttleLeft1()), videoRead, SLOT(transportRev1()));
+	
+	connect(shuttle, SIGNAL(shuttleCenter()), videoRead, SLOT(transportStop()));			
+	
     //createMenus();
     //createStatusBar();
     //createToolBar();
