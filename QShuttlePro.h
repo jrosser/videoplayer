@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.h,v 1.1 2007-04-10 11:18:51 jrosser Exp $
+* $Id: QShuttlePro.h,v 1.2 2007-04-10 15:24:02 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -73,7 +73,23 @@ signals:
 	void keyPressed(int);
 	void keyReleased(int);
 	void keyChanged(int, int);
-	        
+
+	void key256Pressed();
+	void key257Pressed();
+	void key258Pressed();
+	void key259Pressed();	        
+	void key260Pressed();
+	void key261Pressed();	        
+	void key262Pressed();
+	void key263Pressed();	        
+	void key264Pressed();
+	void key265Pressed();	        
+	void key266Pressed();	        
+	void key267Pressed();
+	void key268Pressed();	        
+	void key269Pressed();
+	void key270Pressed();	        
+		        
 private:
 
 	typedef struct
@@ -94,6 +110,7 @@ private:
 	void process_event(struct input_event);
 	void jog(unsigned int value);
 	void shuttle(int value);
+	void key(unsigned int value, unsigned int code);	
 	void check_shuttle_center();
 };
 

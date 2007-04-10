@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.cpp,v 1.1 2007-04-10 11:18:52 jrosser Exp $
+* $Id: QShuttlePro.cpp,v 1.2 2007-04-10 15:24:02 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -22,6 +22,7 @@
 *
 * Contributor(s): Jonathan Rosser
 * Inspired by IngexPlayer
+* and Cinellera
 * 
 * Alternatively, the contents of this file may be used under the terms of
 * the GNU General Public License Version 2 (the "GPL"), or the GNU Lesser
@@ -56,13 +57,12 @@
 QShuttlePro::QShuttlePro() 
 {
 	if(DEBUG) printf("Starting ShuttlePro\n");
-	int found = openShuttle();
 	
+	fd = 0;
 	jogvalue = 0;
 	shuttlevalue = 0;
 	
-	//start worker thread if we found the shuttle
-	if(found) start();
+	start();
 }
 
 int QShuttlePro::openShuttle()
@@ -207,12 +207,49 @@ void QShuttlePro::jog(unsigned int value)
 	jogvalue = value;
 }
 
+void QShuttlePro::key(unsigned int value, unsigned int code)
+{
+	if(DEBUG) printf("Key Event, value=%d, code=%d\n", value, code);	
+	
+	if(value)
+		emit(keyPressed(code));
+	else
+		emit(keyReleased(code));
+		
+	emit(keyChanged(value, code));
+	
+	if(value == 1) {	//key pressed		
+		switch(code) {
+			case 256: emit(key256Pressed()); break;		//top row
+			case 257: emit(key257Pressed()); break;
+			case 258: emit(key258Pressed()); break;
+			case 259: emit(key259Pressed()); break;	
+		
+			case 260: emit(key260Pressed()); break;		//second row
+			case 261: emit(key261Pressed()); break;
+			case 262: emit(key262Pressed()); break;
+			case 263: emit(key263Pressed()); break;
+			case 264: emit(key264Pressed()); break;
+		
+			case 269: emit(key269Pressed()); break;		//left hand
+			case 270: emit(key270Pressed()); break;		//right hand
+		
+			case 265: emit(key265Pressed()); break;		//bottom left inner
+			case 267: emit(key267Pressed()); break;		//bottom left outer
+		
+			case 266: emit(key266Pressed()); break;		//bottom right inner
+			case 268: emit(key268Pressed()); break;		//bottom right outer
+		
+			default:
+				break;
+		}
+	}	
+}
 
 void QShuttlePro::process_event(input_event inEvent)
 {
 	switch(inEvent.type) {
 		case EV_SYN:	//sync
-			if(DEBUG) printf("Sync event\n");
 			break;
 			
 		case EV_REL:	//jog or shuttle			
@@ -225,23 +262,16 @@ void QShuttlePro::process_event(input_event inEvent)
 			break;
 			
 		case EV_KEY:	//button
-			if(inEvent.value)
-				emit(keyPressed(inEvent.code));
-			else
-				emit(keyReleased(inEvent.code));
-				
-			emit(keyChanged(inEvent.value, inEvent.code));
-			if(DEBUG) printf("Key Event, value=%d, code=%d\n", inEvent.value, inEvent.code);
+			key(inEvent.value, inEvent.code);
 			break;
 			
 		default:
-			printf("Unhandled event %d\n", inEvent.type);	
+			if(DEBUG) printf("Unhandled event %d\n", inEvent.type);	
 	}	
 }
 
 void QShuttlePro::run()
 {
-	printf("StartShuttle");
 	
     struct input_event inEvent; 
     fd_set rfds;
@@ -249,43 +279,47 @@ void QShuttlePro::run()
     ssize_t numRead;
         
     while (1 /*!stopped*/)
-    {    	
-        FD_ZERO(&rfds);
-        FD_SET(fd, &rfds);
-        /* TODO: is there a way to find out how many sec between sync events? */
-        tv.tv_sec = 4; /* > sync events interval. */
-        tv.tv_usec = 0;
+    {   
+    	if(fd > 0) {
+        	
+        	FD_ZERO(&rfds);
+        	FD_SET(fd, &rfds);
+        	/* TODO: is there a way to find out how many sec between sync events? */
+        	tv.tv_sec = 4; /* > sync events interval. */
+        	tv.tv_usec = 0;
             
-        int retval = select(fd + 1, &rfds, NULL, NULL, &tv);
+        	int retval = select(fd + 1, &rfds, NULL, NULL, &tv);
 
-        if (retval == -1)
-        {
-            /* select error */
-            continue;
-        }
-        else if (retval)
-        {
-            numRead = read(fd, &inEvent, sizeof(struct input_event));
-            if (numRead > 0)
-            {
-  				process_event(inEvent);
-            }
-        }
-        else
-        {
-            /* handle silence */            
-            //if (handle_silence(&outEvent))
-            //{
-                ///* call the listeners */
-                //for (i = 0; i < MAX_LISTENERS; i++)
-                //{
-                //    if (shuttle->listeners[i].func != NULL)
-                //    {
-                //        shuttle->listeners[i].func(shuttle->listeners[i].data, &outEvent);
-                //    }
-                //}
-            //}
-        }        
+        	if (retval == -1)
+        	{
+            	if(DEBUG) printf("Select Error!\n");	/* select error */
+            	continue;
+        	}
+        	else if (retval)
+        	{
+            	numRead = read(fd, &inEvent, sizeof(struct input_event));
+            
+            	if (numRead > 0)
+  					process_event(inEvent);
+			
+				if(numRead < 0) {
+					//we have lost the ShuttlePro - probably unplugged
+					if(DEBUG) printf("Lost connection to ShuttlePro\n");
+					close(fd);
+			 		fd=0;
+				}
+        	}
+        	else
+        	{
+        		if(DEBUG) printf("Timeout\n");
+				//we got nothing.... what does this mean???
+        	}
+    	}
+    	else {
+    		//have not yet opened the ShuttlePro properly, try again, waiting if we fail
+    		if(openShuttle() == 0)
+    			sleep(1);	
+    	}        
     }
 }
 

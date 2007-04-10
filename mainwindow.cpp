@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.6 2007-04-10 11:18:51 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.7 2007-04-10 15:24:02 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -63,8 +63,7 @@ MainWindow::MainWindow()
   				
 	//set up menus etc
  	createActions();
-    
-    
+        
     //shuttlepro jog wheel
 	connect(shuttle, SIGNAL(jogForward()), videoRead, SLOT(transportJogFwd()));
 	connect(shuttle, SIGNAL(jogBackward()), videoRead, SLOT(transportJogRev()));
@@ -84,9 +83,20 @@ MainWindow::MainWindow()
 	connect(shuttle, SIGNAL(shuttleLeft4()), videoRead, SLOT(transportRev10()));
 	connect(shuttle, SIGNAL(shuttleLeft3()), videoRead, SLOT(transportRev5()));			
 	connect(shuttle, SIGNAL(shuttleLeft2()), videoRead, SLOT(transportRev2()));
-	connect(shuttle, SIGNAL(shuttleLeft1()), videoRead, SLOT(transportRev1()));
-	
+	connect(shuttle, SIGNAL(shuttleLeft1()), videoRead, SLOT(transportRev1()));	
 	connect(shuttle, SIGNAL(shuttleCenter()), videoRead, SLOT(transportStop()));			
+	
+	//shuttlepro buttons
+	connect(shuttle, SIGNAL(key267Pressed()), videoRead, SLOT(transportPlayPause()));
+	connect(shuttle, SIGNAL(key265Pressed()), videoRead, SLOT(transportFwd1()));
+	connect(shuttle, SIGNAL(key259Pressed()), this, SLOT(toggleFullScreen()));
+		
+	//key 269, press=previous mark, hold=start of file
+	//key 270, press=next mark, hold=end of file
+	//key 256, cycle OSD status
+	//key 257, cycle displayed timecode type
+	//key 258, press=lock controls, hold=unlock controls
+	//key 259, press=toggle fullscreen, hold=quit
 	
     //createMenus();
     //createStatusBar();
