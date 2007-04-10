@@ -12,5 +12,5 @@ QT += opengl
 CONFIG += thread debug
 
 # Input
-HEADERS = mainwindow.h GLvideo.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h
-SOURCES = main.cpp mainwindow.cpp GLvideo.cpp GLvideo_mt.cpp GLvideo_rt.cpp videoRead.cpp readThread.cpp videoData.cpp
+HEADERS = mainwindow.h GLvideo.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h QShuttlePro.h
+SOURCES = main.cpp mainwindow.cpp GLvideo.cpp GLvideo_mt.cpp GLvideo_rt.cpp videoRead.cpp readThread.cpp videoData.cpp QShuttlePro.cpp
