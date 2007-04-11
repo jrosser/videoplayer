@@ -13,14 +13,12 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define DEBUG 0
-
-//Texture data types
-//Planar formats	GL_LUMINANCE
+#define DEBUG 1
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
 //should work with all planar chroma subsamplings
+//glInternalFormat=GL_LUMINANCE glFormat=GL_LUMINANCE glType=GL_UNSIGNED_BYTE
 static char *shaderPlanarSrc=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
@@ -30,26 +28,30 @@ static char *shaderPlanarSrc=
   "uniform vec3 yuvOffset;\n"
         
   "void main(void) {\n"
-  "  float nx,ny,a;\n"
-  "  vec3 yuv;\n"
-  "  vec3 rgb;\n"
+  " float nx,ny,a;\n"
+  " vec3 yuv;\n"
+  " vec3 rgb;\n"
   
-  "  nx=gl_TexCoord[0].x;\n"
-  "  ny=Yheight-gl_TexCoord[0].y;\n"
+  " nx=gl_TexCoord[0].x;\n"
+  " ny=Yheight-gl_TexCoord[0].y;\n"
   
-  "  yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
-  "  yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
-  "  yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+  " yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
+  " yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+  " yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
 
-  "  yuv = yuv + yuvOffset;\n"  
-  "  rgb = yuv * colorMatrix;\n"
+  " yuv = yuv + yuvOffset;\n"  
+  " rgb = yuv * colorMatrix;\n"
 
-  "	 a=1.0;\n"
+  "	a=1.0;\n"
       
-  "  gl_FragColor=vec4(rgb ,a);\n"
+  " gl_FragColor=vec4(rgb ,a);\n"
   "}\n";
 
 //------------------------------------------------------------------------------------------
+//shader program for UYVY muxed 8 bit data
+//there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
+//nx and ny should go between 0-1919, 0-1079
+//glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
 static char *shaderUYVYSrc=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
@@ -59,33 +61,26 @@ static char *shaderUYVYSrc=
   "uniform vec3 yuvOffset;\n"
         
   "void main(void) {\n"
-  "  float nx,ny,a;\n"
-  "  vec3 yuv;\n"
-
+  " float nx,ny,a;\n"
+  " vec3 yuv;\n"
   " vec4 rgba;\n"
-  //there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
-  //nx and ny should go between 0-1919, 0-1079
- 
-  " rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"				//sample every other RGBA quad to get luminance
-  " yuv[0] = (fract(nx * Ywidth / 2) < 0.5) ? rgba.g : rgba.a;\n"
+  " vec3 rgb;\n"
 
-  " rgba = textureRect(Ytex, vec2(nx/2), ny));\n"					//sample at and between each RGBA quad to get filtered chrominance
+  " nx=gl_TexCoord[0].x;\n"
+  " ny=Yheight-gl_TexCoord[0].y;\n"
+ 
+  " rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"	 //sample every other RGBA quad to get luminance  
+  " yuv[0] = (fract(nx/2) < 0.5) ? rgba.g : rgba.a;\n"   //pick the correct luminance from G or A for this pixel
+
+  " rgba = textureRect(Ytex, vec2((nx/2), ny));\n"		 //sample chrominance at 0, 0.5, 1.0, 1.5... to get interpolation to 4:4:4
   " yuv[1] = rgba.r;\n"
   " yuv[2] = rgba.b;\n"
-
-  "  nx=gl_TexCoord[0].x;\n"
-  "  ny=Yheight-gl_TexCoord[0].y;\n"
   
-  "  yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
-  "  yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
-  "  yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
-
-  "  yuv = yuv + yuvOffset;\n"  
-  "  rgb = yuv * colorMatrix;\n"
-
-  "	 a=1.0;\n"
+  " yuv = yuv + yuvOffset;\n"  
+  " rgb = yuv * colorMatrix;\n"
+  " a=1.0;\n"
       
-  "  gl_FragColor=vec4(rgb ,a);\n"
+  " gl_FragColor=vec4(rgb, a);\n"
   "}\n";
 
 //------------------------------------------------------------------------------------------
@@ -113,7 +108,7 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 void GLvideo_rt::compileFragmentShaders()
 {
 	compileFragmentShader((int)shaderPlanar, shaderPlanarSrc);
-	compileFragmentShader((int)shaderUYVY,   shaderNullSrc);
+	compileFragmentShader((int)shaderUYVY,   shaderUYVYSrc);
 	compileFragmentShader((int)shaderV216,   shaderNullSrc);
 	compileFragmentShader((int)shaderYV16,   shaderNullSrc);
 	compileFragmentShader((int)shaderV210,   shaderNullSrc);					
@@ -155,46 +150,53 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 
 void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
 {
-    /* Select texture unit 1 as the active unit and bind the U texture. */
-    glActiveTexture(GL_TEXTURE1);
-    int i=glGetUniformLocationARB(programs[currentShader], "Utex");
-    glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
-    glBindTexture(GL_TEXTURE_RECTANGLE_NV,1);
-
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, videoData->Cwidth , videoData->Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	int i=0;
+	
+	if(videoData->isPlanar) {
     
-    /* Select texture unit 2 as the active unit and bind the V texture. */
-    glActiveTexture(GL_TEXTURE2);
-    i=glGetUniformLocationARB(programs[currentShader], "Vtex");
-    glBindTexture(GL_TEXTURE_RECTANGLE_NV,2);
-    glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
+    	/* Select texture unit 1 as the active unit and bind the U texture. */
+    	glActiveTexture(GL_TEXTURE1);
+    	i=glGetUniformLocationARB(programs[currentShader], "Utex");
+    	glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
+    	glBindTexture(GL_TEXTURE_RECTANGLE_NV,1);
 
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
-    //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, videoData->Cwidth , videoData->Cheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
+    
+    	/* Select texture unit 2 as the active unit and bind the V texture. */
+    	glActiveTexture(GL_TEXTURE2);
+    	i=glGetUniformLocationARB(programs[currentShader], "Vtex");
+    	glBindTexture(GL_TEXTURE_RECTANGLE_NV,2);
+    	glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
 
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
+		glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
+	}
+    
     /* Select texture unit 0 as the active unit and bind the Y texture. */
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE3);
     i=glGetUniformLocationARB(programs[currentShader], "Ytex");
-    glUniform1iARB(i,0);  /* Bind Ytex to texture unit 0 */
+    glUniform1iARB(i,3);  /* Bind Ytex to texture unit 3 */
     glBindTexture(GL_TEXTURE_RECTANGLE_NV,3);
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
     //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
-	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, GL_LUMINANCE, videoData->Ywidth , videoData->Yheight, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->glYTextureWidth, videoData->Yheight, 0, videoData->glFormat, videoData->glType, NULL);
 
 	//create buffer objects that are used to transfer the texture data to the card
 	//this is much faster than using glTexSubImage2D() later on to replace the texture data
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->UdataSize, NULL, GL_STREAM_DRAW);    
+    if(videoData->isPlanar) {
+    	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->UdataSize, NULL, GL_STREAM_DRAW);    
 
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
-	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->VdataSize, NULL, GL_STREAM_DRAW);    
+    	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
+		glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->VdataSize, NULL, GL_STREAM_DRAW);    
+    }
     
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
 	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->YdataSize, NULL, GL_STREAM_DRAW);    
@@ -228,28 +230,28 @@ void GLvideo_rt::resizeViewport(int width, int height)
 	glw.unlockMutex();
 }    
 
-void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth, int Yheight, int Cwidth, int Cheight, bool ChromaTextures)
+void GLvideo_rt::render(VideoData *videoData)
 {		
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	void *ioMem;
 
-	if(ChromaTextures) {
+	if(videoData->isPlanar) {
 		
 		glBindTexture(GL_TEXTURE_RECTANGLE_NV, 1);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
 		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-		memcpy(ioMem, Utex, Cwidth * Cheight);
+		memcpy(ioMem, videoData->Udata, videoData->UdataSize);
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, Cwidth, Cheight, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->Cwidth, videoData->Cheight, videoData->glFormat, videoData->glType, NULL);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 
 		glBindTexture(GL_TEXTURE_RECTANGLE_NV, 2);	
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
 		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-		memcpy(ioMem, Vtex, Cwidth * Cheight);
+		memcpy(ioMem, videoData->Vdata, videoData->VdataSize);
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, Cwidth, Cheight, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->Cwidth, videoData->Cheight, videoData->glFormat, videoData->glType, NULL);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);	
 	}
 	
@@ -257,20 +259,20 @@ void GLvideo_rt::render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth,
 	glBindTexture(GL_TEXTURE_RECTANGLE_NV, 3);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
 	ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-	memcpy(ioMem, Ytex, Ywidth * Yheight);
+	memcpy(ioMem, videoData->Ydata, videoData->YdataSize);
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, Ywidth, Yheight, GL_LUMINANCE, GL_UNSIGNED_BYTE, NULL);
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->glYTextureWidth, videoData->Yheight, videoData->glFormat, videoData->glType, NULL);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 	
 	glBegin(GL_QUADS);
 		glTexCoord2i(0,0);
 		glVertex2i(0,0);
-		glTexCoord2i(Ywidth,0);
-		glVertex2i(Ywidth,0);
-		glTexCoord2i(Ywidth, Yheight);
-		glVertex2i(Ywidth, Yheight);
-		glTexCoord2i(0, Yheight);
-		glVertex2i(0, Yheight);
+		glTexCoord2i(videoData->Ywidth,0);
+		glVertex2i(videoData->Ywidth,0);
+		glTexCoord2i(videoData->Ywidth, videoData->Yheight);
+		glVertex2i(videoData->Ywidth, videoData->Yheight);
+		glTexCoord2i(0, videoData->Yheight);
+		glVertex2i(0, videoData->Yheight);
 	glEnd();				
 }
     
@@ -356,9 +358,6 @@ void GLvideo_rt::run()
 
 		//read frame data
 		videoData = glw.vr.getNextFrame();
-
-		//lock the mutex on the current frame data
-		//glw.vr.currentFrameMutex.lock();
 
 		//check for video dimensions changing
 		if(videoData != NULL) {
@@ -466,7 +465,7 @@ void GLvideo_rt::run()
 					//window is wider than image should be
 					int width = (int)(displayheight*sourceAspect);
 					int offset = (displaywidth - width) / 2;
-					glViewport(offset,0, width, displayheight);
+					glViewport(offset, 0, width, displayheight);
 				}
 				else {
 					int height = (int)(displaywidth/sourceAspect);
@@ -481,11 +480,7 @@ void GLvideo_rt::run()
 			
 			//if(DEBUG) printf("Rendering...\n");
 						
-			render((GLubyte *)videoData->Ydata, 
-				   (GLubyte *)videoData->Udata, 
-				   (GLubyte *)videoData->Vdata,
-					videoData->Ywidth, videoData->Yheight, videoData->Cwidth, videoData->Cheight,
-					videoData->isPlanar);
+			render(videoData);
 			
 			glColor3f(1.0, 1.0, 1.0);			
 									

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.7 2007-04-10 15:24:02 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.8 2007-04-11 10:44:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,6 +43,7 @@ MainWindow::MainWindow()
 {
 	setWindowTitle("VideoPlayer");
 	
+	//shuttlePro jog dial
 	shuttle = new QShuttlePro();
 	
 	//threaded video reader
@@ -98,18 +99,11 @@ MainWindow::MainWindow()
 	//key 258, press=lock controls, hold=unlock controls
 	//key 259, press=toggle fullscreen, hold=quit
 	
-    //createMenus();
-    //createStatusBar();
-    //createToolBar();
-  	//setStatusBar(myStatusBar);
-  	//addToolBar(Qt::TopToolBarArea, myToolBar);
-  	//initializeAssistant();
-  			            
-    //signal connections for main window
-
 	//some defaults in the abscence of any settings	
 	
 	//load the settings for this application
+	
+	//override settings with command line
 }
 
 

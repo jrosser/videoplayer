@@ -28,7 +28,7 @@ private:
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
 	void createTextures(VideoData *videoData, int currentShader);
-	void render(GLubyte *Ytex, GLubyte *Utex, GLubyte *Vtex, int Ywidth, int Yheight, int Cwidth, int Cheight, bool ChromaTextures);
+	void render(VideoData *videoData);
 
 	bool m_doRendering;			//set to false to quit thread
 	bool m_doResize;			//resize the openGL viewport
