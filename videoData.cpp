@@ -60,7 +60,7 @@ VideoData::VideoData(int w, int h, DataFmt f)
 		case YV16:
 			Cwidth  = Ywidth / 2;
 			Cheight = Yheight;	
-			YdataSize = 0;
+			YdataSize = Ywidth * Yheight * 4;
 			UdataSize = 0;
 			VdataSize = 0;
 			dataSize = Ywidth * Yheight * 4;
@@ -70,7 +70,7 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			//3 10 bit components packed into 4 bytes
 			Cwidth  = Ywidth / 2;
 			Cheight = Yheight;			
-			YdataSize = 0;
+			YdataSize = (Ywidth * Yheight * 2 * 4) / 3;
 			UdataSize = 0;
 			VdataSize = 0;			
 			dataSize = (Ywidth * Yheight * 2 * 4) / 3;
@@ -120,7 +120,7 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			glType = GL_UNSIGNED_BYTE;			
 			break;
 					
-		case V216:
+		case V210:
 			//really hard!
 			//muxed 10 bit format - this is wrong, FIXME
 			glYTextureWidth = Ywidth;
@@ -132,12 +132,11 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			break;
 			
 		case YV16:	
-		case V210:
-			//muxed 16 bit formats - this is wrong, FIXME
-			glYTextureWidth = Ywidth;
-			glInternalFormat = GL_LUMINANCE;
-			glFormat = GL_LUMINANCE;
-			glType = GL_UNSIGNED_BYTE;			
+		case V216:
+			glYTextureWidth = Ywidth / 2;	//2 samples per YUV quad
+			glInternalFormat = GL_RGBA;
+			glFormat = GL_RGBA;
+			glType = GL_UNSIGNED_SHORT;			
 			Udata = Ydata;
 			Vdata = Ydata;
 			break;

@@ -48,10 +48,9 @@ static char *shaderPlanarSrc=
   "}\n";
 
 //------------------------------------------------------------------------------------------
-//shader program for UYVY muxed 8 bit data
+//shader program for UYVY muxed 8 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
 //there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
 //nx and ny should go between 0-1919, 0-1079
-//glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
 static char *shaderUYVYSrc=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
@@ -109,7 +108,7 @@ void GLvideo_rt::compileFragmentShaders()
 {
 	compileFragmentShader((int)shaderPlanar, shaderPlanarSrc);
 	compileFragmentShader((int)shaderUYVY,   shaderUYVYSrc);
-	compileFragmentShader((int)shaderV216,   shaderNullSrc);
+	compileFragmentShader((int)shaderV216,   shaderUYVYSrc);
 	compileFragmentShader((int)shaderYV16,   shaderNullSrc);
 	compileFragmentShader((int)shaderV210,   shaderNullSrc);					
 }

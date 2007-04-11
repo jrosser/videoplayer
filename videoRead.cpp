@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.3 2007-04-10 11:18:51 jrosser Exp $
+* $Id: videoRead.cpp,v 1.4 2007-04-11 13:05:08 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -64,42 +64,42 @@ void VideoRead::setFileName(const QString &fn)
 	QFileInfo info(fn);
 	
 	//fixme - this is a nasty assumption that .yuv is i420
-	if(info.suffix() == "yuv") {
+	if(info.suffix() == "YUV" || info.suffix() == "yuv") {
 		dataFormat = VideoData::I420;
 		
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
 		lastFrameNum--; 	
 	}
 
-	if(info.suffix() == "i420") {
+	if(info.suffix() == "I420" || info.suffix() == "i420") {
 		dataFormat = VideoData::I420;
 
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
 		lastFrameNum--; 						
 	}
 
-	if(info.suffix() == "yv12") {
+	if(info.suffix() == "YV12" || info.suffix() == "yv12") {
 		dataFormat = VideoData::YV12;
 
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "uyvy") {
+	if(info.suffix() == "UYVY" || info.suffix() == "uyvy") {
 		dataFormat = VideoData::UYVY;
 
 		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "V216") {
+	if(info.suffix() == "V216" || info.suffix() == "v216") {
 		dataFormat = VideoData::V216;
 		
 		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "YV16") {
+	if(info.suffix() == "YV16" || info.suffix() == "yv16") {
 		dataFormat = VideoData::YV16;
 		
 		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
