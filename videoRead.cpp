@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.4 2007-04-11 13:05:08 jrosser Exp $
+* $Id: videoRead.cpp,v 1.5 2007-04-12 13:59:39 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -106,7 +106,7 @@ void VideoRead::setFileName(const QString &fn)
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "V210") {
+	if(info.suffix() == "V210" || info.suffix() == "v210") {
 		dataFormat = VideoData::V210;
 
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 2 * 4) / 3);

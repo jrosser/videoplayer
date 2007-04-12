@@ -47,10 +47,108 @@ static char *shaderPlanarSrc=
   " gl_FragColor=vec4(rgb ,a);\n"
   "}\n";
 
+//---------------------------------------------------------------------------------------------------------------------------
+//shader program for V210 muxed 10 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
+//the data is packed as RGBA as HD1080 material would require a texture of 5120 bytes width, which GL does not like.
+//this way, we have 5120/4=1280 RGBA quads across the picture, each containing some of the 10 bit data....
+
+//there is a 16 byte pattern
+// 00 Cr0  Y0   Cb0
+// 00 Y2   Cb1  Y1
+// 00 Cb2  Y3   Cr1
+// 00 Y5   Cr2  Y4
+
+//which gives 6 Y samples and 3 pairs of Cb/Cr. Unfortunatley, we cannot use the GPU interpolation as the Y/Cb/Cr samples
+//do not regularly fall into the same components of the RGBA quads.
+
+static char *shaderV210Src=
+  "uniform samplerRect Ytex;\n"
+  "uniform samplerRect Utex,Vtex;\n"
+  "uniform float Yheight, Ywidth;\n" 
+  "uniform float CHsubsample, CVsubsample;\n"
+  "uniform mat3 colorMatrix;\n"
+  "uniform vec3 yuvOffset;\n"
+
+  //find a luminance sample from the mess of quads
+  "float getLuminance(in float nx, in float ny) {\n"
+  "  float py=0.0;\n"
+  "  int modulo;\n"
+  "  float incr=0.0;\n"
+      
+  "  float quadx = floor(nx/3.0) * 2.0;\n"
+  "  modulo = int(mod(nx, 6.0));\n"
+  
+  "  if(modulo == 1 || modulo == 2 || modulo == 4 || modulo == 5) incr = 1.0;\n"
+  "  quadx = quadx + incr;\n"  
+      
+  "  if(modulo == 0 || modulo == 3) {\n"	//Y0 or Y3
+  "    int g = int(textureRect(Ytex, vec2(quadx,ny)).g * 255.0);\n"
+  "    int b = int(textureRect(Ytex, vec2(quadx,ny)).b * 255.0);\n"
+  "    int temp;\n"
+  
+  "    temp = (b / 16) * 16;\n"
+  "    b = b - temp;\n"    
+
+  "    b = b * 64;\n"
+  "    g = g / 4;\n"
+          
+  "    py = float( (b + g) / 1023.0);\n"  //close
+  "  };\n"
+  
+  "  if(modulo == 1 || modulo == 4) {\n"	//Y1 or Y4
+  "    int r = int(textureRect(Ytex, vec2(quadx,ny)).r * 255.0);\n"
+  "    int g = int(textureRect(Ytex, vec2(quadx,ny)).g * 255.0);\n"
+  "    int temp;\n"
+  
+  "    temp = int(g / 4) * 4;\n"
+  "    g = g - temp;\n"
+    
+  "    g = g * 256;\n"
+          
+  "    py = float( float(g + r) / 1023.0 );\n"
+  "  };\n"
+  
+  "  if(modulo == 2 || modulo == 5) {\n"	//Y2 or Y5
+  "    int b = int(textureRect(Ytex, vec2(quadx,ny)).b * 255.0);\n"
+  "    int a = int(textureRect(Ytex, vec2(quadx,ny)).a * 255.0);\n"
+  "    int temp;\n"
+  
+  "    temp = int(a / 64) * 64;\n"
+  "    a = a - temp;\n"
+    
+  "    a = a * 16;\n"  
+  "    b = b / 16;\n"
+          
+"    py = float( (a + b) / 1023.0);\n"  //OK
+  "  };\n"
+      
+  "  return py;\n"
+  "}\n"
+  
+  "void main(void) {\n"
+  " float nx,ny,a;\n"
+  " vec3 yuv;\n"
+  " vec4 rgba;\n"
+  " vec3 rgb;\n"
+
+  " nx=gl_TexCoord[0].x;\n"
+  " ny=Yheight-gl_TexCoord[0].y;\n"
+
+  " yuv[0]=getLuminance(nx,ny);\n"
+  " yuv[1]=0.5;\n"
+  " yuv[2]=0.5;\n"
+   
+  " yuv = yuv + yuvOffset;\n"  
+  " rgb = yuv * colorMatrix;\n"
+  " a=1.0;\n"
+      
+  " gl_FragColor=vec4(rgb, a);\n"
+  "}\n";
+
 //------------------------------------------------------------------------------------------
 //shader program for UYVY muxed 8 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
+//shader program for v216 muxed 16 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_SHORT
 //there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
-//nx and ny should go between 0-1919, 0-1079
 static char *shaderUYVYSrc=
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
@@ -110,7 +208,7 @@ void GLvideo_rt::compileFragmentShaders()
 	compileFragmentShader((int)shaderUYVY,   shaderUYVYSrc);
 	compileFragmentShader((int)shaderV216,   shaderUYVYSrc);
 	compileFragmentShader((int)shaderYV16,   shaderNullSrc);
-	compileFragmentShader((int)shaderV210,   shaderNullSrc);					
+	compileFragmentShader((int)shaderV210,   shaderV210Src);					
 }
 
 void GLvideo_rt::compileFragmentShader(int n, const char *src)
@@ -159,8 +257,8 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     	glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
     	glBindTexture(GL_TEXTURE_RECTANGLE_NV,1);
 
-    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
     	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
     
@@ -170,8 +268,8 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     	glBindTexture(GL_TEXTURE_RECTANGLE_NV,2);
     	glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
 
-    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
+    	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
     	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
 	}
@@ -182,8 +280,8 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     glUniform1iARB(i,3);  /* Bind Ytex to texture unit 3 */
     glBindTexture(GL_TEXTURE_RECTANGLE_NV,3);
 
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
+    glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
     //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->glYTextureWidth, videoData->Yheight, 0, videoData->glFormat, videoData->glType, NULL);
 
@@ -328,6 +426,8 @@ void GLvideo_rt::run()
     glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
 
+	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
+
 	compileFragmentShaders();		
     glUseProgramObjectARB(programs[currentShader]);
     	
@@ -357,6 +457,14 @@ void GLvideo_rt::run()
 
 		//read frame data
 		videoData = glw.vr.getNextFrame();
+
+		//check for v210 data - it's very difficult to write a shader for this
+		//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
+		if(videoData) {
+			if(videoData->format == VideoData::V210)
+				videoData->convertV210();
+		}
+
 
 		//check for video dimensions changing
 		if(videoData != NULL) {
@@ -474,6 +582,9 @@ void GLvideo_rt::run()
 			}			
 			doResize = false;
 		}
+
+		//wait for some number of extra vertical syncs
+       	glXWaitVideoSyncSGI(1, (retraceCount+1)%1, &retraceCount);
 																	
 		if(videoData) {
 			
@@ -490,17 +601,15 @@ void GLvideo_rt::run()
 			glFlush();
 			glw.swapBuffers();
 		}
-
-		//wait for some number of extra vertical syncs
-		unsigned int retraceCount;		
+		
+		//get the current frame count
        	glXGetVideoSyncSGI(&retraceCount);
-       	glXWaitVideoSyncSGI(1, (retraceCount+1)%1, &retraceCount);       				
-
+       				
   		//calculate FPS
        	timeval now, diff;
        	gettimeofday(&now, NULL);
        	timersub(&now, &last, &diff);       	
-       	//if(DEBUG)printf("FPS = %f\n", 1000000.0 / diff.tv_usec);
+       	if(DEBUG)printf("FPS = %f\n", 1000000.0 / diff.tv_usec);
        	last = now;
        	       	       	       	
 	}
