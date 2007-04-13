@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.5 2007-04-12 13:59:39 jrosser Exp $
+* $Id: videoRead.cpp,v 1.6 2007-04-13 13:46:43 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -52,7 +52,7 @@ VideoRead::VideoRead()
 	readThread.start();
 	
 	transportMutex.lock();
-	transportStatus = Fwd1;
+	transportStatus = Pause;
 	transportSpeed = 1;
 	transportMutex.unlock();	
 }

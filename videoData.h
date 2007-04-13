@@ -18,7 +18,9 @@ public:
 		
 	unsigned long frameNum;
 	
-	DataFmt    format;		//enumerated format
+	DataFmt    diskFormat;		//enumerated format read from the disk
+	DataFmt    renderFormat;	//pixel packing used for openGL rendering
+		
 	bool 	   isPlanar;	//flag to indicate that we have a seperate texture for each component to copy to the GPU
 	
 	GLenum		glInternalFormat;	//format used to describe which components of the texture are applied to the texels

@@ -14,7 +14,7 @@ class GLvideo_rt : public QThread
 {
 public:
 
-	enum ShaderPrograms { shaderPlanar, shaderUYVY, shaderV216, shaderYV16, shaderV210, shaderMax };
+	enum ShaderPrograms { shaderPlanar, shaderUYVY, shaderV216, shaderYV16, shaderMax };
 
 	GLvideo_rt(GLvideo_mt &glWidget);
 	void resizeViewport(int w, int h);

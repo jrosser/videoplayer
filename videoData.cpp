@@ -4,11 +4,11 @@
 
 
 VideoData::VideoData(int w, int h, DataFmt f)
-	: format(f)
+	: diskFormat(f)
 	, Ywidth(w)
 	, Yheight(h)
 {
-	switch(format) {
+	switch(diskFormat) {
 	
 		case Planar444:
 			Cwidth  = Ywidth;
@@ -86,8 +86,9 @@ VideoData::VideoData(int w, int h, DataFmt f)
 	Ydata = data;
 	isPlanar = false;
 	glMinMaxFilter = GL_LINEAR;	//linear interpolation
+	renderFormat = diskFormat;
 	
-	switch(format) {
+	switch(diskFormat) {
 		//planar formats
 		case Planar444:
 		case Planar422:
@@ -122,7 +123,6 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			break;
 					
 		case V210:
-			//really hard.... packed into RGBA as a texture of 5120 width as GL_LUMINACE is too big
 			glYTextureWidth = (Ywidth * 2 * 4) / (3 * 4);
 			glInternalFormat = GL_LUMINANCE_ALPHA;
 			glFormat = GL_RGBA;
@@ -157,30 +157,26 @@ VideoData::~VideoData()
 //utility function to convert V210 data into something easier to display
 //it is too difficult to do this in the openGL shader
 void VideoData::convertV210()
-{
-	char *converted = new char[Ywidth * Yheight * 2];
-	
+{	
 	int v210LineLength = (2 * Ywidth * 4) / 3;	//there are three components in 4 bytes
+ 
+   	int *uyvyLine = (int*)data;		//do the conversion in place     	      		
+	int *word = (int *)data;
 		
     for (int y=0; y<Yheight; y++) {
      
-     	int *v210Line = (int *)(&data[y * v210LineLength]);
-     	int *uyvyLine = (int*)&converted[y * Ywidth * 2];
-     	      		
-   		int *word = v210Line;
   		register int src;
    		register int dest;
    		
    		for(int x=0; x<v210LineLength/16; x++) {
 
 			//NASTY! this is not endian safe... it deals with four bytes at once in an int. Yuk :-(
-
 			src   = *word++;   			   	   			
-   			dest  = (src >> 2) & 0xFF;			//Cb
-   			dest |= (src >> 4) & 0xFF00;		//Y
-   			dest |= (src >> 6) & 0xFF0000;		//Cr      			
+   			dest  = (src >> 2) & 0xFF;		   //Cb
+   			dest |= (src >> 4) & 0xFF00;	   //Y
+   			dest |= (src >> 6) & 0xFF0000;	   //Cr      			
    			src   = *word++;   			
-   			dest |= (src << 22) & 0xFF000000;   //Y  			
+   			dest |= (src << 22) & 0xFF000000;  //Y  			
 			*uyvyLine++ = dest;
 
    			dest  = (src >> 12) & 0xFF;		   //Cb
@@ -193,24 +189,20 @@ void VideoData::convertV210()
 			dest  = (src >> 22) & 0xFF;	       //Cb			
 			src   = *word++;			
 			dest |= (src << 6) & 0xFF00;       //Y
-			dest |= (src << 4) & 0xFF0000;   //Cr
-			dest |= (src << 2) & 0xFF000000; //Y   			
+			dest |= (src << 4) & 0xFF0000;     //Cr
+			dest |= (src << 2) & 0xFF000000;   //Y   			
    			*uyvyLine++ = dest;   			   			   			
    		}
 	}
 	
-	free(data);
-	data = converted;
-	Ydata = converted;
-	format = VideoData::UYVY;
+	//change the description of the data to match UYVY
+	//note that the dataSize
+	renderFormat = UYVY;
 	glYTextureWidth = Ywidth / 2;	//2 Y samples per RGBA quad			
 	glInternalFormat = GL_RGBA;
 	glFormat = GL_RGBA;
 	glType = GL_UNSIGNED_BYTE;	
-	Cwidth  = Ywidth / 2;
 	YdataSize = Ywidth * Yheight * 2;
 	UdataSize = 0;
-	VdataSize = 0;								
-	dataSize = YdataSize;	
-				
+	VdataSize = 0;													
 }

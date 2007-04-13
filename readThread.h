@@ -40,6 +40,9 @@ private:
 	
 	//video file
 	int fd;
+	
+	//a list of used frames for recycling, so that we don't need to re-allocate storage
+	QList<VideoData *> usedFrames;
 		
 };
 

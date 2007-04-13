@@ -47,104 +47,6 @@ static char *shaderPlanarSrc=
   " gl_FragColor=vec4(rgb ,a);\n"
   "}\n";
 
-//---------------------------------------------------------------------------------------------------------------------------
-//shader program for V210 muxed 10 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
-//the data is packed as RGBA as HD1080 material would require a texture of 5120 bytes width, which GL does not like.
-//this way, we have 5120/4=1280 RGBA quads across the picture, each containing some of the 10 bit data....
-
-//there is a 16 byte pattern
-// 00 Cr0  Y0   Cb0
-// 00 Y2   Cb1  Y1
-// 00 Cb2  Y3   Cr1
-// 00 Y5   Cr2  Y4
-
-//which gives 6 Y samples and 3 pairs of Cb/Cr. Unfortunatley, we cannot use the GPU interpolation as the Y/Cb/Cr samples
-//do not regularly fall into the same components of the RGBA quads.
-
-static char *shaderV210Src=
-  "uniform samplerRect Ytex;\n"
-  "uniform samplerRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n" 
-  "uniform float CHsubsample, CVsubsample;\n"
-  "uniform mat3 colorMatrix;\n"
-  "uniform vec3 yuvOffset;\n"
-
-  //find a luminance sample from the mess of quads
-  "float getLuminance(in float nx, in float ny) {\n"
-  "  float py=0.0;\n"
-  "  int modulo;\n"
-  "  float incr=0.0;\n"
-      
-  "  float quadx = floor(nx/3.0) * 2.0;\n"
-  "  modulo = int(mod(nx, 6.0));\n"
-  
-  "  if(modulo == 1 || modulo == 2 || modulo == 4 || modulo == 5) incr = 1.0;\n"
-  "  quadx = quadx + incr;\n"  
-      
-  "  if(modulo == 0 || modulo == 3) {\n"	//Y0 or Y3
-  "    int g = int(textureRect(Ytex, vec2(quadx,ny)).g * 255.0);\n"
-  "    int b = int(textureRect(Ytex, vec2(quadx,ny)).b * 255.0);\n"
-  "    int temp;\n"
-  
-  "    temp = (b / 16) * 16;\n"
-  "    b = b - temp;\n"    
-
-  "    b = b * 64;\n"
-  "    g = g / 4;\n"
-          
-  "    py = float( (b + g) / 1023.0);\n"  //close
-  "  };\n"
-  
-  "  if(modulo == 1 || modulo == 4) {\n"	//Y1 or Y4
-  "    int r = int(textureRect(Ytex, vec2(quadx,ny)).r * 255.0);\n"
-  "    int g = int(textureRect(Ytex, vec2(quadx,ny)).g * 255.0);\n"
-  "    int temp;\n"
-  
-  "    temp = int(g / 4) * 4;\n"
-  "    g = g - temp;\n"
-    
-  "    g = g * 256;\n"
-          
-  "    py = float( float(g + r) / 1023.0 );\n"
-  "  };\n"
-  
-  "  if(modulo == 2 || modulo == 5) {\n"	//Y2 or Y5
-  "    int b = int(textureRect(Ytex, vec2(quadx,ny)).b * 255.0);\n"
-  "    int a = int(textureRect(Ytex, vec2(quadx,ny)).a * 255.0);\n"
-  "    int temp;\n"
-  
-  "    temp = int(a / 64) * 64;\n"
-  "    a = a - temp;\n"
-    
-  "    a = a * 16;\n"  
-  "    b = b / 16;\n"
-          
-"    py = float( (a + b) / 1023.0);\n"  //OK
-  "  };\n"
-      
-  "  return py;\n"
-  "}\n"
-  
-  "void main(void) {\n"
-  " float nx,ny,a;\n"
-  " vec3 yuv;\n"
-  " vec4 rgba;\n"
-  " vec3 rgb;\n"
-
-  " nx=gl_TexCoord[0].x;\n"
-  " ny=Yheight-gl_TexCoord[0].y;\n"
-
-  " yuv[0]=getLuminance(nx,ny);\n"
-  " yuv[1]=0.5;\n"
-  " yuv[2]=0.5;\n"
-   
-  " yuv = yuv + yuvOffset;\n"  
-  " rgb = yuv * colorMatrix;\n"
-  " a=1.0;\n"
-      
-  " gl_FragColor=vec4(rgb, a);\n"
-  "}\n";
-
 //------------------------------------------------------------------------------------------
 //shader program for UYVY muxed 8 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
 //shader program for v216 muxed 16 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_SHORT
@@ -207,8 +109,7 @@ void GLvideo_rt::compileFragmentShaders()
 	compileFragmentShader((int)shaderPlanar, shaderPlanarSrc);
 	compileFragmentShader((int)shaderUYVY,   shaderUYVYSrc);
 	compileFragmentShader((int)shaderV216,   shaderUYVYSrc);
-	compileFragmentShader((int)shaderYV16,   shaderNullSrc);
-	compileFragmentShader((int)shaderV210,   shaderV210Src);					
+	compileFragmentShader((int)shaderYV16,   shaderNullSrc);					
 }
 
 void GLvideo_rt::compileFragmentShader(int n, const char *src)
@@ -461,7 +362,7 @@ void GLvideo_rt::run()
 		//check for v210 data - it's very difficult to write a shader for this
 		//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
 		if(videoData) {
-			if(videoData->format == VideoData::V210)
+			if(videoData->renderFormat == VideoData::V210)
 				videoData->convertV210();
 		}
 
@@ -485,7 +386,7 @@ void GLvideo_rt::run()
 		if(videoData) {
 			int newShader = currentShader;
 			
-			switch(videoData->format) {
+			switch(videoData->renderFormat) {
 				case VideoData::YV12:
 				case VideoData::I420:
 				case VideoData::Planar411:
@@ -504,11 +405,7 @@ void GLvideo_rt::run()
 				case VideoData::YV16:
 					newShader = shaderYV16;
 					break;
-					
-				case VideoData::V210:
-					newShader = shaderV210;
-					break;	
-					
+										
 				default:
 					//uh-oh!
 					break;

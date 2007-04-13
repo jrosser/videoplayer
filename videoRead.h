@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.3 2007-04-10 11:18:52 jrosser Exp $
+* $Id: videoRead.h,v 1.4 2007-04-13 13:46:43 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -59,19 +59,18 @@ public:
 
 	QList<VideoData *> pastFrames;
 	QList<VideoData *> futureFrames;
-	QMutex listMutex;				//protect the list of frames
+	QMutex listMutex;					//protect the lists of frames
 		
 	int currentFrameNum;
 	int firstFrameNum;
 	int lastFrameNum;
+	
 	int videoWidth;
-	int videoHeight;
-	
-	QString fileName;							//input file
-	VideoData::DataFmt dataFormat;				//data format type
-			
-	VideoData* getNextFrame(void);	//the frame that is currently being displayed, this pointer is only manipulated from the read thread
-	
+	int videoHeight;	
+	QString fileName;				//input file
+	VideoData::DataFmt dataFormat;	//data format type
+	QMutex fileInfoMutex;			//protect the file information
+				
 	QWaitCondition frameConsumed;	//condition variable to pause/wake reading thread, synchronising display rate and data reading thread	
 	QMutex frameMutex;		
 
@@ -79,7 +78,7 @@ public:
 	int transportSpeed;
 	QMutex transportMutex;				//protect the transport status
 
-	QPixmap *osd;
+	VideoData* getNextFrame(void);	//the frame that is currently being displayed, this pointer is only manipulated from the read thread
 			
 protected:
 
