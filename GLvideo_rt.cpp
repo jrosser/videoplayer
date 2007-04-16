@@ -213,7 +213,53 @@ void GLvideo_rt::resizeViewport(int width, int height)
 	glw.unlockMutex();
 }    
 
-void GLvideo_rt::render(VideoData *videoData)
+void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font)
+{
+	//positions of text
+	float tx=0.05 * videoData->Ywidth;
+	float ty=0.05 * videoData->Yheight;
+	float border = 10;
+	
+	//character size for '0'
+	float cx1, cy1, cz1, cx2, cy2, cz2;	
+	font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2); 		
+	
+	//text box location
+	float bx1, by1, bx2, by2;
+	float charWidth = cx2 - cx1;
+	float charHeight = cy2 - cy1;
+	bx1 = tx - border; 
+	by1 = ty - border; 
+	bx2 = tx + charWidth + 2*border;
+	by2 = ty + charHeight + border;
+			
+	//text string
+	char str[20];
+	sprintf(str, "%06ld", videoData->frameNum);
+		
+	//box beind text													
+	glPushMatrix();
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(0.0, 0.0, 0.0, 0.7);
+	
+	//glTranslated(80, 80, 0);							
+	glBegin(GL_QUADS);
+	glVertex2f(bx1, by1);
+	glVertex2f(bx1, by2);
+	glVertex2f(bx2, by2);
+	glVertex2f(bx2, by1);																				
+	glEnd();			
+	glPopMatrix();						
+
+	//text
+	glPushMatrix();
+	glColor3f(1.0, 1.0, 1.0);
+	glTranslated(tx, ty, 0);						
+	font->Render(str);					
+	glPopMatrix();	
+}
+
+void GLvideo_rt::renderVideo(VideoData *videoData)
 {		
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -291,15 +337,16 @@ void GLvideo_rt::run()
 	int frameRepeats = m_frameRepeats;
 	int currentShader = 0;	
 	glw.unlockMutex();
-		
-  	FTGLPolygonFont font((const char *)"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf");    
-    if(font.Error()) {
+	
+	FTFont *font = new FTGLPolygonFont((const char *)"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf"); 	
+    
+    if(font->Error()) {
     	printf("Failed to open font file\n");
     	fflush(stdout);
     }
 
-	font.FaceSize(144);
-	font.CharMap(ft_encoding_unicode);
+	font->FaceSize(144);
+	font->CharMap(ft_encoding_unicode);
         	
 	//initialise OpenGL		
 	glw.makeCurrent();	
@@ -310,7 +357,8 @@ void GLvideo_rt::run()
     glClearColor(0, 0, 0, 0);
     glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
- 
+ 	glEnable(GL_BLEND);
+ 	
 	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
 
 	compileFragmentShaders();		
@@ -470,18 +518,11 @@ void GLvideo_rt::run()
 			//if(DEBUG) printf("Rendering...\n");
 						
 			glUseProgramObjectARB(programs[currentShader]);						
-			render(videoData);
-			
-			glColor3f(1.0, 1.0, 1.0);			
-									
-			glPushMatrix();
-			glUseProgramObjectARB(0);
-			char str[20];
-			sprintf(str, "%06ld", videoData->frameNum);						
-   			font.Render(str);
-			glPopMatrix();									
-
-																								   			   
+			renderVideo(videoData);
+			glUseProgramObjectARB(0);			
+							
+			renderOSD(videoData, font);
+																								   			   																									   			  
 			glFlush();
 			glw.swapBuffers();
 		}

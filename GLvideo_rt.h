@@ -30,7 +30,8 @@ private:
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
 	void createTextures(VideoData *videoData, int currentShader);
-	void render(VideoData *videoData);
+	void renderVideo(VideoData *videoData);
+	void renderOSD(VideoData *videoData, FTFont *font);	
 
 	bool m_doRendering;			//set to false to quit thread
 	bool m_doResize;			//resize the openGL viewport
