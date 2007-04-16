@@ -9,10 +9,10 @@
 #include "readThread.h"
 #include "videoRead.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define LISTLEN 10
 #define MAXREADS 10
-#define MINUSED (LISTLEN * 2)
+#define MINUSED ((LISTLEN * 2) + 5)
 
 ReadThread::ReadThread(VideoRead &v) 
       : QThread(), vr(v)
@@ -118,7 +118,7 @@ void ReadThread::addFutureFrames()
 		}
 		
 		newFrame->frameNum = wantedFrame;												
-		newFrame->renderFormat = newFrame->diskFormat = VideoData::V210;
+		newFrame->renderFormat = newFrame->diskFormat;
 		
 		off64_t offset = (off_t)newFrame->dataSize * (off_t)wantedFrame;	//seek to the wanted frame								
 		off64_t sret = lseek64(fd, offset, SEEK_SET);
@@ -138,7 +138,15 @@ void ReadThread::run()
 {
 	printf("Starting readThread\n");
 	fd = 0;
-	    
+	unsigned int preallocate = 20;
+
+	//get the transport status, assigning to speed and lastspeed initially
+	QMutexLocker transportLocker(&vr.transportMutex);
+	VideoRead::TransportControls ts = vr.transportStatus;
+	speed = vr.transportSpeed;
+	lastSpeed = vr.transportSpeed;
+	transportLocker.unlock();
+
 	while(m_doReading) {
 						
 		//get the transport status
@@ -169,8 +177,8 @@ void ReadThread::run()
 
 			//------------------------------------------------------------------------------------------------
 			//make sure that the used frame list is at least MINUSED long, so there are some spare frames sloshing
-			//arounnd to read into
-			if(usedFrames.size() < MINUSED) {
+			//around to read into
+			for(; preallocate>0; preallocate--) {
 				if(DEBUG) printf("Preallocating used frame, width=%d, height=%d, format=%d\n", videoWidth, videoHeight, dataFormat);				
 				VideoData *newFrame = new VideoData(videoWidth, videoHeight, dataFormat);
 				usedFrames.prepend(newFrame); 	

@@ -14,7 +14,7 @@ class GLvideo_rt : public QThread
 {
 public:
 
-	enum ShaderPrograms { shaderPlanar, shaderUYVY, shaderV216, shaderYV16, shaderMax };
+	enum ShaderPrograms { shaderPlanar, shaderUYVY, shaderV216, shaderMax };
 
 	GLvideo_rt(GLvideo_mt &glWidget);
 	void resizeViewport(int w, int h);
@@ -22,7 +22,9 @@ public:
 	void setAspectLock(bool lock);
 	void run();
 	void stop();
-        
+	void saveGLState();
+	void restoreGLState();
+	        
 private:
 	void setUpFonts(const char* fontfile);
 	void compileFragmentShaders();

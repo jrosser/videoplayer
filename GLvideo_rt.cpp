@@ -13,7 +13,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -82,20 +82,6 @@ static char *shaderUYVYSrc=
   " gl_FragColor=vec4(rgb, a);\n"
   "}\n";
 
-//------------------------------------------------------------------------------------------
-//constant blue - unimplemented shader
-static char *shaderNullSrc=
-  "uniform samplerRect Ytex;\n"
-  "uniform samplerRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n" 
-  "uniform float CHsubsample, CVsubsample;\n"
-  "uniform mat3 colorMatrix;\n"
-  "uniform vec3 yuvOffset;\n"
-        
-  "void main(void) {\n"
-  "  gl_FragColor=vec4(0.0, 0.0, 1.0 , 0.0);\n"
-  "}\n";
-
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
 {	
@@ -108,8 +94,7 @@ void GLvideo_rt::compileFragmentShaders()
 {
 	compileFragmentShader((int)shaderPlanar, shaderPlanarSrc);
 	compileFragmentShader((int)shaderUYVY,   shaderUYVYSrc);
-	compileFragmentShader((int)shaderV216,   shaderUYVYSrc);
-	compileFragmentShader((int)shaderYV16,   shaderNullSrc);					
+	compileFragmentShader((int)shaderV216,   shaderUYVYSrc);						
 }
 
 void GLvideo_rt::compileFragmentShader(int n, const char *src)
@@ -306,8 +291,7 @@ void GLvideo_rt::run()
 	int frameRepeats = m_frameRepeats;
 	int currentShader = 0;	
 	glw.unlockMutex();
-
-	//font rendering
+		
   	FTGLPolygonFont font((const char *)"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf");    
     if(font.Error()) {
     	printf("Failed to open font file\n");
@@ -318,7 +302,7 @@ void GLvideo_rt::run()
 	font.CharMap(ft_encoding_unicode);
         	
 	//initialise OpenGL		
-	glw.makeCurrent();			
+	glw.makeCurrent();	
     glGenBuffers(3, io_buf);	
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -326,13 +310,15 @@ void GLvideo_rt::run()
     glClearColor(0, 0, 0, 0);
     glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
-
+ 
 	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
 
 	compileFragmentShaders();		
     glUseProgramObjectARB(programs[currentShader]);
     	
 	while (doRendering) {
+
+	//saveGLState();
 
 		//update shadow variables
 		glw.lockMutex();
@@ -401,11 +387,7 @@ void GLvideo_rt::run()
 				case VideoData::V216:
 					newShader = shaderV216;
 					break;
-					
-				case VideoData::YV16:
-					newShader = shaderYV16;
-					break;
-										
+															
 				default:
 					//uh-oh!
 					break;
@@ -487,14 +469,19 @@ void GLvideo_rt::run()
 			
 			//if(DEBUG) printf("Rendering...\n");
 						
+			glUseProgramObjectARB(programs[currentShader]);						
 			render(videoData);
 			
 			glColor3f(1.0, 1.0, 1.0);			
 									
-			glPushMatrix();			
-   			font.Render( "Hello World!");
+			glPushMatrix();
+			glUseProgramObjectARB(0);
+			char str[20];
+			sprintf(str, "%06ld", videoData->frameNum);						
+   			font.Render(str);
 			glPopMatrix();									
-										   			   
+
+																								   			   
 			glFlush();
 			glw.swapBuffers();
 		}
@@ -507,7 +494,27 @@ void GLvideo_rt::run()
        	gettimeofday(&now, NULL);
        	timersub(&now, &last, &diff);       	
        	if(DEBUG)printf("FPS = %f\n", 1000000.0 / diff.tv_usec);
-       	last = now;
+       	
+       	last.tv_sec = now.tv_sec;
+       	last.tv_usec = now.tv_usec;       	
        	       	       	       	
 	}
 }
+
+void GLvideo_rt::saveGLState()
+ {
+     glPushAttrib(GL_ALL_ATTRIB_BITS);
+     glMatrixMode(GL_PROJECTION);
+     glPushMatrix();
+     glMatrixMode(GL_MODELVIEW);
+     glPushMatrix();
+ }
+
+ void GLvideo_rt::restoreGLState()
+ {
+     glMatrixMode(GL_PROJECTION);
+     glPopMatrix();
+     glMatrixMode(GL_MODELVIEW);
+     glPopMatrix();
+     glPopAttrib();
+ }

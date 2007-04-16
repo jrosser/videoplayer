@@ -57,7 +57,6 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			break;
 			
 		case V216:
-		case YV16:
 			Cwidth  = Ywidth / 2;
 			Cheight = Yheight;	
 			YdataSize = Ywidth * Yheight * 4;
@@ -123,16 +122,15 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			break;
 					
 		case V210:
-			glYTextureWidth = (Ywidth * 2 * 4) / (3 * 4);
-			glInternalFormat = GL_LUMINANCE_ALPHA;
-			glFormat = GL_RGBA;
-			glType = GL_UNSIGNED_BYTE;
+			glYTextureWidth = (Ywidth * 2 * 4) / (3 * 4);			
+			glInternalFormat = GL_RGBA;
+			glFormat = GL_RGBA;			
+			glType = GL_UNSIGNED_INT;
 			glMinMaxFilter = GL_NEAREST;			
 			Udata = Ydata;
 			Vdata = Ydata;			
 			break;
 			
-		case YV16:	//Wrong! endianess is broken for YV16
 		case V216:
 			glYTextureWidth = Ywidth / 2;	//2 samples per YUV quad
 			glInternalFormat = GL_RGBA;

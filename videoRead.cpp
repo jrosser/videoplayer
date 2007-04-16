@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.6 2007-04-13 13:46:43 jrosser Exp $
+* $Id: videoRead.cpp,v 1.7 2007-04-16 11:03:33 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -99,13 +99,6 @@ void VideoRead::setFileName(const QString &fn)
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "YV16" || info.suffix() == "yv16") {
-		dataFormat = VideoData::YV16;
-		
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
-		lastFrameNum--; 			
-	}
-
 	if(info.suffix() == "V210" || info.suffix() == "v210") {
 		dataFormat = VideoData::V210;
 
@@ -122,98 +115,62 @@ VideoData* VideoRead::getNextFrame()
 	QMutexLocker transportLocker(&transportMutex);
 	TransportControls ts = transportStatus;
 	transportLocker.unlock();
-
-	//jog forward
-	if(ts == JogFwd) {
-
-		QMutexLocker listLocker(&listMutex);
-			
+	
+	//paused or stopped - get a frame if there is none
+	if((ts == Pause || ts == Stop) && displayFrame == NULL) {
+		ts = JogFwd;
+	}
+	
+	//forwards
+	if(ts == Fwd1 || ts == Fwd2 || ts == Fwd5 || ts == Fwd10 || ts == Fwd20 || ts == Fwd50 || ts == Fwd100 || ts == JogFwd) {
+						
 		if(futureFrames.size() == 0)
 			printf("Dropped frame - no future frame available\n");
 		else
-		{
+		{				
+			QMutexLocker listLocker(&listMutex);
+			
 			//playing forward
 			if(displayFrame != NULL)
 				pastFrames.prepend(displayFrame);
-				
-			displayFrame = futureFrames.takeFirst();						
-			currentFrameNum = displayFrame->frameNum;
+			
+			displayFrame = futureFrames.takeFirst();				
+			currentFrameNum = displayFrame->frameNum;				
+		}
+		
+		if(ts == JogFwd) {
+			transportLocker.relock();
+			transportStatus = Stop;
+			transportLocker.unlock();				
 		}		
-
-		listLocker.unlock();
-
-		transportMutex.lock();
-		transportStatus = Stop;			
-		transportMutex.unlock();
 	}
 	
-	//jog reverse
-	if(ts == JogRev) {
-
-		QMutexLocker listLocker(&listMutex);
-										
+	//backwards	
+	if(ts == Rev1 || ts == Rev2 || ts == Rev5 || ts == Rev10 || ts == Rev20 || ts == Rev50 || ts == Rev100 || ts == JogRev) {
+											
 		if(pastFrames.size() == 0)
 			printf("Dropped frame - no past frame available\n");
 		else {
+				QMutexLocker listLocker(&listMutex);
+			
 			//playing backward
 			if(displayFrame != NULL)
 				futureFrames.prepend(displayFrame);
 							
 			displayFrame = pastFrames.takeFirst();				
-			currentFrameNum = displayFrame->frameNum;						
+			currentFrameNum = displayFrame->frameNum;								
 		}
 
-		listLocker.unlock();
-				
-		transportMutex.lock();
-		transportStatus = Stop;
-		transportMutex.unlock();
-	}
-	
-	//playing
-	if((ts != Stop && ts != Pause) || displayFrame == NULL) {
-
-		//get the last item off the frame list
-		QMutexLocker listLocker(&listMutex);
-				
-		if(ts == Fwd1 || ts == Fwd2 || ts == Fwd5 || ts == Fwd10 || ts == Fwd20 || ts == Fwd50 || ts == Fwd100) {
-						
-			if(futureFrames.size() == 0)
-				printf("Dropped frame - no future frame available\n");
-			else
-			{
-				//playing forward
-				if(displayFrame != NULL)
-					pastFrames.prepend(displayFrame);
-				
-				displayFrame = futureFrames.takeFirst();				
-				currentFrameNum = displayFrame->frameNum;				
-			}		
-		}
-		
-		if(ts == Rev1 || ts == Rev2 || ts == Rev5 || ts == Rev10 || ts == Rev20 || ts == Rev50 || ts == Rev100) {
-												
-			if(pastFrames.size() == 0)
-				printf("Dropped frame - no past frame available\n");
-			else {
-				//playing backward
-				if(displayFrame != NULL)
-					futureFrames.prepend(displayFrame);
-								
-				displayFrame = pastFrames.takeFirst();				
-				currentFrameNum = displayFrame->frameNum;								
-			}
-		}
-			
-		listLocker.unlock();
+		if(ts == JogRev) {
+			transportLocker.relock();
+			transportStatus = Stop;
+			transportLocker.unlock();				
+		}		
 	}
 	
 	//wake the reader thread - done each time as jogging may move the frame number
 	frameConsumed.wakeOne();
-	
-	//if(displayFrame == NULL)
-	//	printf("displayFrame is NULL!\n");	
-	
+		
 	return displayFrame;
 }
 

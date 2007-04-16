@@ -9,7 +9,7 @@ class VideoData
 {
 public:
 
-	enum DataFmt { Planar444, Planar422, I420, YV12, Planar411, UYVY, V216, YV16, V210 };	//how is the data packed?
+	enum DataFmt { Planar444, Planar422, I420, YV12, Planar411, UYVY, V216, V210 };	//how is the data packed?
 		
 	VideoData(int width, int height, DataFmt f);
 	~VideoData();
