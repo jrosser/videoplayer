@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.6 2007-04-18 11:35:14 jrosser Exp $
+* $Id: mainwindow.h,v 1.7 2007-04-18 13:13:58 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -62,6 +62,7 @@ private slots:
 private:
 	void createActions(void);
 	void parseCommandLine();
+	void usage();
 	
 	QShuttlePro *shuttle;
 
@@ -99,6 +100,7 @@ private:
 	//data from the command line parameters
 	int videoWidth;
 	int videoHeight;
+	int frameRepeats;
 	QString fileName;	
 };
 

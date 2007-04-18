@@ -18,7 +18,7 @@ public:
 
 	GLvideo_rt(GLvideo_mt &glWidget);
 	void resizeViewport(int w, int h);
-	void setFrameRepeats(int r);
+	void setFrameRepeats(int repeats);
 	void setAspectLock(bool lock);
 	void run();
 	void stop();
