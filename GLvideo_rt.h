@@ -22,11 +22,11 @@ public:
 	void setAspectLock(bool lock);
 	void run();
 	void stop();
-	void saveGLState();
-	void restoreGLState();
-	        
+	void toggleAspectLock();
+	void toggleOSD();
+		        
 private:
-	void setUpFonts(const char* fontfile);
+	//void setUpFonts(const char* fontfile);
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
 	void createTextures(VideoData *videoData, int currentShader);
@@ -36,6 +36,7 @@ private:
 	bool m_doRendering;			//set to false to quit thread
 	bool m_doResize;			//resize the openGL viewport
 	bool m_aspectLock;			//lock the aspect ratio of the source video
+	bool m_osd;					//is the OSD shown?
 			
 	int m_displaywidth;			//width of parent widget
 	int m_displayheight;		//height of parent widget

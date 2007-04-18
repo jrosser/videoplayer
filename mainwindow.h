@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.5 2007-04-10 11:18:52 jrosser Exp $
+* $Id: mainwindow.h,v 1.6 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -50,17 +50,22 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     MainWindow();
-    
+	bool allParsed;		//flag to say that all commandline parameters were parsed OK.
+	    
 protected:
 
 private slots:
 	void toggleFullScreen();
 	void escapeFullScreen(); 
+	void quit();
 	        
 private:
 	void createActions(void);
-
+	void parseCommandLine();
+	
 	QShuttlePro *shuttle;
+
+	QAction *quitAct;
 
 	//display actions
 	QAction *viewFullScreenAct;
@@ -91,6 +96,10 @@ private:
 	VideoRead *videoRead;
 	GLvideo_mt *glvideo_mt;
 
+	//data from the command line parameters
+	int videoWidth;
+	int videoHeight;
+	QString fileName;	
 };
 
 #endif

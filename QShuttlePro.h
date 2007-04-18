@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.h,v 1.2 2007-04-10 15:24:02 jrosser Exp $
+* $Id: QShuttlePro.h,v 1.3 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -47,8 +47,9 @@ class QShuttlePro : public QThread
 
 public:
 
-	QShuttlePro();
-			
+	QShuttlePro(QObject *parent);
+	void stop();
+					
 signals:
 	void jogForward();
 	void jogBackward();
@@ -106,6 +107,8 @@ private:
 	int shuttlevalue;
 
 	void run();
+	bool running;
+	
 	int openShuttle();
 	void process_event(struct input_event);
 	void jog(unsigned int value);

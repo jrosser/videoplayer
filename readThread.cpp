@@ -136,14 +136,12 @@ void ReadThread::addFutureFrames()
     
 void ReadThread::run()
 {
-	printf("Starting readThread\n");
+	if(DEBUG) printf("Starting readThread\n");
 	fd = 0;
 	unsigned int preallocate = 20;
 
-	//get the transport status, assigning to speed and lastspeed initially
+	//get the last transport status to avoid deleting the frame lists first time round
 	QMutexLocker transportLocker(&vr.transportMutex);
-	VideoRead::TransportControls ts = vr.transportStatus;
-	speed = vr.transportSpeed;
 	lastSpeed = vr.transportSpeed;
 	transportLocker.unlock();
 
@@ -161,7 +159,7 @@ void ReadThread::run()
 			if(DEBUG) printf("Opening file %s\n", vr.fileName.toLatin1().data());
 			fd = open(vr.fileName.toLatin1().data(), O_RDONLY);
 			
-			if(fd < 0) { 
+			if(fd < 0 && DEBUG == 1) { 
 				printf("[%s]\n", vr.fileName.toLatin1().data());
 				perror("OPEN");
 			}
@@ -189,7 +187,7 @@ void ReadThread::run()
 			//this could be made MUCH cleverer - to keep past and future frames that we need when changing speed
 			if(speed != lastSpeed) {
 				
-				printf("Trashing frame lists - ts=%d speed=%d, last=%d\n", ts, speed, lastSpeed);
+				if(DEBUG) printf("Trashing frame lists - ts=%d speed=%d, last=%d\n", ts, speed, lastSpeed);
 
 				QMutexLocker listLocker(&vr.listMutex);
 								

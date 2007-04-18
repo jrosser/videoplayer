@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.2 2007-03-27 15:24:13 jrosser Exp $
+* $Id: main.cpp,v 1.3 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -47,7 +47,12 @@ int main(int argc, char **argv)
     QApplication app(argc, argv);
 
     MainWindow window;
-    window.show();   
-
-    return app.exec();
+    
+    if(window.allParsed) {
+    	//only run application if command line parameters all OK
+    	window.show();   
+    	return app.exec();
+    }
+    else
+    	return -1;
 }

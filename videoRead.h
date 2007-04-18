@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.4 2007-04-13 13:46:43 jrosser Exp $
+* $Id: videoRead.h,v 1.5 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -56,7 +56,10 @@ public:
 
 	VideoRead();
 	void setFileName(const QString &fn);
-
+	void setVideoWidth(int width);
+	void setVideoHeight(int height);
+	void stop();
+	
 	QList<VideoData *> pastFrames;
 	QList<VideoData *> futureFrames;
 	QMutex listMutex;					//protect the lists of frames
@@ -65,9 +68,9 @@ public:
 	int firstFrameNum;
 	int lastFrameNum;
 	
-	int videoWidth;
+	int videoWidth;					//input file
 	int videoHeight;	
-	QString fileName;				//input file
+	QString fileName;
 	VideoData::DataFmt dataFormat;	//data format type
 	QMutex fileInfoMutex;			//protect the file information
 				

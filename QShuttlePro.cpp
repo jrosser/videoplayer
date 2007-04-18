@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.cpp,v 1.2 2007-04-10 15:24:02 jrosser Exp $
+* $Id: QShuttlePro.cpp,v 1.3 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -46,7 +46,7 @@
 
 #include <linux/input.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 /* number of event device files to check */
 #define EVENT_DEV_INDEX_MAX     32
@@ -54,7 +54,8 @@
 /* jog values range is 1..255 */
 #define MAX_JOG_VALUE           255
 
-QShuttlePro::QShuttlePro() 
+
+QShuttlePro::QShuttlePro(QObject *parent = 0) 
 {
 	if(DEBUG) printf("Starting ShuttlePro\n");
 	
@@ -62,7 +63,16 @@ QShuttlePro::QShuttlePro()
 	jogvalue = 0;
 	shuttlevalue = 0;
 	
+	running = true;
 	start();
+}
+
+void QShuttlePro::stop()
+{
+	running = false;
+	printf("Waiting for shuttle thread to stop\n");
+	wait();	
+	printf("Shuttle thread stopped\n");
 }
 
 int QShuttlePro::openShuttle()
@@ -278,7 +288,7 @@ void QShuttlePro::run()
     struct timeval tv;
     ssize_t numRead;
         
-    while (1 /*!stopped*/)
+    while(running)
     {   
     	if(fd > 0) {
         	

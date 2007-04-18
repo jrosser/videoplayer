@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.7 2007-04-16 11:03:33 jrosser Exp $
+* $Id: videoRead.cpp,v 1.8 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -37,6 +37,8 @@
 
 #include "videoRead.h"
 
+#define DEBUG 0
+
 VideoRead::VideoRead() 
 	: readThread(*this)
 {	
@@ -44,17 +46,34 @@ VideoRead::VideoRead()
 	currentFrameNum=0;
 	firstFrameNum=0;
 	lastFrameNum=0;
-	videoWidth = 1920;
-	videoHeight = 1080;
 	
 	displayFrame = NULL;
 	frameMutex.lock();	//required for QWaitCondition
 	readThread.start();
 	
 	transportMutex.lock();
-	transportStatus = Pause;
+	transportStatus = Fwd1;
 	transportSpeed = 1;
 	transportMutex.unlock();	
+}
+
+void VideoRead::stop()
+{
+	readThread.stop();
+	frameMutex.unlock();
+	frameConsumed.wakeOne();
+	
+	readThread.wait();
+}
+
+void VideoRead::setVideoWidth(int width)
+{
+	videoWidth = width;
+}
+
+void VideoRead::setVideoHeight(int height)
+{
+	videoHeight = height;
 }
 
 void VideoRead::setFileName(const QString &fn)
@@ -301,7 +320,7 @@ void VideoRead::transportController(TransportControls in)
 		transportStatus = newStatus;
 		transportSpeed = newSpeed;
 		transportMutex.unlock();
-		printf("Changed transport state to %d, speed %d\n", (int)transportStatus, transportSpeed);		
+		if(DEBUG) printf("Changed transport state to %d, speed %d\n", (int)transportStatus, transportSpeed);		
 	}
 	
 

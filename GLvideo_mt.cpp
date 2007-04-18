@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.4 2007-04-05 10:11:23 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.5 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -39,13 +39,29 @@
 
 GLvideo_mt::GLvideo_mt(VideoRead &v) 
 	: vr(v), renderThread(*this)
-{	
-	renderThread.start();
+{
+	renderThread.start();	
+}
+
+void GLvideo_mt::stop()
+{
+	renderThread.stop();
+	renderThread.wait();	
 }
 
 void GLvideo_mt::resizeGL(int w, int h)
 {
 	renderThread.resizeViewport(w, h);	
+}
+
+void GLvideo_mt::toggleOSD() 
+{
+	renderThread.toggleOSD();	
+}
+
+void GLvideo_mt::toggleAspectLock()
+{
+	renderThread.toggleAspectLock();	
 }
 
 void GLvideo_mt::initializeGL()

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.8 2007-04-11 10:44:14 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.9 2007-04-18 11:35:14 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,23 +43,19 @@ MainWindow::MainWindow()
 {
 	setWindowTitle("VideoPlayer");
 	
+	shuttle = NULL;
+	videoRead = NULL;
+	glvideo_mt = NULL;
+		
 	//shuttlePro jog dial
-	shuttle = new QShuttlePro();
+	shuttle = new QShuttlePro(this);
 	
 	//threaded video reader
 	videoRead = new VideoRead();
 	
 	//central widget is the threaded openGL video widget
 	//which pulls video from the reader
-	glvideo_mt = new GLvideo_mt(*videoRead);
-	
-	if(qApp->arguments().count() > 1) {
-		const QStringList &args = qApp->arguments();	
-		videoRead->setFileName(args[1]);
-	}
-	else
-		exit(1);
-		
+	glvideo_mt = new GLvideo_mt(*videoRead);			
   	setCentralWidget(glvideo_mt);
   				
 	//set up menus etc
@@ -91,25 +87,96 @@ MainWindow::MainWindow()
 	connect(shuttle, SIGNAL(key267Pressed()), videoRead, SLOT(transportPlayPause()));
 	connect(shuttle, SIGNAL(key265Pressed()), videoRead, SLOT(transportFwd1()));
 	connect(shuttle, SIGNAL(key259Pressed()), this, SLOT(toggleFullScreen()));
-		
+	connect(shuttle, SIGNAL(key256Pressed()), glvideo_mt, SLOT(toggleOSD()));
+	connect(shuttle, SIGNAL(key257Pressed()), glvideo_mt, SLOT(toggleAspectLock()));
+			
+	//this is what the IngexPlayer also does
 	//key 269, press=previous mark, hold=start of file
 	//key 270, press=next mark, hold=end of file
-	//key 256, cycle OSD status
 	//key 257, cycle displayed timecode type
 	//key 258, press=lock controls, hold=unlock controls
-	//key 259, press=toggle fullscreen, hold=quit
 	
 	//some defaults in the abscence of any settings	
+	videoWidth = 1920;
+	videoHeight = 1080;
 	
-	//load the settings for this application
+	//load the settings for this application from QSettings
+	//(not really needed yet)
 	
 	//override settings with command line
+	parseCommandLine();
+	videoRead->setVideoWidth(videoWidth);
+	videoRead->setVideoHeight(videoHeight);	
+	videoRead->setFileName(fileName);				
+}
+
+void MainWindow::parseCommandLine()
+{
+	QVector<bool> parsed(qApp->arguments().size());
+	const QStringList &args = qApp->arguments();
+	
+	for(int i=1; i<parsed.size(); i++)
+		parsed[i] = false;
+			
+	for(int i=1; i<parsed.size(); i++) {
+		
+		//video width
+		if(args[i] == "-w") {
+			bool ok;
+			int val;
+			
+			parsed[i] = true;
+			val = args[i+1].toInt(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				videoWidth = val;	
+			}				
+		}
+
+		//video height
+		if(args[i] == "-h") {
+			bool ok;
+			int val;
+			
+			parsed[i] = true;
+			val = args[i+1].toInt(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				videoHeight = val;
+			}				
+		}		
+	}
+	
+	//take the filename as the last argument
+	fileName = args.last();
+	parsed[parsed.size()-1] = true;
+	
+	allParsed = true;
+	for(int i=1; i<parsed.size(); i++) {
+		if(parsed[i] == false) {
+			allParsed = false;
+			printf("Unknown parameter %s\n", args[i].toLatin1().data());	
+		}	
+	}
+	
+	if(allParsed == false) {
+		quit();	 		
+	}
 }
 
 
 //generate actions for menus and keypress handlers
 void MainWindow::createActions()
 {	
+	quitAct = new QAction("Quit", this);
+	quitAct->setShortcut(tr("Q"));
+	addAction(quitAct);
+	connect(quitAct, SIGNAL(triggered()), this, SLOT(quit()));
+	
 	viewFullScreenAct = new QAction("View full screen", this);
 	viewFullScreenAct->setShortcut(tr("Ctrl+F"));		
 	addAction(viewFullScreenAct);		
@@ -214,7 +281,8 @@ void MainWindow::createActions()
 //slot to receive full screen toggle command
 void MainWindow::toggleFullScreen()
 {
-	setFullScreen(!isFullScreen());	
+	setFullScreen(!isFullScreen());
+	glvideo_mt->resizeGL(width(), height());	
 }
 
 void MainWindow::escapeFullScreen()
@@ -232,4 +300,22 @@ void MainWindow::setFullScreen(bool fullscreen)
 	else {
 		showNormal();
 	}	
+}
+
+void MainWindow::quit()
+{	
+	if(shuttle) {
+		shuttle->stop();
+		shuttle->wait();
+	}
+	
+	if(glvideo_mt) {
+		glvideo_mt->stop();
+	}
+	
+	if(videoRead) {
+		videoRead->stop();
+	}
+				
+	qApp->quit(); 
 }

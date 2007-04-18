@@ -87,7 +87,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 {	
 	m_frameRepeats = 2;	
 	m_doRendering = true;
-	m_aspectLock = true;		
+	m_aspectLock = true;
+	m_osd = true;		
 }
 
 void GLvideo_rt::compileFragmentShaders()
@@ -99,7 +100,7 @@ void GLvideo_rt::compileFragmentShaders()
 
 void GLvideo_rt::compileFragmentShader(int n, const char *src)
 {
-	GLint length;			//log length
+	GLint length = 0;			//log length
 	
     shaders[n]=glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
@@ -112,7 +113,11 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
     glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);    
     char *s=(char *)malloc(length);
     glGetInfoLogARB(shaders[n], length, &length ,s);
-    if(DEBUG)printf("Compile Status %d, Log: (%d) %s\n", compiled[n], length, s);
+    if(DEBUG)printf("Compile Status %d, Log: (%d) %s\n", compiled[n], length, length ? s : NULL);
+    if(compiled[n] <= 0) {
+		printf("Compile Failed: %s\n", gluErrorString(glGetError()));
+    	throw /* */;
+    }
     free(s);
 
    	/* Set up program objects. */
@@ -202,6 +207,21 @@ void GLvideo_rt::setAspectLock(bool l)
 	}
 	
 	glw.unlockMutex();	
+}
+
+void GLvideo_rt::toggleAspectLock(void)
+{
+	glw.lockMutex();
+	m_aspectLock = !m_aspectLock;
+	m_doResize = true;
+	glw.unlockMutex();		
+}
+
+void GLvideo_rt::toggleOSD(void)
+{
+	glw.lockMutex();
+	m_osd = !m_osd;	
+	glw.unlockMutex();		
 }
     
 void GLvideo_rt::resizeViewport(int width, int height)
@@ -307,6 +327,7 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
     
 void GLvideo_rt::run()
 {
+	//usleep(5e5);
 	if(DEBUG) printf("Starting renderthread\n");
 	
 	VideoData *videoData = NULL;
@@ -348,8 +369,10 @@ void GLvideo_rt::run()
 	font->FaceSize(144);
 	font->CharMap(ft_encoding_unicode);
         	
-	//initialise OpenGL		
-	glw.makeCurrent();	
+	//initialise OpenGL
+	fprintf(stderr,"go\n");		
+	glw.makeCurrent();
+	fprintf(stderr,"nah\n");	
     glGenBuffers(3, io_buf);	
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -442,7 +465,7 @@ void GLvideo_rt::run()
 			}	
 			
 			if(newShader != currentShader) {
-				printf("Changing shader from %d to %d\n", currentShader, newShader);
+				if(DEBUG) printf("Changing shader from %d to %d\n", currentShader, newShader);
 				createGLTextures = true;
 				updateShaderVars = true;
 				currentShader = newShader;
@@ -521,7 +544,7 @@ void GLvideo_rt::run()
 			renderVideo(videoData);
 			glUseProgramObjectARB(0);			
 							
-			renderOSD(videoData, font);
+			if(m_osd) renderOSD(videoData, font);
 																								   			   																									   			  
 			glFlush();
 			glw.swapBuffers();
@@ -541,21 +564,3 @@ void GLvideo_rt::run()
        	       	       	       	
 	}
 }
-
-void GLvideo_rt::saveGLState()
- {
-     glPushAttrib(GL_ALL_ATTRIB_BITS);
-     glMatrixMode(GL_PROJECTION);
-     glPushMatrix();
-     glMatrixMode(GL_MODELVIEW);
-     glPushMatrix();
- }
-
- void GLvideo_rt::restoreGLState()
- {
-     glMatrixMode(GL_PROJECTION);
-     glPopMatrix();
-     glMatrixMode(GL_MODELVIEW);
-     glPopMatrix();
-     glPopAttrib();
- }
