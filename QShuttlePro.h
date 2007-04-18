@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.h,v 1.3 2007-04-18 11:35:14 jrosser Exp $
+* $Id: QShuttlePro.h,v 1.4 2007-04-18 15:54:36 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -40,6 +40,8 @@
 #define QSHUTTLEPRO_H
 
 #include <QtGui>
+
+#include "pthread.h"
 
 class QShuttlePro : public QThread
 {
@@ -108,6 +110,7 @@ private:
 
 	void run();
 	bool running;
+	pthread_t self;
 	
 	int openShuttle();
 	void process_event(struct input_event);

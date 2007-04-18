@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.cpp,v 1.4 2007-04-18 13:13:58 jrosser Exp $
+* $Id: QShuttlePro.cpp,v 1.5 2007-04-18 15:54:36 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -46,6 +46,9 @@
 
 #include <linux/input.h>
 
+#include <pthread.h>
+#include <signal.h>
+
 #define DEBUG 0
 
 /* number of event device files to check */
@@ -62,6 +65,7 @@ QShuttlePro::QShuttlePro(QObject *parent = 0)
 	fd = 0;
 	jogvalue = 0;
 	shuttlevalue = 0;
+	self = 0;
 	
 	running = true;
 	start();
@@ -70,6 +74,7 @@ QShuttlePro::QShuttlePro(QObject *parent = 0)
 void QShuttlePro::stop()
 {
 	running = false;
+	pthread_kill(self, SIGUSR1);	
 	wait();	
 }
 
@@ -278,6 +283,12 @@ void QShuttlePro::process_event(input_event inEvent)
 	}	
 }
 
+static void signalHandler(int signum)
+{
+	//we do nothing here.... the side effect has been to make the select() call return early
+	signum = signum;
+}
+
 void QShuttlePro::run()
 {
 	
@@ -285,6 +296,9 @@ void QShuttlePro::run()
     fd_set rfds;
     struct timeval tv;
     ssize_t numRead;
+      
+    self = pthread_self();			//get thread ID
+    signal(SIGUSR1, signalHandler);	//handler for sigusr1
         
     while(running)
     {   
@@ -325,8 +339,12 @@ void QShuttlePro::run()
     	}
     	else {
     		//have not yet opened the ShuttlePro properly, try again, waiting if we fail
-    		if(openShuttle() == 0)
-    			sleep(1);	
+    		if(openShuttle() == 0) {    		
+    			tv.tv_sec = 1;
+    			tv.tv_usec = 0;
+    			//use select() rather than sleep(), as it is woken by signals
+        		select(1, NULL, NULL, NULL, &tv);            	
+    		}	
     	}        
     }
 }

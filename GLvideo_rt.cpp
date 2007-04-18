@@ -85,7 +85,7 @@ static char *shaderUYVYSrc=
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
 {	
-	m_frameRepeats = 2;	
+	m_frameRepeats = 0;	
 	m_doRendering = true;
 	m_aspectLock = true;
 	m_osd = true;		
@@ -207,6 +207,13 @@ void GLvideo_rt::setAspectLock(bool l)
 	}
 	
 	glw.unlockMutex();	
+}
+
+void GLvideo_rt::setFrameRepeats(int repeats)
+{
+	glw.lockMutex();
+	m_frameRepeats = repeats;
+	glw.unlockMutex();		
 }
 
 void GLvideo_rt::toggleAspectLock(void)
@@ -369,10 +376,8 @@ void GLvideo_rt::run()
 	font->FaceSize(144);
 	font->CharMap(ft_encoding_unicode);
         	
-	//initialise OpenGL
-	fprintf(stderr,"go\n");		
-	glw.makeCurrent();
-	fprintf(stderr,"nah\n");	
+	//initialise OpenGL		
+	glw.makeCurrent();	
     glGenBuffers(3, io_buf);	
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -388,8 +393,6 @@ void GLvideo_rt::run()
     glUseProgramObjectARB(programs[currentShader]);
     	
 	while (doRendering) {
-
-	//saveGLState();
 
 		//update shadow variables
 		glw.lockMutex();
@@ -533,9 +536,8 @@ void GLvideo_rt::run()
 			doResize = false;
 		}
 
-		//wait for some number of extra vertical syncs
-       	glXWaitVideoSyncSGI(1, (retraceCount+1)%1, &retraceCount);
-																	
+     	glXWaitVideoSyncSGI(frameRepeats, 0, &retraceCount);
+																			
 		if(videoData) {
 			
 			//if(DEBUG) printf("Rendering...\n");
@@ -557,7 +559,7 @@ void GLvideo_rt::run()
        	timeval now, diff;
        	gettimeofday(&now, NULL);
        	timersub(&now, &last, &diff);       	
-       	if(DEBUG)printf("FPS = %f\n", 1000000.0 / diff.tv_usec);
+       	if(DEBUG)printf("Display frame %d, FPS = %f\n", retraceCount, 1000000.0 / diff.tv_usec);
        	
        	last.tv_sec = now.tv_sec;
        	last.tv_usec = now.tv_usec;       	

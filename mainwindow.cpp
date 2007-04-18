@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.9 2007-04-18 11:35:14 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.10 2007-04-18 15:54:35 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -99,6 +99,8 @@ MainWindow::MainWindow()
 	//some defaults in the abscence of any settings	
 	videoWidth = 1920;
 	videoHeight = 1080;
+	frameRepeats = 0;
+	fileName = "";
 	
 	//load the settings for this application from QSettings
 	//(not really needed yet)
@@ -107,7 +109,9 @@ MainWindow::MainWindow()
 	parseCommandLine();
 	videoRead->setVideoWidth(videoWidth);
 	videoRead->setVideoHeight(videoHeight);	
-	videoRead->setFileName(fileName);				
+	videoRead->setFileName(fileName);
+	glvideo_mt->setFrameRepeats(frameRepeats);
+					
 }
 
 void MainWindow::parseCommandLine()
@@ -148,26 +152,86 @@ void MainWindow::parseCommandLine()
 				parsed[i] = true;
 				videoHeight = val;
 			}				
-		}		
+		}
+		
+		//frame repeats
+		//video height
+		if(args[i] == "-r") {
+			bool ok;
+			int val;
+			
+			parsed[i] = true;
+			val = args[i+1].toInt(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				frameRepeats = val;
+			}				
+		}
+						
 	}
 	
-	//take the filename as the last argument
-	fileName = args.last();
-	parsed[parsed.size()-1] = true;
-	
 	allParsed = true;
-	for(int i=1; i<parsed.size(); i++) {
+	
+	//take the filename as the last argument
+	if(args.size() < 2) {
+		printf("No filename\n");
+		allParsed = false;	
+	}
+	else	
+	{
+		fileName = args.last();
+		parsed[parsed.size()-1] = true;
+	}
+
+	//check all args are parsed
+	for(int i=1; i<args.size(); i++) {
 		if(parsed[i] == false) {
 			allParsed = false;
 			printf("Unknown parameter %s\n", args[i].toLatin1().data());	
 		}	
 	}
 	
+	QFileInfo info(fileName);
+	if(info.exists() == false) {
+		printf("Cannot open input file %s\n", fileName.toLatin1().data());
+		allParsed = false;	
+	} 
+	else {
+		if(info.isReadable() == false) {
+			printf("Cannot read input file %s\n", fileName.toLatin1().data());
+			allParsed = false;		
+		}
+	}
+		
 	if(allParsed == false) {
 		quit();	 		
 	}
 }
 
+void MainWindow::usage()
+{
+    printf("\nOpenGL accelerated YUV video player.");
+    printf("\n");
+    printf("\nUsage: progname -<flag1> [<flag1_val>] ... <input>");
+    printf("\nIn case of multiple assignment to the same parameter, the last holds.");
+    printf("\n");
+    printf("\nSupported file formats:");
+    printf("\n");
+    printf("\n  .yuv / .i420  4:2:0 YUV planar");
+    printf("\n  .yv12         4:2:0 YVU planar");
+    printf("\n  .uyvy         4:2:2 YUV 8 bit packed");
+    printf("\n  .v210         4:2:2 YUV 10 bit packed");
+    printf("\n  .v216         4:2:2 YUV 16 bit packed");
+    printf("\n");                    
+    printf("\nFlag              Type    Default Value Description");
+    printf("\n====              ====    ============= ===========                                       ");
+    printf("\nw                 ulong   1920          Width of video luminance component");
+    printf("\nh                 ulong   1080          Height of video luminance component");
+    printf("\nr                 ulong   0             Number of additional times each frame is displayed");
+    printf("\n");
+}
 
 //generate actions for menus and keypress handlers
 void MainWindow::createActions()

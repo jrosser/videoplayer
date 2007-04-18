@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.5 2007-04-18 11:35:14 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.6 2007-04-18 15:54:35 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -77,6 +77,11 @@ void GLvideo_mt::paintGL()
 void GLvideo_mt::paintEvent(QPaintEvent * event)
 {
 	//absorb any paint events - let the worker thread update the window	
+}
+
+void GLvideo_mt::setFrameRepeats(int repeats)
+{
+	renderThread.setFrameRepeats(repeats);	
 }
 
 void GLvideo_mt::lockMutex()
