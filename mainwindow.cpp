@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.10 2007-04-18 15:54:35 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.11 2007-04-19 14:43:44 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -100,6 +100,7 @@ MainWindow::MainWindow()
 	videoWidth = 1920;
 	videoHeight = 1080;
 	frameRepeats = 0;
+	framePolarity = 0;
 	fileName = "";
 	
 	//load the settings for this application from QSettings
@@ -111,6 +112,7 @@ MainWindow::MainWindow()
 	videoRead->setVideoHeight(videoHeight);	
 	videoRead->setFileName(fileName);
 	glvideo_mt->setFrameRepeats(frameRepeats);
+	glvideo_mt->setFramePolarity(framePolarity);
 					
 }
 
@@ -169,7 +171,21 @@ void MainWindow::parseCommandLine()
 				frameRepeats = val;
 			}				
 		}
-						
+
+		if(args[i] == "-p") {
+			bool ok;
+			int val;
+			
+			parsed[i] = true;
+			val = args[i+1].toInt(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				framePolarity = val;
+			}				
+		}
+					
 	}
 	
 	allParsed = true;
@@ -230,6 +246,7 @@ void MainWindow::usage()
     printf("\nw                 ulong   1920          Width of video luminance component");
     printf("\nh                 ulong   1080          Height of video luminance component");
     printf("\nr                 ulong   0             Number of additional times each frame is displayed");
+    printf("\np                 ulong   0             Set frame to display video on (0,r-1)");
     printf("\n");
 }
 

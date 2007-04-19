@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.7 2007-04-18 13:13:58 jrosser Exp $
+* $Id: mainwindow.h,v 1.8 2007-04-19 14:43:44 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -101,6 +101,7 @@ private:
 	int videoWidth;
 	int videoHeight;
 	int frameRepeats;
+	int framePolarity;
 	QString fileName;	
 };
 

@@ -216,6 +216,13 @@ void GLvideo_rt::setFrameRepeats(int repeats)
 	glw.unlockMutex();		
 }
 
+void GLvideo_rt::setFramePolarity(int p)
+{
+	glw.lockMutex();
+	m_framePolarity = p;
+	glw.unlockMutex();		
+}
+
 void GLvideo_rt::toggleAspectLock(void)
 {
 	glw.lockMutex();
@@ -280,7 +287,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font)
 
 	//text
 	glPushMatrix();
-	glColor3f(1.0, 1.0, 1.0);
+	glColor4f(1.0, 1.0, 1.0, 0.5);
 	glTranslated(tx, ty, 0);						
 	font->Render(str);					
 	glPopMatrix();	
@@ -362,6 +369,7 @@ void GLvideo_rt::run()
 	int displaywidth = m_displaywidth;
 	int displayheight = m_displayheight;
 	int frameRepeats = m_frameRepeats;
+	int framePolarity = m_framePolarity;
 	int currentShader = 0;	
 	glw.unlockMutex();
 	
@@ -400,6 +408,7 @@ void GLvideo_rt::run()
 			displaywidth = m_displaywidth;
 			displayheight = m_displayheight;
 			frameRepeats = m_frameRepeats;
+			framePolarity = m_framePolarity;
 												
 			doResize = m_doResize;				
 			m_doResize = false;
@@ -535,7 +544,8 @@ void GLvideo_rt::run()
 			doResize = false;
 		}
 
-     	glXWaitVideoSyncSGI(frameRepeats, 0, &retraceCount);
+        if (frameRepeats > 1)
+         	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
 																			
 		if(videoData) {
 			
@@ -552,13 +562,14 @@ void GLvideo_rt::run()
 		}
 		
 		//get the current frame count
-       	glXGetVideoSyncSGI(&retraceCount);
+        unsigned int retraceCount2;
+       	glXGetVideoSyncSGI(&retraceCount2);
        				
   		//calculate FPS
        	timeval now, diff;
        	gettimeofday(&now, NULL);
        	timersub(&now, &last, &diff);       	
-       	if(DEBUG)printf("Display frame %d, FPS = %f\n", retraceCount, 1000000.0 / diff.tv_usec);
+       	if(DEBUG)printf("Display frame %d->%d, FPS = %f\n", retraceCount, retraceCount2, 1000000.0 / diff.tv_usec);
        	
        	last.tv_sec = now.tv_sec;
        	last.tv_usec = now.tv_usec;       	

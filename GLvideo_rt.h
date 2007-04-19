@@ -19,6 +19,7 @@ public:
 	GLvideo_rt(GLvideo_mt &glWidget);
 	void resizeViewport(int w, int h);
 	void setFrameRepeats(int repeats);
+	void setFramePolarity(int polarity);
 	void setAspectLock(bool lock);
 	void run();
 	void stop();
@@ -42,6 +43,7 @@ private:
 	int m_displayheight;		//height of parent widget
 	
 	int m_frameRepeats;			//number of times each frame is repeated
+	int m_framePolarity;		//which frame in m_frameRepeats to update on
 	
 	GLuint programs[shaderMax];	//handles for the shaders and programs	
 	GLuint shaders[shaderMax];

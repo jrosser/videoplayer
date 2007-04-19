@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.6 2007-04-19 09:38:12 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.7 2007-04-19 14:43:44 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -56,6 +56,7 @@ class GLvideo_mt : public QGLWidget
 public:
 	GLvideo_mt(VideoRead &vr);
 	void setFrameRepeats(int repeats);
+	void setFramePolarity(int p);
 	void lockMutex();
 	void unlockMutex();
 	void resizeGL(int w, int h);	

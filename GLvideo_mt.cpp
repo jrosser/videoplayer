@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.7 2007-04-19 09:38:12 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.8 2007-04-19 14:43:44 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -91,6 +91,11 @@ void GLvideo_mt::resizeEvent(QResizeEvent * event)
 void GLvideo_mt::setFrameRepeats(int repeats)
 {
 	renderThread.setFrameRepeats(repeats);	
+}
+
+void GLvideo_mt::setFramePolarity(int p)
+{
+	renderThread.setFramePolarity(p);
 }
 
 void GLvideo_mt::lockMutex()
