@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.5 2007-04-18 13:13:58 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.6 2007-04-19 09:38:12 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -77,6 +77,7 @@ private:
 
 	void paintGL();
 	void paintEvent(QPaintEvent * event);
+	void resizeEvent(QResizeEvent * event);	
 	QMutex mutex;
 };
 

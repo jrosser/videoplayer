@@ -334,7 +334,6 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
     
 void GLvideo_rt::run()
 {
-	//usleep(5e5);
 	if(DEBUG) printf("Starting renderthread\n");
 	
 	VideoData *videoData = NULL;
