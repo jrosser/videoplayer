@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.12 2007-04-23 14:21:55 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.13 2007-04-23 14:34:15 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -258,7 +258,9 @@ void MainWindow::usage()
 	printf("\nSpace                  Play/Pause");
 	printf("\ns                      Stop");
 	printf("\n1,2,3,4,5,6,7          Play forward at 1,2,5,10,20,50,100x");
-	printf("\nCTRL + 1,2,3,4,5,6,7   Play backward at 1,2,5,10,20,50,100x");						        
+	printf("\nCTRL + 1,2,3,4,5,6,7   Play backward at 1,2,5,10,20,50,100x");
+	printf("\n>                      Jog one frame forward when paused");
+	printf("\n<                      Jog one frame backward when paused");
 	printf("\nq                      Quit");	
     printf("\n");
     printf("\n");        
