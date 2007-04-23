@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.11 2007-04-19 14:43:44 davidf Exp $
+* $Id: mainwindow.cpp,v 1.12 2007-04-23 14:21:55 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -222,6 +222,7 @@ void MainWindow::parseCommandLine()
 	}
 		
 	if(allParsed == false) {
+		usage();
 		quit();	 		
 	}
 }
@@ -240,14 +241,27 @@ void MainWindow::usage()
     printf("\n  .uyvy         4:2:2 YUV 8 bit packed");
     printf("\n  .v210         4:2:2 YUV 10 bit packed");
     printf("\n  .v216         4:2:2 YUV 16 bit packed");
-    printf("\n");                    
+    printf("\n");                            
     printf("\nFlag              Type    Default Value Description");
-    printf("\n====              ====    ============= ===========                                       ");
+    printf("\n====              ====    ============= ===========");
     printf("\nw                 ulong   1920          Width of video luminance component");
     printf("\nh                 ulong   1080          Height of video luminance component");
     printf("\nr                 ulong   0             Number of additional times each frame is displayed");
     printf("\np                 ulong   0             Set frame to display video on (0,r-1)");
     printf("\n");
+	printf("\nKeypress               Action");
+    printf("\n========               ======");
+    printf("\no                      Toggle OSD on/off");
+	printf("\nf                      Toggle full screen mode");
+	printf("\nEsc                    Return from full screen mode to windowed");
+	printf("\na                      Toggle aspect ratio lock");
+	printf("\nSpace                  Play/Pause");
+	printf("\ns                      Stop");
+	printf("\n1,2,3,4,5,6,7          Play forward at 1,2,5,10,20,50,100x");
+	printf("\nCTRL + 1,2,3,4,5,6,7   Play backward at 1,2,5,10,20,50,100x");						        
+	printf("\nq                      Quit");	
+    printf("\n");
+    printf("\n");        
 }
 
 //generate actions for menus and keypress handlers
@@ -257,7 +271,17 @@ void MainWindow::createActions()
 	quitAct->setShortcut(tr("Q"));
 	addAction(quitAct);
 	connect(quitAct, SIGNAL(triggered()), this, SLOT(quit()));
-	
+
+	toggleOSDAct = new QAction("Toggle OSD", this);
+	toggleOSDAct->setShortcut(tr("o"));		
+	addAction(toggleOSDAct);			
+	connect(toggleOSDAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleOSD()));
+
+	toggleAspectLockAct = new QAction("Toggle Aspect Ratio Lock", this);
+	toggleAspectLockAct->setShortcut(tr("a"));		
+	addAction(toggleAspectLockAct);		
+	connect(toggleAspectLockAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleAspectLock()));	
+		
 	viewFullScreenAct = new QAction("View full screen", this);
 	viewFullScreenAct->setShortcut(tr("Ctrl+F"));		
 	addAction(viewFullScreenAct);		
@@ -299,7 +323,7 @@ void MainWindow::createActions()
 	connect(transportFwd2Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd2()));
 	
 	transportFwd1Act = new QAction("Forward 1x", this);
-	transportFwd1Act->setShortcut(tr("f"));
+	transportFwd1Act->setShortcut(tr("1"));
 	addAction(transportFwd1Act);
 	connect(transportFwd1Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd1()));
 	
@@ -309,37 +333,37 @@ void MainWindow::createActions()
 	connect(transportStopAct, SIGNAL(triggered()), videoRead, SLOT(transportStop()));
 	
 	transportRev1Act = new QAction("Reverse 1x", this);
-	transportRev1Act->setShortcut(tr("r"));
+	transportRev1Act->setShortcut(tr("Ctrl+1"));
 	addAction(transportRev1Act);
 	connect(transportRev1Act, SIGNAL(triggered()), videoRead, SLOT(transportRev1()));
 	
 	transportRev2Act = new QAction("Reverse 2x", this);
-	transportRev2Act->setShortcut(tr(""));
+	transportRev2Act->setShortcut(tr("Ctrl+2"));
 	addAction(transportRev2Act);
 	connect(transportRev2Act, SIGNAL(triggered()), videoRead, SLOT(transportRev2()));
 	
 	transportRev5Act = new QAction("Reverse 5x", this);
-	transportRev5Act->setShortcut(tr(""));
+	transportRev5Act->setShortcut(tr("Ctrl+3"));
 	addAction(transportRev5Act);
 	connect(transportRev5Act, SIGNAL(triggered()), videoRead, SLOT(transportRev5()));
 	
 	transportRev10Act = new QAction("Reverse 10x", this);
-	transportRev10Act->setShortcut(tr(""));
+	transportRev10Act->setShortcut(tr("Ctrl+4"));
 	addAction(transportRev10Act);
 	connect(transportRev10Act, SIGNAL(triggered()), videoRead, SLOT(transportRev10()));
 					
 	transportRev20Act = new QAction("Reverse 20x", this);
-	transportRev20Act->setShortcut(tr(""));
+	transportRev20Act->setShortcut(tr("Ctrl+5"));
 	addAction(transportRev20Act);
 	connect(transportRev20Act, SIGNAL(triggered()), videoRead, SLOT(transportRev20()));
 	
 	transportRev50Act = new QAction("Reverse 50x", this);
-	transportRev50Act->setShortcut(tr(""));
+	transportRev50Act->setShortcut(tr("Ctrl+6"));
 	addAction(transportFwd100Act);
 	connect(transportFwd100Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd100()));
 	
 	transportRev100Act = new QAction("Reverse 100x", this);								
-	transportRev100Act->setShortcut(tr(""));
+	transportRev100Act->setShortcut(tr("Ctrl+7"));
 	addAction(transportRev100Act);
 	connect(transportRev100Act, SIGNAL(triggered()), videoRead, SLOT(transportRev100()));
 

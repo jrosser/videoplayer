@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.8 2007-04-19 14:43:44 davidf Exp $
+* $Id: mainwindow.h,v 1.9 2007-04-23 14:21:55 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -69,6 +69,8 @@ private:
 	QAction *quitAct;
 
 	//display actions
+	QAction *toggleOSDAct;
+	QAction *toggleAspectLockAct;		
 	QAction *viewFullScreenAct;
 	QAction *escapeFullScreenAct;
 
