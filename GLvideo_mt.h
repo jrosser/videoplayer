@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.9 2007-04-25 10:29:34 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.10 2007-04-25 12:56:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -42,7 +42,6 @@
 
 #include <QtGui>
 #include <QGLWidget>
-#include <sys/time.h>
 
 #include "GLvideo_rt.h"
 #include "videoRead.h"

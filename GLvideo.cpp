@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo.cpp,v 1.2 2007-03-27 15:24:13 jrosser Exp $
+* $Id: GLvideo.cpp,v 1.3 2007-04-25 12:56:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -37,8 +37,10 @@
 
 #include "GLvideo.h"
 
+#ifdef Q_OS_UNIX
 #include <sys/time.h>
 #include <time.h>
+#endif
 
 static char *FProgram=
   "uniform samplerRect Ytex;\n"
@@ -86,11 +88,7 @@ static char *FProgram=
   "}\n";
 
 GLvideo::GLvideo(QWidget *parent)
-{
-	timer = new QTimer();
-	timer->start(1);
-	connect(timer, SIGNAL(timeout()), this, SLOT(updateGL()));
-	
+{	
 	fp = NULL;
 	
 	srcwidth  = 1920;

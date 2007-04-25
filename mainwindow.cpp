@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.15 2007-04-25 10:29:34 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.16 2007-04-25 12:56:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,7 +43,6 @@ MainWindow::MainWindow()
 {
 	setWindowTitle("VideoPlayer");
 	
-	shuttle = NULL;	
 	videoRead = NULL;
 	glvideo_mt = NULL;
 			
@@ -60,6 +59,7 @@ MainWindow::MainWindow()
 
 #ifdef Q_OS_LINUX		
 	//shuttlePro jog dial - linux only native support at the moment	
+	shuttle = NULL;	
 	shuttle = new QShuttlePro(this);
         
     //shuttlepro jog wheel

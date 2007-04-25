@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo.h,v 1.1 2007-03-23 18:02:22 jrosser Exp $
+* $Id: GLvideo.h,v 1.2 2007-04-25 12:56:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,8 +43,9 @@
 #include <QtGui>
 #include <QGLWidget>
 
+#ifdef Q_OS_UNIX
 #include <sys/time.h>
-
+#endif
 
 class GLvideo : public QGLWidget
 {
@@ -65,7 +66,6 @@ private:
 	
 	timeval last;
 	int framenum;
-	QTimer *timer;
 	int srcwidth, srcheight;	//dimensions of input pictures
 
 	bool shaderCompiled;
