@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.8 2007-04-25 10:03:58 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.9 2007-04-25 10:29:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -57,9 +57,9 @@ public:
 	GLvideo_mt(VideoRead &vr);
 	void setFrameRepeats(int repeats);
 	void setFramePolarity(int p);
+	void setFontFile(QString &fontFile);	
 	void lockMutex();
-	void unlockMutex();
-	//void resizeGL(int w, int h);	
+	void unlockMutex();	
 	VideoRead &vr;
 	void stop();
 	

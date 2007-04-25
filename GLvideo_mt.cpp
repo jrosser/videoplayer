@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.9 2007-04-25 10:03:58 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.10 2007-04-25 10:29:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -95,6 +95,11 @@ void GLvideo_mt::setFrameRepeats(int repeats)
 void GLvideo_mt::setFramePolarity(int p)
 {
 	renderThread.setFramePolarity(p);
+}
+
+void GLvideo_mt::setFontFile(QString &fontFile)
+{
+	renderThread.setFontFile(fontFile.toLatin1().data());	
 }
 
 void GLvideo_mt::lockMutex()

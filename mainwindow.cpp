@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.14 2007-04-25 10:03:58 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.15 2007-04-25 10:29:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -104,6 +104,7 @@ MainWindow::MainWindow()
 	frameRepeats = 0;
 	framePolarity = 0;
 	fileName = "";
+	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
 	
 	//load the settings for this application from QSettings
 	//(not really needed yet)
@@ -113,8 +114,10 @@ MainWindow::MainWindow()
 	videoRead->setVideoWidth(videoWidth);
 	videoRead->setVideoHeight(videoHeight);	
 	videoRead->setFileName(fileName);
+	
 	glvideo_mt->setFrameRepeats(frameRepeats);
 	glvideo_mt->setFramePolarity(framePolarity);
+	glvideo_mt->setFontFile(fontFile);	
 					
 }
 
@@ -187,7 +190,14 @@ void MainWindow::parseCommandLine()
 				framePolarity = val;
 			}				
 		}
-					
+
+		if(args[i] == "-f") {			
+			parsed[i] = true;
+			fontFile = args[i+1];
+			i++;
+			parsed[i] = true;
+		}
+
 	}
 	
 	allParsed = true;
@@ -211,9 +221,10 @@ void MainWindow::parseCommandLine()
 		}	
 	}
 	
+	//check video file exists
 	QFileInfo info(fileName);
 	if(info.exists() == false) {
-		printf("Cannot open input file %s\n", fileName.toLatin1().data());
+		printf("Cannot find input file %s\n", fileName.toLatin1().data());
 		allParsed = false;	
 	} 
 	else {
@@ -222,7 +233,21 @@ void MainWindow::parseCommandLine()
 			allParsed = false;		
 		}
 	}
-		
+
+	//check OSD font file exists
+	info.setFile(fontFile);
+	if(info.exists() == false) {
+		printf("Cannot find OSD font file %s\n", fontFile.toLatin1().data());
+		allParsed = false;	
+	} 
+	else {
+		if(info.isReadable() == false) {
+			printf("Cannot read OSD font file %s\n", fontFile.toLatin1().data());
+			allParsed = false;		
+		}
+	}
+	
+	//are all parameters parsed?	
 	if(allParsed == false) {
 		usage();
 		quit();	 		
@@ -250,6 +275,7 @@ void MainWindow::usage()
     printf("\nh                 ulong   1080          Height of video luminance component");
     printf("\nr                 ulong   0             Number of additional times each frame is displayed");
     printf("\np                 ulong   0             Set frame to display video on (0,r-1)");
+    printf("\nf                 string                TrueType font file for OSD");    
     printf("\n");
 	printf("\nKeypress               Action");
     printf("\n========               ======");

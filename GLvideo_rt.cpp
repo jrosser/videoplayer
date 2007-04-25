@@ -88,7 +88,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_frameRepeats = 0;	
 	m_doRendering = true;
 	m_aspectLock = true;
-	m_osd = true;		
+	m_osd = true;
+	m_changeFont = false;	
 }
 
 void GLvideo_rt::compileFragmentShaders()
@@ -214,6 +215,14 @@ void GLvideo_rt::setFrameRepeats(int repeats)
 	glw.lockMutex();
 	m_frameRepeats = repeats;
 	glw.unlockMutex();		
+}
+
+void GLvideo_rt::setFontFile(const char *f)
+{
+	glw.lockMutex();
+	strncpy(fontFile, f, 255);
+	m_changeFont = true;
+	glw.unlockMutex();	
 }
 
 void GLvideo_rt::setFramePolarity(int p)
@@ -366,6 +375,7 @@ void GLvideo_rt::run()
 	bool aspectLock = m_aspectLock;
 	bool doRendering = m_doRendering;
 	bool doResize = m_doResize;
+	bool changeFont = m_changeFont;
 	int displaywidth = m_displaywidth;
 	int displayheight = m_displayheight;
 	int frameRepeats = m_frameRepeats;
@@ -373,16 +383,8 @@ void GLvideo_rt::run()
 	int currentShader = 0;	
 	glw.unlockMutex();
 	
-	FTFont *font = new FTGLPolygonFont((const char *)"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf"); 	
-    
-    if(font->Error()) {
-    	printf("Failed to open font file\n");
-    	fflush(stdout);
-    }
-
-	font->FaceSize(144);
-	font->CharMap(ft_encoding_unicode);
-        	
+	FTFont *font = NULL; 	
+            	
 	//initialise OpenGL		
 	glw.makeCurrent();	
     glGenBuffers(3, io_buf);	
@@ -415,6 +417,7 @@ void GLvideo_rt::run()
 						
 			//boolean flags
 			doRendering = m_doRendering;
+			changeFont = m_changeFont;
 			
 			//check for changed aspect ratio lock
 			if(aspectLock != m_aspectLock) {
@@ -544,6 +547,15 @@ void GLvideo_rt::run()
 			doResize = false;
 		}
 
+		if(changeFont) {
+			if(font) 
+				delete font;
+			
+			font = new FTGLPolygonFont((const char *)fontFile);
+			font->FaceSize(144);
+			font->CharMap(ft_encoding_unicode);			
+		}
+
         if (frameRepeats > 1)
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
 																			
@@ -555,7 +567,7 @@ void GLvideo_rt::run()
 			renderVideo(videoData);
 			glUseProgramObjectARB(0);			
 							
-			if(m_osd) renderOSD(videoData, font);
+			if(m_osd && font != NULL) renderOSD(videoData, font);
 																								   			   																									   			  
 			glFlush();
 			glw.swapBuffers();
