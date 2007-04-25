@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.8 2007-04-19 14:43:44 davidf Exp $
+* $Id: GLvideo_mt.cpp,v 1.9 2007-04-25 10:03:58 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -49,10 +49,10 @@ void GLvideo_mt::stop()
 	renderThread.wait();	
 }
 
-void GLvideo_mt::resizeGL(int w, int h)
-{
-	renderThread.resizeViewport(w, h);	
-}
+//void GLvideo_mt::resizeGL(int w, int h)
+//{
+//	renderThread.resizeViewport(w, h);	
+//}
 
 void GLvideo_mt::toggleOSD() 
 {
@@ -84,8 +84,7 @@ void GLvideo_mt::resizeEvent(QResizeEvent * event)
 	//added at the suggestion of Trolltech - if the rendering thread
 	//is slow to start the first window resize event will issue a makeCurrent() before
 	//the rendering thread does, stealing the openGL context from it
-	QGLWidget::resizeEvent(event);
-	doneCurrent();	
+	renderThread.resizeViewport(event->size().width(), event->size().height());	
 }
 
 void GLvideo_mt::setFrameRepeats(int repeats)

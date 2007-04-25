@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.13 2007-04-23 14:34:15 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.14 2007-04-25 10:03:58 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,13 +43,10 @@ MainWindow::MainWindow()
 {
 	setWindowTitle("VideoPlayer");
 	
-	shuttle = NULL;
+	shuttle = NULL;	
 	videoRead = NULL;
 	glvideo_mt = NULL;
-		
-	//shuttlePro jog dial
-	shuttle = new QShuttlePro(this);
-	
+			
 	//threaded video reader
 	videoRead = new VideoRead();
 	
@@ -60,6 +57,10 @@ MainWindow::MainWindow()
   				
 	//set up menus etc
  	createActions();
+
+#ifdef Q_OS_LINUX		
+	//shuttlePro jog dial - linux only native support at the moment	
+	shuttle = new QShuttlePro(this);
         
     //shuttlepro jog wheel
 	connect(shuttle, SIGNAL(jogForward()), videoRead, SLOT(transportJogFwd()));
@@ -95,6 +96,7 @@ MainWindow::MainWindow()
 	//key 270, press=next mark, hold=end of file
 	//key 257, cycle displayed timecode type
 	//key 258, press=lock controls, hold=unlock controls
+#endif
 	
 	//some defaults in the abscence of any settings	
 	videoWidth = 1920;
@@ -388,8 +390,7 @@ void MainWindow::createActions()
 //slot to receive full screen toggle command
 void MainWindow::toggleFullScreen()
 {
-	setFullScreen(!isFullScreen());
-	glvideo_mt->resizeGL(width(), height());	
+	setFullScreen(!isFullScreen());	
 }
 
 void MainWindow::escapeFullScreen()
@@ -411,10 +412,12 @@ void MainWindow::setFullScreen(bool fullscreen)
 
 void MainWindow::quit()
 {	
+#ifdef Q_OS_LINUX
 	if(shuttle) {
 		shuttle->stop();
 		shuttle->wait();
 	}
+#endif
 	
 	if(glvideo_mt) {
 		glvideo_mt->stop();

@@ -4,12 +4,12 @@
 
 TEMPLATE = app
 TARGET = 
-INCLUDEPATH += . /usr/include  ../include /usr/include/freetype2
+INCLUDEPATH += . /usr/include  /usr/include/freetype2
 
 LIBS += -lGL -L/project/compression/jrosser/workspace/lib -lftgl
 
 QT += opengl
-CONFIG += thread debug
+CONFIG += thread
 
 # Input
 HEADERS = mainwindow.h GLvideo.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h QShuttlePro.h

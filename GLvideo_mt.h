@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.7 2007-04-19 14:43:44 davidf Exp $
+* $Id: GLvideo_mt.h,v 1.8 2007-04-25 10:03:58 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -59,7 +59,7 @@ public:
 	void setFramePolarity(int p);
 	void lockMutex();
 	void unlockMutex();
-	void resizeGL(int w, int h);	
+	//void resizeGL(int w, int h);	
 	VideoRead &vr;
 	void stop();
 	

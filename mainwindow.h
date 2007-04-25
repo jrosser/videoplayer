@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.9 2007-04-23 14:21:55 jrosser Exp $
+* $Id: mainwindow.h,v 1.10 2007-04-25 10:03:58 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,7 +43,10 @@
 
 #include "GLvideo_mt.h"
 #include "videoRead.h"
+
+#ifdef Q_OS_LINUX
 #include "QShuttlePro.h"
+#endif
 
 class MainWindow : public QMainWindow
 {
@@ -63,8 +66,10 @@ private:
 	void createActions(void);
 	void parseCommandLine();
 	void usage();
-	
+
+#ifdef Q_OS_LINUX	
 	QShuttlePro *shuttle;
+#endif
 
 	QAction *quitAct;
 

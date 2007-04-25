@@ -39,7 +39,7 @@ static char *shaderPlanarSrc=
   " yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
   " yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
 
-  " yuv = yuv + yuvOffset;\n"  
+  " yuv = yuv + yuvOffset;\n"
   " rgb = yuv * colorMatrix;\n"
 
   "	a=1.0;\n"
@@ -68,14 +68,14 @@ static char *shaderUYVYSrc=
   " nx=gl_TexCoord[0].x;\n"
   " ny=Yheight-gl_TexCoord[0].y;\n"
  
-  " rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"	 //sample every other RGBA quad to get luminance  
+  " rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"	 //sample every other RGBA quad to get luminance
   " yuv[0] = (fract(nx/2) < 0.5) ? rgba.g : rgba.a;\n"   //pick the correct luminance from G or A for this pixel
 
   " rgba = textureRect(Ytex, vec2((nx/2), ny));\n"		 //sample chrominance at 0, 0.5, 1.0, 1.5... to get interpolation to 4:4:4
   " yuv[1] = rgba.r;\n"
   " yuv[2] = rgba.b;\n"
   
-  " yuv = yuv + yuvOffset;\n"  
+  " yuv = yuv + yuvOffset;\n"
   " rgb = yuv * colorMatrix;\n"
   " a=1.0;\n"
       

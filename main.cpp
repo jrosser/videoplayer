@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.3 2007-04-18 11:35:14 jrosser Exp $
+* $Id: main.cpp,v 1.4 2007-04-25 10:03:58 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -36,13 +36,18 @@
 * ***** END LICENSE BLOCK ***** */
 
 #include "mainwindow.h"
+
+#ifdef Q_OS_UNIX
 #include "X11/Xlib.h"
+#endif
 
 #include <QApplication>
 
 int main(int argc, char **argv)
 {
+#ifdef Q_OS_UNIX
 	XInitThreads();	
+#endif
 	
     QApplication app(argc, argv);
 
