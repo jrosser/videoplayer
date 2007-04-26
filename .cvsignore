@@ -8,3 +8,7 @@ Makefile*
 *.vcproj*
 moc_*
 videoplayer
+.cdtproject
+.project
+.settings
+.*
