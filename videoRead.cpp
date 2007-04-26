@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.9 2007-04-18 15:55:05 jrosser Exp $
+* $Id: videoRead.cpp,v 1.10 2007-04-26 16:09:51 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -52,7 +52,7 @@ VideoRead::VideoRead()
 	readThread.start();
 	
 	transportMutex.lock();
-	transportStatus = Pause;
+	transportStatus = Fwd1;
 	transportSpeed = 1;
 	transportMutex.unlock();	
 }
@@ -78,6 +78,7 @@ void VideoRead::setVideoHeight(int height)
 
 void VideoRead::setFileName(const QString &fn)
 {
+    QMutexLocker fileInfoLocker(&fileInfoMutex);
 	fileName = fn;
 	
 	QFileInfo info(fn);
