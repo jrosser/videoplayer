@@ -1,16 +1,27 @@
-#define GL_GLEXT_PROTOTYPES 1
-
 #include "GLvideo_rt.h"
 #include "GLvideo_mt.h"
+
+#ifdef Q_OS_UNIX
 #include "GL/glx.h"
+#endif
 
+#ifdef HAVE_FTGL
 #include "FTGL/FTGLPolygonFont.h"
+#endif
 
+#ifdef Q_OS_UNIX
 #include <unistd.h>
+#endif
+
+#ifdef Q_OS_UNIX
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -82,6 +93,30 @@ static char *shaderUYVYSrc=
       
   " gl_FragColor=vec4(rgb, a);\n"
   "}\n";
+
+PFNGLLINKPROGRAMARBPROC glLinkProgramARB;
+PFNGLATTACHOBJECTARBPROC glAttachObjectARB;
+PFNGLCREATEPROGRAMOBJECTARBPROC glCreateProgramObjectARB;
+PFNGLGETINFOLOGARBPROC glGetInfoLogARB;
+PFNGLGETOBJECTPARAMETERIVARBPROC glGetObjectParameterivARB;
+PFNGLCOMPILESHADERARBPROC glCompileShaderARB;
+PFNGLSHADERSOURCEARBPROC glShaderSourceARB;
+PFNGLCREATESHADEROBJECTARBPROC glCreateShaderObjectARB;
+PFNGLBUFFERDATAPROC glBufferData;
+PFNGLBINDBUFFERPROC glBindBuffer;
+PFNGLUNIFORM1IARBPROC glUniform1iARB;
+PFNGLGETUNIFORMLOCATIONARBPROC glGetUniformLocationARB;
+PFNGLUNMAPBUFFERPROC glUnmapBuffer;
+PFNGLMAPBUFFERPROC glMapBuffer;
+PFNGLUNIFORM3FARBPROC glUniform3fARB;
+PFNGLUNIFORMMATRIX3FVARBPROC glUniformMatrix3fvARB;
+PFNGLUNIFORM1FARBPROC glUniform1fARB;
+PFNGLUSEPROGRAMOBJECTARBPROC glUseProgramObjectARB;
+PFNGLGENBUFFERSPROC glGenBuffers;
+
+//#ifndef GL_VERSION_1_3
+PFNGLACTIVETEXTUREPROC glActiveTexture;
+//#endif
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
@@ -194,69 +229,70 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     
 void GLvideo_rt::stop()
 {
-	glw.lockMutex();
+	mutex.lock();
 	m_doRendering = false;
-	glw.unlockMutex();
+	mutex.unlock();
 }
 
 void GLvideo_rt::setAspectLock(bool l)
 {
-	glw.lockMutex();
+	mutex.lock();
 
 	if(m_aspectLock != l) {
 		m_aspectLock = l;
 		m_doResize = true;
 	}
 	
-	glw.unlockMutex();	
+	mutex.unlock();	
 }
 
 void GLvideo_rt::setFrameRepeats(int repeats)
 {
-	glw.lockMutex();
+	mutex.lock();
 	m_frameRepeats = repeats;
-	glw.unlockMutex();		
+	mutex.unlock();		
 }
 
 void GLvideo_rt::setFontFile(const char *f)
 {
-	glw.lockMutex();
+	mutex.lock();
 	strncpy(fontFile, f, 255);
 	m_changeFont = true;
-	glw.unlockMutex();	
+	mutex.unlock();	
 }
 
 void GLvideo_rt::setFramePolarity(int p)
 {
-	glw.lockMutex();
+	mutex.lock();
 	m_framePolarity = p;
-	glw.unlockMutex();		
+	mutex.unlock();		
 }
 
 void GLvideo_rt::toggleAspectLock(void)
 {
-	glw.lockMutex();
+	mutex.lock();
 	m_aspectLock = !m_aspectLock;
 	m_doResize = true;
-	glw.unlockMutex();		
+	mutex.unlock();		
 }
 
 void GLvideo_rt::toggleOSD(void)
 {
-	glw.lockMutex();
+	mutex.lock();
 	m_osd = !m_osd;	
-	glw.unlockMutex();		
+	mutex.unlock();		
 }
     
 void GLvideo_rt::resizeViewport(int width, int height)
 {
-	glw.lockMutex();
+	mutex.lock();
 	m_displaywidth = width;
 	m_displayheight = height;
 	m_doResize = true;
-	glw.unlockMutex();
+	mutex.unlock();
 }    
 
+#ifdef HAVE_FTGL
 void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font)
 {
 	//positions of text
@@ -302,6 +338,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font)
 	font->Render(str);					
 	glPopMatrix();	
 }
+#endif
 
 void GLvideo_rt::renderVideo(VideoData *videoData)
 {		
@@ -348,22 +385,58 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
 		glVertex2i(0, videoData->Yheight);
 	glEnd();				
 }
-    
+
+
 void GLvideo_rt::run()
 {
 	if(DEBUG) printf("Starting renderthread\n");
 	
 	VideoData *videoData = NULL;
     
+#ifdef Q_OS_UNIX
 	timeval last;
+#endif
 	
 	int (*glXWaitVideoSyncSGI)(int , int , unsigned int *) = NULL;
 	int (*glXGetVideoSyncSGI)(unsigned int *) = NULL;
 		
 	//get addresses of VSYNC extensions
+#ifdef Q_OS_UNIX	
 	glXGetVideoSyncSGI = (int (*)(unsigned int *))glXGetProcAddress((GLubyte *)"glXGetVideoSyncSGI");
 	glXWaitVideoSyncSGI = (int (*)(int, int, unsigned int *))glXGetProcAddress((GLubyte *)"glXWaitVideoSyncSGI");		
 	if(DEBUG) printf("pget=%p pwait=%p\n", glXGetVideoSyncSGI, glXWaitVideoSyncSGI);
+#endif
+
+#ifdef Q_OS_UNIX
+#define XglGetProcAddress(str) glXGetProcAddress((GLubyte *)str)
+#else
+#define XglGetProcAddress(str) wglGetProcAddress((LPCSTR)str)
+#endif
+
+    glLinkProgramARB = (PFNGLLINKPROGRAMARBPROC) XglGetProcAddress("glLinkProgramARB");
+    glAttachObjectARB = (PFNGLATTACHOBJECTARBPROC) XglGetProcAddress("glAttachObjectARB");
+    glCreateProgramObjectARB = (PFNGLCREATEPROGRAMOBJECTARBPROC) XglGetProcAddress("glCreateProgramObjectARB");
+    glGetInfoLogARB = (PFNGLGETINFOLOGARBPROC) XglGetProcAddress("glGetInfoLogARB");
+    glGetObjectParameterivARB = (PFNGLGETOBJECTPARAMETERIVARBPROC) XglGetProcAddress("glGetObjectParameterivARB");
+    glCompileShaderARB = (PFNGLCOMPILESHADERARBPROC) XglGetProcAddress("glCompileShaderARB");
+    glShaderSourceARB = (PFNGLSHADERSOURCEARBPROC) XglGetProcAddress("glShaderSourceARB");
+    glCreateShaderObjectARB = (PFNGLCREATESHADEROBJECTARBPROC) XglGetProcAddress("glCreateShaderObjectARB");
+    glBufferData = (PFNGLBUFFERDATAPROC) XglGetProcAddress("glBufferData");
+    glBindBuffer = (PFNGLBINDBUFFERPROC) XglGetProcAddress("glBindBuffer");
+    glUniform1iARB = (PFNGLUNIFORM1IARBPROC) XglGetProcAddress("glUniform1iARB");
+    glGetUniformLocationARB = (PFNGLGETUNIFORMLOCATIONARBPROC) XglGetProcAddress("glGetUniformLocationARB");
+
+    glUnmapBuffer = (PFNGLUNMAPBUFFERPROC) XglGetProcAddress("glUnmapBuffer");
+    glMapBuffer = (PFNGLMAPBUFFERPROC) XglGetProcAddress("glMapBuffer");
+    glUniform3fARB = (PFNGLUNIFORM3FARBPROC) XglGetProcAddress("glUniform3fARB");
+    glUniformMatrix3fvARB = (PFNGLUNIFORMMATRIX3FVARBPROC) XglGetProcAddress("glUniformMatrix3fvARB");
+    glUniform1fARB = (PFNGLUNIFORM1FARBPROC) XglGetProcAddress("glUniform1fARB");
+    glUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC) XglGetProcAddress("glUseProgramObjectARB");
+    glGenBuffers = (PFNGLGENBUFFERSPROC) XglGetProcAddress("glGenBuffers");
+
+//#ifndef GL_VERSION_1_3
+    glActiveTexture = (PFNGLACTIVETEXTUREPROC) XglGetProcAddress("glActiveTexture");
+//#endif
 	
 	//flags and status
 	int lastsrcwidth = 0;
@@ -372,7 +445,7 @@ void GLvideo_rt::run()
 	bool updateShaderVars = false;
 
 	//declare shadow variables for the thread worker and initialise them
-	glw.lockMutex();
+	mutex.lock();
 	bool aspectLock = m_aspectLock;
 	bool doRendering = m_doRendering;
 	bool doResize = m_doResize;
@@ -382,9 +455,11 @@ void GLvideo_rt::run()
 	int frameRepeats = m_frameRepeats;
 	int framePolarity = m_framePolarity;
 	int currentShader = 0;	
-	glw.unlockMutex();
-	
-	FTFont *font = NULL; 	
+	mutex.unlock();
+
+#ifdef HAVE_FTGL
+	FTFont *font = NULL;
+#endif 	
             	
 	//initialise OpenGL		
 	glw.makeCurrent();	
@@ -405,7 +480,7 @@ void GLvideo_rt::run()
 	while (doRendering) {
 
 		//update shadow variables
-		glw.lockMutex();
+		mutex.lock();
 		
 			//values
 			displaywidth = m_displaywidth;
@@ -426,7 +501,7 @@ void GLvideo_rt::run()
 				doResize = true;
 			}
 			
-		glw.unlockMutex();
+		mutex.unlock();
 
 		//read frame data
 		videoData = glw.vr.getNextFrame();
@@ -548,6 +623,7 @@ void GLvideo_rt::run()
 			doResize = false;
 		}
 
+#ifdef HAVE_FTGL
 		if(changeFont) {
 			if(font) 
 				delete font;
@@ -556,6 +632,7 @@ void GLvideo_rt::run()
 			font->FaceSize(144);
 			font->CharMap(ft_encoding_unicode);			
 		}
+#endif
 
         if (frameRepeats > 1)
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
@@ -567,8 +644,10 @@ void GLvideo_rt::run()
 			glUseProgramObjectARB(programs[currentShader]);						
 			renderVideo(videoData);
 			glUseProgramObjectARB(0);			
-							
+
+#ifdef HAVE_FTGL							
 			if(m_osd && font != NULL) renderOSD(videoData, font);
+#endif
 																								   			   																									   			  
 			glFlush();
 			glw.swapBuffers();
@@ -579,6 +658,7 @@ void GLvideo_rt::run()
        	glXGetVideoSyncSGI(&retraceCount2);
        				
   		//calculate FPS
+ #ifdef Q_OS_UNIX
        	timeval now, diff;
        	gettimeofday(&now, NULL);
        	timersub(&now, &last, &diff);       	
@@ -586,6 +666,6 @@ void GLvideo_rt::run()
        	
        	last.tv_sec = now.tv_sec;
        	last.tv_usec = now.tv_usec;       	
-       	       	       	       	
+#endif       	       	       	       	
 	}
 }

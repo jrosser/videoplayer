@@ -4,7 +4,18 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+
+#ifdef Q_OS_UNIX
 #include <unistd.h>
+#endif
+
+#ifdef Q_OS_WIN32
+#include <io.h>
+#define lseek64 _lseeki64
+#define read _read
+#define open _open
+#define off64_t qint64
+#endif
 
 #include "readThread.h"
 #include "videoRead.h"
@@ -148,7 +159,7 @@ void ReadThread::run()
 	while(m_doReading) {
 						
 		//get the transport status
-		QMutexLocker transportLocker(&vr.transportMutex);
+		transportLocker.relock();
 		VideoRead::TransportControls ts = vr.transportStatus;
 		speed = vr.transportSpeed;
 		transportLocker.unlock();
@@ -279,7 +290,9 @@ void ReadThread::run()
 				listLocker.unlock();							
 			}
 		}
-
-		vr.frameConsumed.wait(&(vr.frameMutex));						
+#ifdef Q_OS_UNIX
+/* Broken under win32? */
+		vr.frameConsumed.wait(&(vr.frameMutex));
+#endif						
 	}
 }

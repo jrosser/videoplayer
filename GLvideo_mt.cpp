@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.10 2007-04-25 10:29:34 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.11 2007-04-26 13:04:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -40,7 +40,11 @@
 GLvideo_mt::GLvideo_mt(VideoRead &v) 
 	: vr(v), renderThread(*this)
 {
-	renderThread.start();	
+	renderThread.start();
+	setMouseTracking(true);	
+	hideMouse();
+	connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
+	mouseHideTimer.setSingleShot(true);
 }
 
 void GLvideo_mt::stop()
@@ -49,10 +53,21 @@ void GLvideo_mt::stop()
 	renderThread.wait();	
 }
 
-//void GLvideo_mt::resizeGL(int w, int h)
-//{
-//	renderThread.resizeViewport(w, h);	
-//}
+/* Reveal the mouse whenever it is moved,
+ * Cause it to be hidden 1second later */
+void GLvideo_mt::mouseMoveEvent(QMouseEvent *ev)
+{
+	if (!mouseHideTimer.isActive())
+		setCursor(QCursor(Qt::ArrowCursor));
+	mouseHideTimer.start(1000);
+}
+
+void GLvideo_mt::hideMouse()
+{
+	setCursor(QCursor(Qt::BlankCursor));
+}
+
+
 
 void GLvideo_mt::toggleOSD() 
 {
@@ -100,14 +115,4 @@ void GLvideo_mt::setFramePolarity(int p)
 void GLvideo_mt::setFontFile(QString &fontFile)
 {
 	renderThread.setFontFile(fontFile.toLatin1().data());	
-}
-
-void GLvideo_mt::lockMutex()
-{
-	mutex.lock();	
-}
-
-void GLvideo_mt::unlockMutex()
-{
-	mutex.unlock();
 }

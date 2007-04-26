@@ -2,6 +2,10 @@
 
 #include <malloc.h>
 
+#ifdef Q_OS_WIN32
+#define valloc malloc
+#endif
+
 
 VideoData::VideoData(int w, int h, DataFmt f)
 	: diskFormat(f)

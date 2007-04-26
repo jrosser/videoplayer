@@ -1,8 +1,6 @@
 #ifndef VIDEODATA_H_
 #define VIDEODATA_H_
 
-#include <GL/gl.h>
-
 #include "GLvideo_rt.h"
 
 class VideoData

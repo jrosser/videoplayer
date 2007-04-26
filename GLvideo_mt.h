@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.10 2007-04-25 12:56:59 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.11 2007-04-26 13:04:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -38,13 +38,13 @@
 #ifndef GLVIDEO_MT_H
 #define GLVIDEO_MT_H
 
-#define GL_GLEXT_PROTOTYPES 1
-
 #include <QtGui>
 #include <QGLWidget>
 
 #include "GLvideo_rt.h"
 #include "videoRead.h"
+
+#include "glext.h"
 
 class MainWindow;
 
@@ -57,8 +57,6 @@ public:
 	void setFrameRepeats(int repeats);
 	void setFramePolarity(int p);
 	void setFontFile(QString &fontFile);	
-	void lockMutex();
-	void unlockMutex();	
 	VideoRead &vr;
 	void stop();
 	
@@ -71,14 +69,17 @@ public slots:
 	void toggleAspectLock();
 	
 private slots:
+	void hideMouse();
         
 private:
 	void initializeGL();
 
 	void paintGL();
 	void paintEvent(QPaintEvent * event);
-	void resizeEvent(QResizeEvent * event);	
-	QMutex mutex;
+	void resizeEvent(QResizeEvent * event);
+	
+	void mouseMoveEvent(QMouseEvent *ev);
+	QTimer mouseHideTimer;
 };
 
 #endif

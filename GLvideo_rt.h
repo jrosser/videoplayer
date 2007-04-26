@@ -1,8 +1,6 @@
 #ifndef GLVIDEO_RT_H_
 #define GLVIDEO_RT_H_
 
-#define GL_GLEXT_PROTOTYPES 1
-
 #include <QtGui>
 #include <QGLWidget>
 
@@ -33,7 +31,9 @@ private:
 	void compileFragmentShader(int n, const char *src);
 	void createTextures(VideoData *videoData, int currentShader);
 	void renderVideo(VideoData *videoData);
-	void renderOSD(VideoData *videoData, FTFont *font);	
+#ifdef HAVE_FTGL
+	void renderOSD(VideoData *videoData, FTFont *font);
+#endif	
 
 	bool m_doRendering;			//set to false to quit thread
 	bool m_doResize;			//resize the openGL viewport
@@ -55,6 +55,8 @@ private:
 	GLvideo_mt &glw;			//parent widget
 	
 	char fontFile[255];
+
+	QMutex mutex;	
 };
 
 #endif /*GLVIDEO_RT_H_*/
