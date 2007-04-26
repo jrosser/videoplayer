@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <assert.h>
 
 #define DEBUG 0
 
@@ -32,6 +33,8 @@
 //should work with all planar chroma subsamplings
 //glInternalFormat=GL_LUMINANCE glFormat=GL_LUMINANCE glType=GL_UNSIGNED_BYTE
 static char *shaderPlanarSrc=
+  "#extension ARB_texture_rectangle : enable\n"
+  "#extension GL_ARB_texture_rect : enable\n"
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
   "uniform float Yheight, Ywidth;\n" 
@@ -64,6 +67,8 @@ static char *shaderPlanarSrc=
 //shader program for v216 muxed 16 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_SHORT
 //there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
 static char *shaderUYVYSrc=
+  "#extension ARB_texture_rectangle : enable\n"
+  "#extension GL_ARB_texture_rect : enable\n"
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
   "uniform float Yheight, Ywidth;\n" 
@@ -351,6 +356,7 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
 		glBindTexture(GL_TEXTURE_RECTANGLE_NV, 1);
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
 		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+        assert(ioMem);
 		memcpy(ioMem, videoData->Udata, videoData->UdataSize);
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->Cwidth, videoData->Cheight, videoData->glFormat, videoData->glType, NULL);
@@ -359,6 +365,7 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
 		glBindTexture(GL_TEXTURE_RECTANGLE_NV, 2);	
 		glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
 		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+        assert(ioMem);
 		memcpy(ioMem, videoData->Vdata, videoData->VdataSize);
 		glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 		glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->Cwidth, videoData->Cheight, videoData->glFormat, videoData->glType, NULL);
@@ -369,6 +376,7 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
 	glBindTexture(GL_TEXTURE_RECTANGLE_NV, 3);
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
 	ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+    assert(ioMem);
 	memcpy(ioMem, videoData->Ydata, videoData->YdataSize);
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->glYTextureWidth, videoData->Yheight, videoData->glFormat, videoData->glType, NULL);
