@@ -167,8 +167,8 @@ void VideoData::convertV210()
 		
     for (int y=0; y<Yheight; y++) {
      
-  		register int src;
-   		register int dest;
+  		register unsigned int src;
+   		register unsigned int dest;
    		
    		for(int x=0; x<v210LineLength/16; x++) {
 
