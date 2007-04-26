@@ -7,7 +7,7 @@ TARGET =
 INCLUDEPATH += . /usr/include  /usr/include/freetype2
 
 QT += opengl
-CONFIG += thread debug console
+CONFIG += thread debug
 
 # Input
 HEADERS = mainwindow.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h

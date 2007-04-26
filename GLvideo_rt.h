@@ -32,14 +32,15 @@ private:
 	void createTextures(VideoData *videoData, int currentShader);
 	void renderVideo(VideoData *videoData);
 #ifdef HAVE_FTGL
-	void renderOSD(VideoData *videoData, FTFont *font);
+	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd);
 #endif	
 
 	bool m_doRendering;			//set to false to quit thread
 	bool m_doResize;			//resize the openGL viewport
 	bool m_aspectLock;			//lock the aspect ratio of the source video
-	bool m_osd;					//is the OSD shown?
 	bool m_changeFont;			//set a new font for the OSD
+	int m_osd;					//type of OSD shown
+	static const int MAX_OSD = 3;
 				
 	int m_displaywidth;			//width of parent widget
 	int m_displayheight;		//height of parent widget

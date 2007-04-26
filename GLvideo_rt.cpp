@@ -284,7 +284,7 @@ void GLvideo_rt::toggleAspectLock(void)
 void GLvideo_rt::toggleOSD(void)
 {
 	mutex.lock();
-	m_osd = !m_osd;	
+	m_osd = (m_osd + 1) % MAX_OSD;	
 	mutex.unlock();		
 }
     
@@ -298,7 +298,7 @@ void GLvideo_rt::resizeViewport(int width, int height)
 }    
 
 #ifdef HAVE_FTGL
-void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font)
+void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int osd)
 {
 	//positions of text
 	float tx=0.05 * videoData->Ywidth;
@@ -320,8 +320,12 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font)
 			
 	//text string
 	char str[20];
-	sprintf(str, "%06ld", videoData->frameNum);
-		
+	switch (osd) {
+	case 1: sprintf(str, "%06ld", videoData->frameNum); break;
+	case 2: sprintf(str, "%06ld, fps:%3.2f", videoData->frameNum, fps); break;
+	default: str[0] = '\0';
+	}
+			
 	//box beind text													
 	glPushMatrix();
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -400,10 +404,10 @@ void GLvideo_rt::run()
 	if(DEBUG) printf("Starting renderthread\n");
 	
 	VideoData *videoData = NULL;
-    
-#ifdef Q_OS_UNIX
-	timeval last;
-#endif
+
+	QTime frameIntervalTime;
+	int fpsAvgPeriod=1;
+	float fps = 0;
 	
 	int (*glXWaitVideoSyncSGI)(int , int , unsigned int *) = NULL;
 	int (*glXGetVideoSyncSGI)(unsigned int *) = NULL;
@@ -463,6 +467,7 @@ void GLvideo_rt::run()
 	int frameRepeats = m_frameRepeats;
 	int framePolarity = m_framePolarity;
 	int currentShader = 0;	
+	int osd = m_osd;
 	mutex.unlock();
 
 #ifdef HAVE_FTGL
@@ -495,6 +500,7 @@ void GLvideo_rt::run()
 			displayheight = m_displayheight;
 			frameRepeats = m_frameRepeats;
 			framePolarity = m_framePolarity;
+			osd = m_osd;
 												
 			doResize = m_doResize;				
 			m_doResize = false;
@@ -654,26 +660,24 @@ void GLvideo_rt::run()
 			glUseProgramObjectARB(0);			
 
 #ifdef HAVE_FTGL							
-			if(m_osd && font != NULL) renderOSD(videoData, font);
+			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
 #endif
 																								   			   																									   			  
 			glFlush();
 			glw.swapBuffers();
 		}
-		
 		//get the current frame count
         unsigned int retraceCount2;
        	glXGetVideoSyncSGI(&retraceCount2);
-       				
-  		//calculate FPS
- #ifdef Q_OS_UNIX
-       	timeval now, diff;
-       	gettimeofday(&now, NULL);
-       	timersub(&now, &last, &diff);       	
-       	if(DEBUG)printf("Display frame %d->%d, FPS = %f\n", retraceCount, retraceCount2, 1000000.0 / diff.tv_usec);
        	
-       	last.tv_sec = now.tv_sec;
-       	last.tv_usec = now.tv_usec;       	
-#endif       	       	       	       	
+  		//calculate FPS
+  		
+  		if (fpsAvgPeriod == 0) {
+  			int fintvl = frameIntervalTime.elapsed();
+  			if (fintvl) fps = 10*1e3/fintvl;
+  			frameIntervalTime.start();
+  		}
+		fpsAvgPeriod = (fpsAvgPeriod + 1) %10;
 	}
 }
+
