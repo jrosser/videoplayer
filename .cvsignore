@@ -1,0 +1,9 @@
+debug
+release
+Makefile*
+*.pdb
+*.ncb
+*.sln
+*.suo
+*.vcproj*
+moc_*
