@@ -17,5 +17,5 @@ unix {
   SOURCES += QShuttlePro.cpp
   HEADERS += QShuttlePro.h
   LIBS += -lftgl
-  DEFINES += -DHAVE_FTGL
+  DEFINES += HAVE_FTGL
 }
