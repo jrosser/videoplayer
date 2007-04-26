@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.11 2007-04-26 13:04:34 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.12 2007-04-26 16:11:09 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -40,11 +40,13 @@
 GLvideo_mt::GLvideo_mt(VideoRead &v) 
 	: vr(v), renderThread(*this)
 {
-	renderThread.start();
 	setMouseTracking(true);	
-	hideMouse();
 	connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
 	mouseHideTimer.setSingleShot(true);
+
+    /* NB, a) this helps to be last
+     *     b) don't put HideMouse anywhere near here */
+	renderThread.start();
 }
 
 void GLvideo_mt::stop()
