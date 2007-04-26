@@ -7,3 +7,4 @@ Makefile*
 *.suo
 *.vcproj*
 moc_*
+videoplayer
