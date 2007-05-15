@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.cpp,v 1.5 2007-04-18 15:54:36 jrosser Exp $
+* $Id: QShuttlePro.cpp,v 1.6 2007-05-15 16:53:35 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -74,8 +74,11 @@ QShuttlePro::QShuttlePro(QObject *parent = 0)
 void QShuttlePro::stop()
 {
 	running = false;
-	pthread_kill(self, SIGUSR1);	
-	wait();	
+	
+	if(isRunning()) {
+		pthread_kill(self, SIGUSR1);	
+		wait();
+	}	
 }
 
 int QShuttlePro::openShuttle()
