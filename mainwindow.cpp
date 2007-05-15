@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.16 2007-04-25 12:56:59 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.17 2007-05-15 16:54:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -313,7 +313,7 @@ void MainWindow::createActions()
 	connect(toggleAspectLockAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleAspectLock()));	
 		
 	viewFullScreenAct = new QAction("View full screen", this);
-	viewFullScreenAct->setShortcut(tr("Ctrl+F"));		
+	viewFullScreenAct->setShortcut(tr("f"));		
 	addAction(viewFullScreenAct);		
 	connect(viewFullScreenAct, SIGNAL(triggered()), this, SLOT(toggleFullScreen()));	
     
