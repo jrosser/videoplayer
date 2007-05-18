@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.11 2007-04-25 10:29:34 jrosser Exp $
+* $Id: mainwindow.h,v 1.12 2007-05-18 14:29:05 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -78,7 +78,9 @@ private:
 	QAction *toggleAspectLockAct;		
 	QAction *viewFullScreenAct;
 	QAction *escapeFullScreenAct;
-
+	QAction *toggleLuminanceAct;
+	QAction *toggleChrominanceAct;
+	
 	//transport control actions
 	QAction *transportFwd100Act;
 	QAction *transportFwd50Act;
@@ -111,6 +113,9 @@ private:
 	int framePolarity;
 	QString fileName;
 	QString fontFile;
+	
+	bool forceFileType;
+	QString fileType;
 };
 
 #endif

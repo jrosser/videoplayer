@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -37,7 +37,8 @@ static char *shaderPlanarSrc=
   "#extension GL_ARB_texture_rect : enable\n"
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n" 
+  "uniform float Yheight, Ywidth;\n"
+  "uniform float Ymul, Cmul;\n"   
   "uniform float CHsubsample, CVsubsample;\n"
   "uniform mat3 colorMatrix;\n"
   "uniform vec3 yuvOffset;\n"
@@ -54,7 +55,11 @@ static char *shaderPlanarSrc=
   " yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
   " yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
 
+  " yuv[0] = yuv[0] * Ymul;\n"
   " yuv = yuv + yuvOffset;\n"
+  " yuv[1] = yuv[1] * Cmul;\n"
+  " yuv[2] = yuv[2] * Cmul;\n"
+        
   " rgb = yuv * colorMatrix;\n"
 
   "	a=1.0;\n"
@@ -92,7 +97,11 @@ static char *shaderUYVYSrc=
   " yuv[1] = rgba.r;\n"
   " yuv[2] = rgba.b;\n"
   
+  " yuv[0] = yuv[0] * Ymul;\n"
   " yuv = yuv + yuvOffset;\n"
+  " yuv[1] = yuv[1] * Cmul;\n"
+  " yuv[2] = yuv[2] * Cmul;\n"
+
   " rgb = yuv * colorMatrix;\n"
   " a=1.0;\n"
       
@@ -130,7 +139,9 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_doRendering = true;
 	m_aspectLock = true;
 	m_osd = true;
-	m_changeFont = false;	
+	m_changeFont = false;
+	m_showLuminance = true;
+	m_showChrominance = true;		
 }
 
 void GLvideo_rt::compileFragmentShaders()
@@ -287,6 +298,21 @@ void GLvideo_rt::toggleOSD(void)
 	m_osd = (m_osd + 1) % MAX_OSD;	
 	mutex.unlock();		
 }
+
+void GLvideo_rt::toggleLuminance(void)
+{
+	mutex.lock();
+	m_showLuminance = not m_showLuminance;	
+	mutex.unlock();		
+}
+
+void GLvideo_rt::toggleChrominance(void)
+{
+	mutex.lock();
+	m_showChrominance = not m_showChrominance;	
+	mutex.unlock();		
+}
+
     
 void GLvideo_rt::resizeViewport(int width, int height)
 {
@@ -461,6 +487,8 @@ void GLvideo_rt::run()
 	bool aspectLock = m_aspectLock;
 	bool doRendering = m_doRendering;
 	bool doResize = m_doResize;
+	bool showLuminance = m_showLuminance;
+	bool showChrominance = m_showChrominance;	
 	bool changeFont = m_changeFont;
 	int displaywidth = m_displaywidth;
 	int displayheight = m_displayheight;
@@ -515,6 +543,16 @@ void GLvideo_rt::run()
 				doResize = true;
 			}
 			
+			if(showLuminance != m_showLuminance) {
+				showLuminance = m_showLuminance;
+				updateShaderVars = true;	
+			}
+
+			if(showChrominance != m_showChrominance) {
+				showChrominance = m_showChrominance;
+				updateShaderVars = true;	
+			}
+
 		mutex.unlock();
 
 		//read frame data
@@ -587,7 +625,8 @@ void GLvideo_rt::run()
 		
 		if(updateShaderVars) {
 			if(DEBUG) printf("Updating fragment shader variables\n");
-			
+
+			//data from the file to the shader			
 		    int i=glGetUniformLocationARB(programs[currentShader], "Yheight");
     		glUniform1fARB(i, videoData->Yheight);
 
@@ -600,12 +639,20 @@ void GLvideo_rt::run()
 		    i=glGetUniformLocationARB(programs[currentShader], "CVsubsample");
     		glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
 
+			//settings from the program to the shader
+		    i=glGetUniformLocationARB(programs[currentShader], "Ymul");
+    		glUniform1fARB(i, showLuminance ? 1.0 : 0.0);
+    			    					
+		    i=glGetUniformLocationARB(programs[currentShader], "Cmul");
+    		glUniform1fARB(i, showChrominance ? 1.0 : 0.0);
+
 		    i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
 		    float matrix[9] = {1.0, 0.0, 1.5958, 1.0, -0.39173, -0.8129, 1.0, 2.017, 0.0};	    
     		glUniformMatrix3fvARB(i, 1, false, &matrix[0]);
 
 		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset");
-    		glUniform3fARB(i, -0.0625, -0.5, -0.5);
+		    float yOffset = showLuminance ? -0.0625 : 0.5;
+    		glUniform3fARB(i, yOffset, -0.5, -0.5);
 			
 			updateShaderVars = false;	
 		}	
@@ -653,14 +700,13 @@ void GLvideo_rt::run()
 																			
 		if(videoData) {
 			
-			//if(DEBUG) printf("Rendering...\n");
-						
-			glUseProgramObjectARB(programs[currentShader]);						
+			//if(DEBUG) printf("Rendering...\n");												
 			renderVideo(videoData);
-			glUseProgramObjectARB(0);			
-
-#ifdef HAVE_FTGL							
+			
+#ifdef HAVE_FTGL
+			glUseProgramObjectARB(0);							
 			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
+			glUseProgramObjectARB(programs[currentShader]);			
 #endif
 																								   			   																									   			  
 			glFlush();

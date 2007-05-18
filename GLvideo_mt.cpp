@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.12 2007-04-26 16:11:09 davidf Exp $
+* $Id: GLvideo_mt.cpp,v 1.13 2007-05-18 14:29:04 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -80,6 +80,17 @@ void GLvideo_mt::toggleAspectLock()
 {
 	renderThread.toggleAspectLock();	
 }
+
+void GLvideo_mt::toggleLuminance()
+{
+	renderThread.toggleLuminance();	
+}
+
+void GLvideo_mt::toggleChrominance()
+{	
+	renderThread.toggleChrominance();	
+}
+
 
 void GLvideo_mt::initializeGL()
 {  

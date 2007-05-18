@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.6 2007-04-25 12:56:59 jrosser Exp $
+* $Id: videoRead.h,v 1.7 2007-05-18 14:29:05 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -55,6 +55,8 @@ public:
 	void setFileName(const QString &fn);
 	void setVideoWidth(int width);
 	void setVideoHeight(int height);
+	void setForceFileType(bool flag);
+	void setFileType(const QString &t);
 	void stop();
 	
 	QList<VideoData *> pastFrames;
@@ -113,6 +115,9 @@ private slots:
 private:
 	ReadThread readThread;
 	VideoData *displayFrame;				//a pointer to the video data for the frame being displayed
+	
+	bool forceFileType;
+	QString fileType;
 		
 	TransportControls lastTransportStatus;	//what we were doing before 'pause'
 };

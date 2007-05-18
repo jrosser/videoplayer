@@ -24,7 +24,9 @@ public:
 	void stop();
 	void toggleAspectLock();
 	void toggleOSD();
-		        
+	void toggleLuminance();
+	void toggleChrominance();
+			        
 private:
 	//void setUpFonts(const char* fontfile);
 	void compileFragmentShaders();
@@ -40,6 +42,9 @@ private:
 	bool m_aspectLock;			//lock the aspect ratio of the source video
 	bool m_changeFont;			//set a new font for the OSD
 	int m_osd;					//type of OSD shown
+	bool m_showLuminance;		//use Y data or 0.5
+	bool m_showChrominance;		//use C data or 0.5
+	
 	static const int MAX_OSD = 3;
 				
 	int m_displaywidth;			//width of parent widget

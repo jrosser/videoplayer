@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.17 2007-05-15 16:54:34 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.18 2007-05-18 14:29:05 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -104,6 +104,8 @@ MainWindow::MainWindow()
 	frameRepeats = 0;
 	framePolarity = 0;
 	fileName = "";
+	forceFileType = false;
+	fileType = "";
 	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
 	
 	//load the settings for this application from QSettings
@@ -112,7 +114,9 @@ MainWindow::MainWindow()
 	//override settings with command line
 	parseCommandLine();
 	videoRead->setVideoWidth(videoWidth);
-	videoRead->setVideoHeight(videoHeight);	
+	videoRead->setVideoHeight(videoHeight);
+	videoRead->setForceFileType(forceFileType);
+	videoRead->setFileType(fileType);	
 	videoRead->setFileName(fileName);
 	
 	glvideo_mt->setFrameRepeats(frameRepeats);
@@ -198,6 +202,21 @@ void MainWindow::parseCommandLine()
 			parsed[i] = true;
 		}
 
+		if(args[i] == "-t") {			
+			parsed[i] = true;
+			forceFileType = true;
+			fileType = args[i+1];
+			i++;
+			
+			parsed[i] = false;
+			if(fileType.toLower() == "i420") parsed[i] = true;
+			if(fileType.toLower() == "yv12") parsed[i] = true;
+			if(fileType.toLower() == "uyvy") parsed[i] = true;
+			if(fileType.toLower() == "v216") parsed[i] = true;
+			if(fileType.toLower() == "v210") parsed[i] = true;															
+		}
+		
+
 	}
 	
 	allParsed = true;
@@ -205,12 +224,27 @@ void MainWindow::parseCommandLine()
 	//take the filename as the last argument
 	if(args.size() < 2) {
 		printf("No filename\n");
-		allParsed = false;	
+		allParsed = false;
 	}
 	else	
 	{
 		fileName = args.last();
 		parsed[parsed.size()-1] = true;
+		
+		if(forceFileType == false) {
+			QFileInfo fi(fileName);
+			//file extension must be one we know about
+			parsed[parsed.size()-1] = false;			
+			if(fi.suffix().toLower() == "i420") parsed[parsed.size()-1] = true;
+			if(fi.suffix().toLower() == "yv12") parsed[parsed.size()-1] = true;
+			if(fi.suffix().toLower() == "uyvy") parsed[parsed.size()-1] = true;
+			if(fi.suffix().toLower() == "v216") parsed[parsed.size()-1] = true;
+			if(fi.suffix().toLower() == "v210") parsed[parsed.size()-1] = true;		
+			
+			if(parsed[parsed.size()-1] == false)
+				printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
+				printf("Please specify file format with the -t flag\n");																					
+		}
 	}
 
 	//check all args are parsed
@@ -263,19 +297,20 @@ void MainWindow::usage()
     printf("\n");
     printf("\nSupported file formats:");
     printf("\n");
-    printf("\n  .yuv / .i420  4:2:0 YUV planar");
+    printf("\n  .i420         4:2:0 YUV planar");
     printf("\n  .yv12         4:2:0 YVU planar");
     printf("\n  .uyvy         4:2:2 YUV 8 bit packed");
     printf("\n  .v210         4:2:2 YUV 10 bit packed");
     printf("\n  .v216         4:2:2 YUV 16 bit packed");
     printf("\n");                            
-    printf("\nFlag              Type    Default Value Description");
-    printf("\n====              ====    ============= ===========");
-    printf("\nw                 ulong   1920          Width of video luminance component");
-    printf("\nh                 ulong   1080          Height of video luminance component");
-    printf("\nr                 ulong   0             Number of additional times each frame is displayed");
-    printf("\np                 ulong   0             Set frame to display video on (0,r-1)");
-    printf("\nf                 string                TrueType font file for OSD");    
+    printf("\nFlag              Type    Default Value   Description");
+    printf("\n====              ====    =============== ===========");
+    printf("\nw                 ulong   1920            Width of video luminance component");
+    printf("\nh                 ulong   1080            Height of video luminance component");
+    printf("\nr                 ulong   0               Number of additional times each frame is displayed");
+    printf("\np                 ulong   0               Set frame to display video on (0,r-1)");
+    printf("\nf                 string                  TrueType font file for OSD");
+    printf("\nt                 string  FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");        
     printf("\n");
 	printf("\nKeypress               Action");
     printf("\n========               ======");
@@ -289,6 +324,8 @@ void MainWindow::usage()
 	printf("\nCTRL + 1,2,3,4,5,6,7   Play backward at 1,2,5,10,20,50,100x");
 	printf("\n>                      Jog one frame forward when paused");
 	printf("\n<                      Jog one frame backward when paused");
+	printf("\ny                      Toggle display of luminance  on/off");
+	printf("\nc                      Toggle display of chrominance on/off");
 	printf("\nq                      Quit");	
     printf("\n");
     printf("\n");        
@@ -306,6 +343,16 @@ void MainWindow::createActions()
 	toggleOSDAct->setShortcut(tr("o"));		
 	addAction(toggleOSDAct);			
 	connect(toggleOSDAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleOSD()));
+
+	toggleLuminanceAct = new QAction("Toggle Luminance", this);
+	toggleLuminanceAct->setShortcut(tr("y"));
+	addAction(toggleLuminanceAct);
+	connect(toggleLuminanceAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleLuminance()));
+
+	toggleChrominanceAct = new QAction("Toggle Chrominance", this);
+	toggleChrominanceAct->setShortcut(tr("c"));
+	addAction(toggleChrominanceAct);
+	connect(toggleChrominanceAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleChrominance()));
 
 	toggleAspectLockAct = new QAction("Toggle Aspect Ratio Lock", this);
 	toggleAspectLockAct->setShortcut(tr("a"));		

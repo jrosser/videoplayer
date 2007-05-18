@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.11 2007-04-26 13:04:34 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.12 2007-05-18 14:29:05 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -67,6 +67,8 @@ protected:
 public slots:
 	void toggleOSD();
 	void toggleAspectLock();
+	void toggleLuminance();
+	void toggleChrominance();
 	
 private slots:
 	void hideMouse();

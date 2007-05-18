@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.10 2007-04-26 16:09:51 davidf Exp $
+* $Id: videoRead.cpp,v 1.11 2007-05-18 14:29:04 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -54,7 +54,10 @@ VideoRead::VideoRead()
 	transportMutex.lock();
 	transportStatus = Fwd1;
 	transportSpeed = 1;
-	transportMutex.unlock();	
+	transportMutex.unlock();
+	
+	forceFileType = false;
+	fileType = "";	
 }
 
 void VideoRead::stop()
@@ -76,6 +79,16 @@ void VideoRead::setVideoHeight(int height)
 	videoHeight = height;
 }
 
+void VideoRead::setForceFileType(bool flag)
+{
+	forceFileType = flag;	
+}
+
+void VideoRead::setFileType(const QString &t)
+{
+	fileType = t;	
+}
+
 void VideoRead::setFileName(const QString &fn)
 {
     QMutexLocker fileInfoLocker(&fileInfoMutex);
@@ -83,43 +96,39 @@ void VideoRead::setFileName(const QString &fn)
 	
 	QFileInfo info(fn);
 	
-	//fixme - this is a nasty assumption that .yuv is i420
-	if(info.suffix() == "YUV" || info.suffix() == "yuv") {
-		dataFormat = VideoData::I420;
-		
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
-		lastFrameNum--; 	
-	}
-
-	if(info.suffix() == "I420" || info.suffix() == "i420") {
+	QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
+	
+	printf("Playing file with type %s\n", type.toLatin1().data());
+	
+	if(type == "i420") {
 		dataFormat = VideoData::I420;
 
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
 		lastFrameNum--; 						
 	}
 
-	if(info.suffix() == "YV12" || info.suffix() == "yv12") {
+	if(type == "yv12") {
 		dataFormat = VideoData::YV12;
 
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "UYVY" || info.suffix() == "uyvy") {
+	if(type == "uyvy") {
 		dataFormat = VideoData::UYVY;
 
 		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "V216" || info.suffix() == "v216") {
+	if(type == "v216") {
 		dataFormat = VideoData::V216;
 		
 		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
 		lastFrameNum--; 			
 	}
 
-	if(info.suffix() == "V210" || info.suffix() == "v210") {
+	if(type == "v210") {
 		dataFormat = VideoData::V210;
 
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 2 * 4) / 3);
