@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -76,7 +76,8 @@ static char *shaderUYVYSrc=
   "#extension GL_ARB_texture_rect : enable\n"
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n" 
+  "uniform float Yheight, Ywidth;\n"
+  "uniform float Ymul, Cmul;\n"  
   "uniform float CHsubsample, CVsubsample;\n"
   "uniform mat3 colorMatrix;\n"
   "uniform vec3 yuvOffset;\n"
