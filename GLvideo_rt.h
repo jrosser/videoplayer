@@ -26,7 +26,9 @@ public:
 	void toggleOSD();
 	void toggleLuminance();
 	void toggleChrominance();
-			        
+	void setLuminanceMultiplier(float m);
+	void setChrominanceMultiplier(float m);
+					        
 private:
 	//void setUpFonts(const char* fontfile);
 	void compileFragmentShaders();
@@ -44,6 +46,8 @@ private:
 	int m_osd;					//type of OSD shown
 	bool m_showLuminance;		//use Y data or 0.5
 	bool m_showChrominance;		//use C data or 0.5
+	float m_luminanceMultiplier;
+	float m_chrominanceMultiplier;
 	
 	static const int MAX_OSD = 3;
 				

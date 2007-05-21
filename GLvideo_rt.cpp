@@ -37,12 +37,14 @@ static char *shaderPlanarSrc=
   "#extension GL_ARB_texture_rect : enable\n"
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n"
-  "uniform float Ymul, Cmul;\n"   
+  "uniform float Yheight, Ywidth;\n"   
   "uniform float CHsubsample, CVsubsample;\n"
+
+  "uniform vec3 yuvOffset1;\n"
+  "uniform vec3 yuvMul;\n"
+  "uniform vec3 yuvOffset2;\n"
   "uniform mat3 colorMatrix;\n"
-  "uniform vec3 yuvOffset;\n"
-        
+          
   "void main(void) {\n"
   " float nx,ny,a;\n"
   " vec3 yuv;\n"
@@ -55,11 +57,9 @@ static char *shaderPlanarSrc=
   " yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
   " yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
 
-  " yuv[0] = yuv[0] * Ymul;\n"
-  " yuv = yuv + yuvOffset;\n"
-  " yuv[1] = yuv[1] * Cmul;\n"
-  " yuv[2] = yuv[2] * Cmul;\n"
-        
+  " yuv = yuv + yuvOffset1;\n"
+  " yuv = yuv * yuvMul;\n"
+  " yuv = yuv + yuvOffset2;\n"  
   " rgb = yuv * colorMatrix;\n"
 
   "	a=1.0;\n"
@@ -76,11 +76,13 @@ static char *shaderUYVYSrc=
   "#extension GL_ARB_texture_rect : enable\n"
   "uniform samplerRect Ytex;\n"
   "uniform samplerRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n"
-  "uniform float Ymul, Cmul;\n"  
+  "uniform float Yheight, Ywidth;\n"  
   "uniform float CHsubsample, CVsubsample;\n"
+
+  "uniform vec3 yuvOffset1;\n"
+  "uniform vec3 yuvMul;\n"
+  "uniform vec3 yuvOffset2;\n"
   "uniform mat3 colorMatrix;\n"
-  "uniform vec3 yuvOffset;\n"
         
   "void main(void) {\n"
   " float nx,ny,a;\n"
@@ -98,12 +100,11 @@ static char *shaderUYVYSrc=
   " yuv[1] = rgba.r;\n"
   " yuv[2] = rgba.b;\n"
   
-  " yuv[0] = yuv[0] * Ymul;\n"
-  " yuv = yuv + yuvOffset;\n"
-  " yuv[1] = yuv[1] * Cmul;\n"
-  " yuv[2] = yuv[2] * Cmul;\n"
-
+  " yuv = yuv + yuvOffset1;\n"
+  " yuv = yuv * yuvMul;\n"
+  " yuv = yuv + yuvOffset2;\n"  
   " rgb = yuv * colorMatrix;\n"
+
   " a=1.0;\n"
       
   " gl_FragColor=vec4(rgb, a);\n"
@@ -123,7 +124,7 @@ PFNGLUNIFORM1IARBPROC glUniform1iARB;
 PFNGLGETUNIFORMLOCATIONARBPROC glGetUniformLocationARB;
 PFNGLUNMAPBUFFERPROC glUnmapBuffer;
 PFNGLMAPBUFFERPROC glMapBuffer;
-PFNGLUNIFORM3FARBPROC glUniform3fARB;
+PFNGLUNIFORM3FVARBPROC glUniform3fvARB;
 PFNGLUNIFORMMATRIX3FVARBPROC glUniformMatrix3fvARB;
 PFNGLUNIFORM1FARBPROC glUniform1fARB;
 PFNGLUSEPROGRAMOBJECTARBPROC glUseProgramObjectARB;
@@ -142,7 +143,9 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_osd = true;
 	m_changeFont = false;
 	m_showLuminance = true;
-	m_showChrominance = true;		
+	m_showChrominance = true;
+	m_luminanceMultiplier = 1.0;	
+	m_chrominanceMultiplier = 1.0;
 }
 
 void GLvideo_rt::compileFragmentShaders()
@@ -314,7 +317,20 @@ void GLvideo_rt::toggleChrominance(void)
 	mutex.unlock();		
 }
 
+void GLvideo_rt::setLuminanceMultiplier(float m)
+{
+	mutex.lock();
+	m_luminanceMultiplier = m;
+	mutex.unlock();	
+}
     
+void GLvideo_rt::setChrominanceMultiplier(float m)
+{
+	mutex.lock();
+	m_chrominanceMultiplier = m;
+	mutex.unlock();		
+}
+
 void GLvideo_rt::resizeViewport(int width, int height)
 {
 	mutex.lock();
@@ -467,7 +483,7 @@ void GLvideo_rt::run()
 
     glUnmapBuffer = (PFNGLUNMAPBUFFERPROC) XglGetProcAddress("glUnmapBuffer");
     glMapBuffer = (PFNGLMAPBUFFERPROC) XglGetProcAddress("glMapBuffer");
-    glUniform3fARB = (PFNGLUNIFORM3FARBPROC) XglGetProcAddress("glUniform3fARB");
+    glUniform3fvARB = (PFNGLUNIFORM3FVARBPROC) XglGetProcAddress("glUniform3fvARB");
     glUniformMatrix3fvARB = (PFNGLUNIFORMMATRIX3FVARBPROC) XglGetProcAddress("glUniformMatrix3fvARB");
     glUniform1fARB = (PFNGLUNIFORM1FARBPROC) XglGetProcAddress("glUniform1fARB");
     glUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC) XglGetProcAddress("glUseProgramObjectARB");
@@ -497,6 +513,8 @@ void GLvideo_rt::run()
 	int framePolarity = m_framePolarity;
 	int currentShader = 0;	
 	int osd = m_osd;
+	float luminanceMultiplier = m_luminanceMultiplier;
+	float chrominanceMultiplier = m_chrominanceMultiplier;	
 	mutex.unlock();
 
 #ifdef HAVE_FTGL
@@ -552,6 +570,16 @@ void GLvideo_rt::run()
 			if(showChrominance != m_showChrominance) {
 				showChrominance = m_showChrominance;
 				updateShaderVars = true;	
+			}
+
+			if(luminanceMultiplier != m_luminanceMultiplier) {
+				luminanceMultiplier = m_luminanceMultiplier;
+				updateShaderVars = true;
+			}
+
+			if(chrominanceMultiplier != m_chrominanceMultiplier) {
+				chrominanceMultiplier = m_chrominanceMultiplier;
+				updateShaderVars = true;
 			}
 
 		mutex.unlock();
@@ -624,10 +652,10 @@ void GLvideo_rt::run()
 			createGLTextures = false;
 		}			
 		
-		if(updateShaderVars) {
+		if(updateShaderVars && videoData) {
 			if(DEBUG) printf("Updating fragment shader variables\n");
 
-			//data from the file to the shader			
+			//data about the input file to the shader			
 		    int i=glGetUniformLocationARB(programs[currentShader], "Yheight");
     		glUniform1fARB(i, videoData->Yheight);
 
@@ -640,20 +668,31 @@ void GLvideo_rt::run()
 		    i=glGetUniformLocationARB(programs[currentShader], "CVsubsample");
     		glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
 
-			//settings from the program to the shader
-		    i=glGetUniformLocationARB(programs[currentShader], "Ymul");
-    		glUniform1fARB(i, showLuminance ? 1.0 : 0.0);
-    			    					
-		    i=glGetUniformLocationARB(programs[currentShader], "Cmul");
-    		glUniform1fARB(i, showChrominance ? 1.0 : 0.0);
+			//settings from the c++ program to the shader
+		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
+		    float offset1[3];
+		    offset1[0] = -0.0625;
+		    offset1[1] = -0.5;
+		    offset1[2] = -0.5;
+			glUniform3fvARB(i, 1, &offset1[0]);		    
 
+		    i=glGetUniformLocationARB(programs[currentShader], "yuvMul");			
+			float mul[3];
+			mul[0] = showLuminance   ? luminanceMultiplier   : 0.0;
+			mul[1] = showChrominance ? chrominanceMultiplier : 0.0;
+			mul[2] = showChrominance ? chrominanceMultiplier : 0.0;
+			glUniform3fvARB(i, 1, &mul[0]); 									
+
+		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
+		    float offset2[3];
+		    offset2[0] = showLuminance ? 0.0 : 0.5;
+		    offset2[1] = 0.0;
+		    offset2[2] = 0.0;
+			glUniform3fvARB(i, 1, &offset2[0]);		    
+    			    					
 		    i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
 		    float matrix[9] = {1.0, 0.0, 1.5958, 1.0, -0.39173, -0.8129, 1.0, 2.017, 0.0};	    
     		glUniformMatrix3fvARB(i, 1, false, &matrix[0]);
-
-		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset");
-		    float yOffset = showLuminance ? -0.0625 : 0.5;
-    		glUniform3fARB(i, yOffset, -0.5, -0.5);
 			
 			updateShaderVars = false;	
 		}	

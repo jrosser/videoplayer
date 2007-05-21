@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.18 2007-05-18 14:29:05 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.19 2007-05-21 10:38:52 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -41,6 +41,24 @@
 
 MainWindow::MainWindow()
 {
+	//some defaults in the abscence of any settings	
+	videoWidth = 1920;
+	videoHeight = 1080;
+	frameRepeats = 0;
+	framePolarity = 0;
+	luminanceMul = 1.0;
+	chrominanceMul = 1.0;
+	fileName = "";
+	forceFileType = false;
+	fileType = "";
+	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
+		
+	//override settings with command line
+	parseCommandLine();
+	
+	if(allParsed == false)
+		return;
+	
 	setWindowTitle("VideoPlayer");
 	
 	videoRead = NULL;
@@ -98,21 +116,6 @@ MainWindow::MainWindow()
 	//key 258, press=lock controls, hold=unlock controls
 #endif
 	
-	//some defaults in the abscence of any settings	
-	videoWidth = 1920;
-	videoHeight = 1080;
-	frameRepeats = 0;
-	framePolarity = 0;
-	fileName = "";
-	forceFileType = false;
-	fileType = "";
-	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
-	
-	//load the settings for this application from QSettings
-	//(not really needed yet)
-	
-	//override settings with command line
-	parseCommandLine();
 	videoRead->setVideoWidth(videoWidth);
 	videoRead->setVideoHeight(videoHeight);
 	videoRead->setForceFileType(forceFileType);
@@ -122,13 +125,15 @@ MainWindow::MainWindow()
 	glvideo_mt->setFrameRepeats(frameRepeats);
 	glvideo_mt->setFramePolarity(framePolarity);
 	glvideo_mt->setFontFile(fontFile);	
-					
+	glvideo_mt->setLuminanceMultiplier(luminanceMul);
+	glvideo_mt->setChrominanceMultiplier(chrominanceMul);						
 }
 
 void MainWindow::parseCommandLine()
 {
 	QVector<bool> parsed(qApp->arguments().size());
 	const QStringList &args = qApp->arguments();
+	bool showUsage = false;
 	
 	for(int i=1; i<parsed.size(); i++)
 		parsed[i] = false;
@@ -140,13 +145,15 @@ void MainWindow::parseCommandLine()
 			bool ok;
 			int val;
 			
-			parsed[i] = true;
-			val = args[i+1].toInt(&ok);
-				
-			if(ok) {
-				i++;
+			if(parsed.size() > i) {
 				parsed[i] = true;
-				videoWidth = val;	
+				val = args[i+1].toInt(&ok);
+				
+				if(ok) {
+					i++;
+					parsed[i] = true;
+					videoWidth = val;	
+				}
 			}				
 		}
 
@@ -166,7 +173,6 @@ void MainWindow::parseCommandLine()
 		}
 		
 		//frame repeats
-		//video height
 		if(args[i] == "-r") {
 			bool ok;
 			int val;
@@ -181,6 +187,7 @@ void MainWindow::parseCommandLine()
 			}				
 		}
 
+		//frame in sequence 0...repeats-1 on which to show new frame
 		if(args[i] == "-p") {
 			bool ok;
 			int val;
@@ -195,6 +202,37 @@ void MainWindow::parseCommandLine()
 			}				
 		}
 
+		//luminance values multipler
+		if(args[i] == "-ym") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				luminanceMul = val;
+			}				
+		}
+
+		//luminance values multipler
+		if(args[i] == "-cm") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				chrominanceMul = val;
+			}				
+		}
+
+		//specify OSD font file
 		if(args[i] == "-f") {			
 			parsed[i] = true;
 			fontFile = args[i+1];
@@ -202,6 +240,7 @@ void MainWindow::parseCommandLine()
 			parsed[i] = true;
 		}
 
+		//force yuv file type
 		if(args[i] == "-t") {			
 			parsed[i] = true;
 			forceFileType = true;
@@ -216,23 +255,23 @@ void MainWindow::parseCommandLine()
 			if(fileType.toLower() == "v210") parsed[i] = true;															
 		}
 		
+		//display usage
+		if(args[i] == "-h") {			
+			showUsage = true;
+			parsed[i] = true;			
+		}
 
 	}
+		
+	fileName = args.last();
+	QFileInfo fi(fileName);	
 	
-	allParsed = true;
-	
-	//take the filename as the last argument
-	if(args.size() < 2) {
-		printf("No filename\n");
-		allParsed = false;
-	}
-	else	
-	{
-		fileName = args.last();
+	if(fi.exists()) {
+		
 		parsed[parsed.size()-1] = true;
 		
 		if(forceFileType == false) {
-			QFileInfo fi(fileName);
+
 			//file extension must be one we know about
 			parsed[parsed.size()-1] = false;			
 			if(fi.suffix().toLower() == "i420") parsed[parsed.size()-1] = true;
@@ -240,14 +279,15 @@ void MainWindow::parseCommandLine()
 			if(fi.suffix().toLower() == "uyvy") parsed[parsed.size()-1] = true;
 			if(fi.suffix().toLower() == "v216") parsed[parsed.size()-1] = true;
 			if(fi.suffix().toLower() == "v210") parsed[parsed.size()-1] = true;		
-			
+		
 			if(parsed[parsed.size()-1] == false)
 				printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
 				printf("Please specify file format with the -t flag\n");																					
 		}
 	}
-
+	
 	//check all args are parsed
+	allParsed = true;	
 	for(int i=1; i<args.size(); i++) {
 		if(parsed[i] == false) {
 			allParsed = false;
@@ -281,11 +321,7 @@ void MainWindow::parseCommandLine()
 		}
 	}
 	
-	//are all parameters parsed?	
-	if(allParsed == false) {
-		usage();
-		quit();	 		
-	}
+	if(showUsage == true || allParsed == false) usage();	
 }
 
 void MainWindow::usage()
@@ -309,8 +345,11 @@ void MainWindow::usage()
     printf("\nh                 ulong   1080            Height of video luminance component");
     printf("\nr                 ulong   0               Number of additional times each frame is displayed");
     printf("\np                 ulong   0               Set frame to display video on (0,r-1)");
+    printf("\nym                float   1.0             Luminance values multipler");
+    printf("\ncm                float   1.0             Chrominance values multipler");        
     printf("\nf                 string                  TrueType font file for OSD");
-    printf("\nt                 string  FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");        
+    printf("\nt                 string  FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");
+	printf("\nh                                         Show this usage information");            
     printf("\n");
 	printf("\nKeypress               Action");
     printf("\n========               ======");
@@ -325,7 +364,7 @@ void MainWindow::usage()
 	printf("\n>                      Jog one frame forward when paused");
 	printf("\n<                      Jog one frame backward when paused");
 	printf("\ny                      Toggle display of luminance  on/off");
-	printf("\nc                      Toggle display of chrominance on/off");
+	printf("\nc                      Toggle display of chrominance on/off");	
 	printf("\nq                      Quit");	
     printf("\n");
     printf("\n");        

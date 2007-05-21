@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.13 2007-05-18 14:29:04 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.14 2007-05-21 10:38:52 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -128,4 +128,14 @@ void GLvideo_mt::setFramePolarity(int p)
 void GLvideo_mt::setFontFile(QString &fontFile)
 {
 	renderThread.setFontFile(fontFile.toLatin1().data());	
+}
+
+void GLvideo_mt::setLuminanceMultiplier(float m)
+{
+	renderThread.setLuminanceMultiplier(m);
+}
+
+void GLvideo_mt::setChrominanceMultiplier(float m)
+{
+	renderThread.setChrominanceMultiplier(m);	
 }
