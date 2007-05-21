@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.20 2007-05-21 11:24:41 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.21 2007-05-21 13:12:11 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -348,9 +348,10 @@ void MainWindow::parseCommandLine()
 			if(fi.suffix().toLower() == "v216") parsed[parsed.size()-1] = true;
 			if(fi.suffix().toLower() == "v210") parsed[parsed.size()-1] = true;		
 		
-			if(parsed[parsed.size()-1] == false)
+			if(parsed[parsed.size()-1] == false) {
 				printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
-				printf("Please specify file format with the -t flag\n");																					
+				printf("Please specify file format with the -t flag\n");
+			}																					
 		}
 	}
 	
