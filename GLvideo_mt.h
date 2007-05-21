@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.13 2007-05-21 10:38:52 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.14 2007-05-21 11:24:41 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -69,8 +69,12 @@ public slots:
 	void toggleAspectLock();
 	void toggleLuminance();
 	void toggleChrominance();
+	void setLuminanceOffset1(float o);
+	void setChrominanceOffset1(float o);	
 	void setLuminanceMultiplier(float m);
 	void setChrominanceMultiplier(float m);
+	void setLuminanceOffset2(float o);
+	void setChrominanceOffset2(float o);	
 		
 private slots:
 	void hideMouse();

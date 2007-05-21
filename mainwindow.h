@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.13 2007-05-21 10:38:52 jrosser Exp $
+* $Id: mainwindow.h,v 1.14 2007-05-21 11:24:41 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -117,8 +117,12 @@ private:
 	bool forceFileType;
 	QString fileType;
 	
+	float luminanceOffset1;
+	float chrominanceOffset1;	
 	float luminanceMul;
 	float chrominanceMul;
+	float luminanceOffset2;
+	float chrominanceOffset2;		
 };
 
 #endif

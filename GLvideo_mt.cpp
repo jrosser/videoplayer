@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.14 2007-05-21 10:38:52 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.15 2007-05-21 11:24:41 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -138,4 +138,24 @@ void GLvideo_mt::setLuminanceMultiplier(float m)
 void GLvideo_mt::setChrominanceMultiplier(float m)
 {
 	renderThread.setChrominanceMultiplier(m);	
+}
+
+void GLvideo_mt::setLuminanceOffset1(float o)
+{
+	renderThread.setLuminanceOffset1(o);
+}
+
+void GLvideo_mt::setChrominanceOffset1(float o)
+{
+	renderThread.setChrominanceOffset1(o);
+}
+
+void GLvideo_mt::setLuminanceOffset2(float o)
+{
+	renderThread.setLuminanceOffset2(o);
+}
+
+void GLvideo_mt::setChrominanceOffset2(float o)
+{
+	renderThread.setChrominanceOffset2(o);
 }

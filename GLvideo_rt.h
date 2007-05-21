@@ -26,8 +26,12 @@ public:
 	void toggleOSD();
 	void toggleLuminance();
 	void toggleChrominance();
+	void setLuminanceOffset1(float o);
+	void setChrominanceOffset1(float o);	
 	void setLuminanceMultiplier(float m);
 	void setChrominanceMultiplier(float m);
+	void setLuminanceOffset2(float o);
+	void setChrominanceOffset2(float o);
 					        
 private:
 	//void setUpFonts(const char* fontfile);
@@ -46,8 +50,13 @@ private:
 	int m_osd;					//type of OSD shown
 	bool m_showLuminance;		//use Y data or 0.5
 	bool m_showChrominance;		//use C data or 0.5
-	float m_luminanceMultiplier;
+	
+	float m_luminanceOffset1;		//Y & C offsets applied to data passed to the shader directly from the file
+	float m_chrominanceOffset1;
+	float m_luminanceMultiplier;	//Y & C scaling factors applied to offset Y/C data
 	float m_chrominanceMultiplier;
+	float m_luminanceOffset2;		//Y & C offsets applied to scaled data
+	float m_chrominanceOffset2;
 	
 	static const int MAX_OSD = 3;
 				

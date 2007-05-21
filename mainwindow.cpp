@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.19 2007-05-21 10:38:52 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.20 2007-05-21 11:24:41 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -46,8 +46,12 @@ MainWindow::MainWindow()
 	videoHeight = 1080;
 	frameRepeats = 0;
 	framePolarity = 0;
+	luminanceOffset1 = -0.0625;
+	chrominanceOffset1 = -0.5;
 	luminanceMul = 1.0;
 	chrominanceMul = 1.0;
+	luminanceOffset2 = 0.0;
+	chrominanceOffset2 = 0.0;	
 	fileName = "";
 	forceFileType = false;
 	fileType = "";
@@ -125,8 +129,12 @@ MainWindow::MainWindow()
 	glvideo_mt->setFrameRepeats(frameRepeats);
 	glvideo_mt->setFramePolarity(framePolarity);
 	glvideo_mt->setFontFile(fontFile);	
+	glvideo_mt->setLuminanceOffset1(luminanceOffset1);
+	glvideo_mt->setChrominanceOffset1(chrominanceOffset1);
 	glvideo_mt->setLuminanceMultiplier(luminanceMul);
-	glvideo_mt->setChrominanceMultiplier(chrominanceMul);						
+	glvideo_mt->setChrominanceMultiplier(chrominanceMul);
+	glvideo_mt->setLuminanceOffset2(luminanceOffset2);
+	glvideo_mt->setChrominanceOffset2(chrominanceOffset2);
 }
 
 void MainWindow::parseCommandLine()
@@ -199,6 +207,66 @@ void MainWindow::parseCommandLine()
 				i++;
 				parsed[i] = true;
 				framePolarity = val;
+			}				
+		}
+
+		//luminance values data offset
+		if(args[i] == "-yo") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				luminanceOffset1 = val;
+			}				
+		}
+
+		//chrominance values data offset
+		if(args[i] == "-co") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				chrominanceOffset1 = val;
+			}				
+		}
+
+		//luminance values data offset
+		if(args[i] == "-yo2") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				luminanceOffset2 = val;
+			}				
+		}
+
+		//chrominance values data offset
+		if(args[i] == "-co2") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				chrominanceOffset2 = val;
 			}				
 		}
 
@@ -345,8 +413,12 @@ void MainWindow::usage()
     printf("\nh                 ulong   1080            Height of video luminance component");
     printf("\nr                 ulong   0               Number of additional times each frame is displayed");
     printf("\np                 ulong   0               Set frame to display video on (0,r-1)");
-    printf("\nym                float   1.0             Luminance values multipler");
-    printf("\ncm                float   1.0             Chrominance values multipler");        
+    printf("\nyo                float   -0.0625         Luminance data values offset");
+    printf("\nco                float   -0.5            Chrominance data values offset");                        
+    printf("\nym                float   1.0             Luminance multipler");
+    printf("\ncm                float   1.0             Chrominance multipler");
+    printf("\nyo2               float   0.0             Multiplied Luminance offset 2");
+    printf("\nco2               float   0.0             Multiplied Chrominance offset 2");                    
     printf("\nf                 string                  TrueType font file for OSD");
     printf("\nt                 string  FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");
 	printf("\nh                                         Show this usage information");            

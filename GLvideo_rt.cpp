@@ -144,8 +144,15 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_changeFont = false;
 	m_showLuminance = true;
 	m_showChrominance = true;
-	m_luminanceMultiplier = 1.0;	
+
+	m_luminanceOffset1 = -0.0625;	//video luminance has black at 16/255
+	m_chrominanceOffset1 = -0.5;    //video chrominace is centered at 128/255
+	
+	m_luminanceMultiplier = 1.0;	//unscaled
 	m_chrominanceMultiplier = 1.0;
+	
+	m_luminanceOffset2 = 0.0;		//no offset
+	m_chrominanceOffset2 = 0.0;
 }
 
 void GLvideo_rt::compileFragmentShaders()
@@ -331,6 +338,34 @@ void GLvideo_rt::setChrominanceMultiplier(float m)
 	mutex.unlock();		
 }
 
+void GLvideo_rt::setLuminanceOffset1(float o)
+{
+	mutex.lock();
+	m_luminanceOffset1 = o;	
+	mutex.unlock();	
+}
+    
+void GLvideo_rt::setChrominanceOffset1(float o)
+{
+	mutex.lock();
+	m_chrominanceOffset1 = o;
+	mutex.unlock();		
+}
+
+void GLvideo_rt::setLuminanceOffset2(float o)
+{
+	mutex.lock();
+	m_luminanceOffset2 = o;
+	mutex.unlock();	
+}
+    
+void GLvideo_rt::setChrominanceOffset2(float o)
+{
+	mutex.lock();
+	m_chrominanceOffset2 = o;
+	mutex.unlock();		
+}
+
 void GLvideo_rt::resizeViewport(int width, int height)
 {
 	mutex.lock();
@@ -513,8 +548,12 @@ void GLvideo_rt::run()
 	int framePolarity = m_framePolarity;
 	int currentShader = 0;	
 	int osd = m_osd;
+	float luminanceOffset1 = m_luminanceOffset1;
+	float chrominanceOffset1 = m_chrominanceOffset1;
 	float luminanceMultiplier = m_luminanceMultiplier;
-	float chrominanceMultiplier = m_chrominanceMultiplier;	
+	float chrominanceMultiplier = m_chrominanceMultiplier;
+	float luminanceOffset2 = m_luminanceOffset2;
+	float chrominanceOffset2 = m_chrominanceOffset2;	
 	mutex.unlock();
 
 #ifdef HAVE_FTGL
@@ -580,6 +619,26 @@ void GLvideo_rt::run()
 			if(chrominanceMultiplier != m_chrominanceMultiplier) {
 				chrominanceMultiplier = m_chrominanceMultiplier;
 				updateShaderVars = true;
+			}
+
+			if(luminanceOffset1 != m_luminanceOffset1) {
+				luminanceOffset1 = m_luminanceOffset1;
+				updateShaderVars = true;	
+			}
+
+			if(chrominanceOffset1 != m_chrominanceOffset1) {
+				chrominanceOffset1 = m_chrominanceOffset1;
+				updateShaderVars = true;	
+			}
+
+			if(luminanceOffset2 != m_luminanceOffset2) {
+				luminanceOffset2 = m_luminanceOffset2;
+				updateShaderVars = true;	
+			}
+
+			if(chrominanceOffset2 != m_chrominanceOffset2) {
+				chrominanceOffset2 = m_chrominanceOffset2;
+				updateShaderVars = true;	
 			}
 
 		mutex.unlock();
@@ -671,9 +730,9 @@ void GLvideo_rt::run()
 			//settings from the c++ program to the shader
 		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
 		    float offset1[3];
-		    offset1[0] = -0.0625;
-		    offset1[1] = -0.5;
-		    offset1[2] = -0.5;
+		    offset1[0] = luminanceOffset1;
+		    offset1[1] = chrominanceOffset1;
+		    offset1[2] = chrominanceOffset1;
 			glUniform3fvARB(i, 1, &offset1[0]);		    
 
 		    i=glGetUniformLocationARB(programs[currentShader], "yuvMul");			
@@ -685,9 +744,9 @@ void GLvideo_rt::run()
 
 		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
 		    float offset2[3];
-		    offset2[0] = showLuminance ? 0.0 : 0.5;
-		    offset2[1] = 0.0;
-		    offset2[2] = 0.0;
+		    offset2[0] = showLuminance ? luminanceOffset2 : 0.5;	//when luminance is off, set to mid grey
+		    offset2[1] = chrominanceOffset2;
+		    offset2[2] = chrominanceOffset2;
 			glUniform3fvARB(i, 1, &offset2[0]);		    
     			    					
 		    i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
