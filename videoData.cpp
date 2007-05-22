@@ -130,8 +130,7 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			glYTextureWidth = (Ywidth * 2 * 4) / (3 * 4);	//gets converted to 16 bit UYVY the sent to the GPU	
 			glInternalFormat = GL_RGBA;
 			glFormat = GL_RGBA;			
-			glType = GL_UNSIGNED_INT;
-			glMinMaxFilter = GL_NEAREST;			
+			glType = GL_UNSIGNED_INT;			
 			Udata = Ydata;
 			Vdata = Ydata;			
 			break;
