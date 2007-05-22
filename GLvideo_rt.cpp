@@ -530,7 +530,8 @@ void GLvideo_rt::uploadTextures(VideoData *videoData)
 	memcpy(ioMem, videoData->Ydata, videoData->YdataSize);
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->glYTextureWidth, videoData->Yheight, videoData->glFormat, videoData->glType, NULL);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);	
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+		
 }
 
 void GLvideo_rt::renderVideo(VideoData *videoData)
@@ -557,6 +558,7 @@ void GLvideo_rt::run()
 	VideoData *videoData = NULL;
 
 	QTime frameIntervalTime;
+	QTime perfTimer;
 	int fpsAvgPeriod=1;
 	float fps = 0;
 	
@@ -655,7 +657,7 @@ void GLvideo_rt::run()
     glUseProgramObjectARB(programs[currentShader]);
     	
 	while (doRendering) {
-
+		perfTimer.start();
 		//update shadow variables
 		mutex.lock();
 		
@@ -730,11 +732,14 @@ void GLvideo_rt::run()
 			}
 	
 		mutex.unlock();
+		printf("  getparams %d\n", perfTimer.elapsed());
 
 		//read frame data, one frame at a time, or after we have displayed the second field
 		if(interlacedSource == 0 || field == 1) {
 			videoData = glw.vr.getNextFrame();
 		}
+		
+		printf("  readData %d\n", perfTimer.elapsed());
 		
 		//check for v210 data - it's very difficult to write a shader for this
 		//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
@@ -743,7 +748,7 @@ void GLvideo_rt::run()
 				videoData->convertV210();
 		}
 
-		//check for video dimensions changing
+		//check for video dimensions changing		
 		if(videoData != NULL) {
 			if(lastsrcwidth != videoData->Ywidth || lastsrcheight != videoData->Yheight) {
 			
@@ -757,8 +762,10 @@ void GLvideo_rt::run()
 				lastsrcheight = videoData->Yheight;
 			}
 		}
-
+		printf("  dimensions %d\n", perfTimer.elapsed());
+		
 		//check for the shader changing
+		
 		if(videoData) {
 			int newShader = currentShader;
 			
@@ -790,15 +797,16 @@ void GLvideo_rt::run()
 				currentShader = newShader;
     			glUseProgramObjectARB(programs[currentShader]);					
 			}							
-		}
-
-
+		}		
+		printf("  shader %d\n", perfTimer.elapsed());
+		
 		if(createGLTextures) {
 			if(DEBUG) printf("Creating GL textures\n");
 			//create the textures on the GPU
 			createTextures(videoData, currentShader);
 			createGLTextures = false;
-		}			
+		}
+		printf("  createTexture %d\n", perfTimer.elapsed());			
 		
 		if(updateShaderVars && videoData) {
 			if(DEBUG) printf("Updating fragment shader variables\n");
@@ -849,6 +857,7 @@ void GLvideo_rt::run()
     		glUniform1iARB(i, deinterlace);
 			updateShaderVars = false;	
 		}	
+		printf("  shaderVars %d\n", perfTimer.elapsed());
 												
 		if(doResize && videoData != NULL) {
 			
@@ -876,7 +885,8 @@ void GLvideo_rt::run()
 			}			
 			doResize = false;
 		}
-
+		printf("  resize %d\n", perfTimer.elapsed());
+		
 #ifdef HAVE_FTGL
 		if(changeFont) {
 			if(font) 
@@ -884,33 +894,46 @@ void GLvideo_rt::run()
 			
 			font = new FTGLPolygonFont((const char *)fontFile);
 			font->FaceSize(144);
-			font->CharMap(ft_encoding_unicode);			
-		}
+			font->CharMap(ft_encoding_unicode);
+			changeFont = false;	
+		}		
+		printf("  changefont %d %d\n", perfTimer.elapsed(), changeFont);		
 #endif
 
+		
+
+		
         if (frameRepeats > 1)
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
+		printf("  syncwait %d %d\n", perfTimer.elapsed(), frameRepeats);
 																			
 		if(interlacedSource) {
 		   	int i=glGetUniformLocationARB(programs[currentShader], "field");
     		glUniform1iARB(i, field);    		
-		}	
-																			
+		}			
+		printf("  field %d\n", perfTimer.elapsed());
+																					
 		if(videoData) {
 			
 			//upload the texture data for each new frame, or for before we render the first field
 			if(interlacedSource == 0 || field == 0) uploadTextures(videoData);
-			renderVideo(videoData);
-			
+			printf("  upload %d\n", perfTimer.elapsed());
+						
+			renderVideo(videoData);			
+			printf("  render %d\n", perfTimer.elapsed());
+						
 #ifdef HAVE_FTGL
 			glUseProgramObjectARB(0);							
 			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
-			glUseProgramObjectARB(programs[currentShader]);			
+			glUseProgramObjectARB(programs[currentShader]);
+			printf("  osd %d\n", perfTimer.elapsed());			
 #endif			
 		}
 																															   			   																									   			  
 		glFlush();
+		printf("  flush %d\n", perfTimer.elapsed());		
 		glw.swapBuffers();
+		printf("  swapbuffers %d\n", perfTimer.elapsed());		
 		
 		if(interlacedSource) {
 			//move to the next field			
@@ -919,10 +942,13 @@ void GLvideo_rt::run()
 		}
 		
 		//get the current frame count
-        unsigned int retraceCount2;
-       	glXGetVideoSyncSGI(&retraceCount2);
+        //unsigned int retraceCount2;
+       	//glXGetVideoSyncSGI(&retraceCount2);
        	
-  		//calculate FPS  		
+  		//calculate FPS
+  		int intvl = perfTimer.restart();
+  		assert(intvl < 100);
+  		printf("interval = %d\n", frameIntervalTime.restart());   		
   		if (fpsAvgPeriod == 0) {
   			int fintvl = frameIntervalTime.elapsed();
   			if (fintvl) fps = 10*1e3/fintvl;
