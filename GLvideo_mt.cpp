@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.15 2007-05-21 11:24:41 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.16 2007-05-22 14:56:28 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -91,6 +91,20 @@ void GLvideo_mt::toggleChrominance()
 	renderThread.toggleChrominance();	
 }
 
+void GLvideo_mt::setInterlacedSource(bool i)
+{	
+	renderThread.setInterlacedSource(i);	
+}
+
+void GLvideo_mt::toggleDeinterlace()
+{	
+	renderThread.toggleDeinterlace();	
+}
+
+void GLvideo_mt::setDeinterlace(bool d)
+{	
+	renderThread.setDeinterlace(d);
+}
 
 void GLvideo_mt::initializeGL()
 {  

@@ -20,24 +20,28 @@ public:
 	void setFramePolarity(int polarity);
 	void setFontFile(const char *fontFile);	
 	void setAspectLock(bool lock);
+	void setInterlacedSource(bool i);	
 	void run();
 	void stop();
 	void toggleAspectLock();
 	void toggleOSD();
 	void toggleLuminance();
 	void toggleChrominance();
+	void toggleDeinterlace();	
 	void setLuminanceOffset1(float o);
 	void setChrominanceOffset1(float o);	
 	void setLuminanceMultiplier(float m);
 	void setChrominanceMultiplier(float m);
 	void setLuminanceOffset2(float o);
 	void setChrominanceOffset2(float o);
+	void setDeinterlace(bool d);
 					        
 private:
 	//void setUpFonts(const char* fontfile);
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
 	void createTextures(VideoData *videoData, int currentShader);
+	void uploadTextures(VideoData *videoData);
 	void renderVideo(VideoData *videoData);
 #ifdef HAVE_FTGL
 	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd);
@@ -50,6 +54,8 @@ private:
 	int m_osd;					//type of OSD shown
 	bool m_showLuminance;		//use Y data or 0.5
 	bool m_showChrominance;		//use C data or 0.5
+	bool m_interlacedSource;	//is the source video interlaced?
+	bool m_deinterlace;			//do we try to deinterlace an interlaced source?
 	
 	float m_luminanceOffset1;		//Y & C offsets applied to data passed to the shader directly from the file
 	float m_chrominanceOffset1;
@@ -58,7 +64,7 @@ private:
 	float m_luminanceOffset2;		//Y & C offsets applied to scaled data
 	float m_chrominanceOffset2;
 	
-	static const int MAX_OSD = 3;
+	static const int MAX_OSD = 4;
 				
 	int m_displaywidth;			//width of parent widget
 	int m_displayheight;		//height of parent widget

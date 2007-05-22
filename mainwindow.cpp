@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.21 2007-05-21 13:12:11 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.22 2007-05-22 14:56:28 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -51,7 +51,9 @@ MainWindow::MainWindow()
 	luminanceMul = 1.0;
 	chrominanceMul = 1.0;
 	luminanceOffset2 = 0.0;
-	chrominanceOffset2 = 0.0;	
+	chrominanceOffset2 = 0.0;
+	interlacedSource = false;
+	deinterlace = false;	
 	fileName = "";
 	forceFileType = false;
 	fileType = "";
@@ -135,6 +137,8 @@ MainWindow::MainWindow()
 	glvideo_mt->setChrominanceMultiplier(chrominanceMul);
 	glvideo_mt->setLuminanceOffset2(luminanceOffset2);
 	glvideo_mt->setChrominanceOffset2(chrominanceOffset2);
+	glvideo_mt->setInterlacedSource(interlacedSource);
+	glvideo_mt->setDeinterlace(deinterlace);		
 }
 
 void MainWindow::parseCommandLine()
@@ -300,6 +304,36 @@ void MainWindow::parseCommandLine()
 			}				
 		}
 
+		//source pictures interlace
+		if(args[i] == "-i") {
+			bool ok;
+			bool val;
+			
+			parsed[i] = true;
+			val = (bool)args[i+1].toInt(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				interlacedSource = val;
+			}				
+		}
+
+		//deinterlace interlaced pictures
+		if(args[i] == "-d") {
+			bool ok;
+			bool val;
+			
+			parsed[i] = true;
+			val = (bool)args[i+1].toInt(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				deinterlace = val;
+			}				
+		}
+
 		//specify OSD font file
 		if(args[i] == "-f") {			
 			parsed[i] = true;
@@ -414,6 +448,8 @@ void MainWindow::usage()
     printf("\nh                 ulong   1080            Height of video luminance component");
     printf("\nr                 ulong   0               Number of additional times each frame is displayed");
     printf("\np                 ulong   0               Set frame to display video on (0,r-1)");
+    printf("\ni                 bool    0               Source video is interlaced (1), progressive (0)");
+    printf("\nd                 bool    0               Deinterlace video if source is interlaced (1), no deinterlacing (0)");        
     printf("\nyo                float   -0.0625         Luminance data values offset");
     printf("\nco                float   -0.5            Chrominance data values offset");                        
     printf("\nym                float   1.0             Luminance multipler");
@@ -451,6 +487,11 @@ void MainWindow::createActions()
 	addAction(quitAct);
 	connect(quitAct, SIGNAL(triggered()), this, SLOT(quit()));
 
+	toggleDeinterlaceAct = new QAction("Toggle Deinterlacing", this);
+	toggleDeinterlaceAct->setShortcut(tr("i"));
+	addAction(toggleDeinterlaceAct);
+	connect(toggleDeinterlaceAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleDeinterlace()));
+	
 	toggleOSDAct = new QAction("Toggle OSD", this);
 	toggleOSDAct->setShortcut(tr("o"));		
 	addAction(toggleOSDAct);			

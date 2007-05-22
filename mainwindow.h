@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.14 2007-05-21 11:24:41 jrosser Exp $
+* $Id: mainwindow.h,v 1.15 2007-05-22 14:56:29 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -80,6 +80,7 @@ private:
 	QAction *escapeFullScreenAct;
 	QAction *toggleLuminanceAct;
 	QAction *toggleChrominanceAct;
+	QAction *toggleDeinterlaceAct;
 	
 	//transport control actions
 	QAction *transportFwd100Act;
@@ -122,7 +123,9 @@ private:
 	float luminanceMul;
 	float chrominanceMul;
 	float luminanceOffset2;
-	float chrominanceOffset2;		
+	float chrominanceOffset2;
+	bool  interlacedSource;
+	bool  deinterlace;			
 };
 
 #endif

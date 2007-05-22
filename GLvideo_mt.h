@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.14 2007-05-21 11:24:41 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.15 2007-05-22 14:56:28 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -69,6 +69,9 @@ public slots:
 	void toggleAspectLock();
 	void toggleLuminance();
 	void toggleChrominance();
+    void toggleDeinterlace();
+    void setInterlacedSource(bool i);
+    void setDeinterlace(bool d);
 	void setLuminanceOffset1(float o);
 	void setChrominanceOffset1(float o);	
 	void setLuminanceMultiplier(float m);

@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#define DEBUG 0
+#define DEBUG 1
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -39,7 +39,10 @@ static char *shaderPlanarSrc=
   "uniform samplerRect Utex,Vtex;\n"
   "uniform float Yheight, Ywidth;\n"   
   "uniform float CHsubsample, CVsubsample;\n"
-
+  
+  "uniform bool interlacedSource;\n"
+  "uniform bool deinterlace;\n"  
+  "uniform int  field;\n"
   "uniform vec3 yuvOffset1;\n"
   "uniform vec3 yuvMul;\n"
   "uniform vec3 yuvOffset2;\n"
@@ -52,10 +55,20 @@ static char *shaderPlanarSrc=
   
   " nx=gl_TexCoord[0].x;\n"
   " ny=Yheight-gl_TexCoord[0].y;\n"
-  
-  " yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
-  " yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
-  " yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+
+  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + field, 2.0) > 0.5)) {\n"   
+  "     //interpolated line in a field\n"
+  "     yuv[0] = textureRect(Ytex,vec2(nx, (ny+1))).r + textureRect(Ytex,vec2(nx, (ny-1))).r;\n" 
+  "     yuv[1] = textureRect(Utex,vec2(nx/CHsubsample, (ny+1)/CVsubsample)).r + textureRect(Utex,vec2(nx/CHsubsample, (ny-1)/CVsubsample)).r;\n"
+  "     yuv[2] = textureRect(Vtex,vec2(nx/CHsubsample, (ny+1)/CVsubsample)).r + textureRect(Vtex,vec2(nx/CHsubsample, (ny-1)/CVsubsample)).r;\n"  
+  "     yuv = yuv / 2.0;"
+  " }\n"
+  " else {\n"
+  "     //non interpolated line in a field, or non interlaced\n"
+  "     yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
+  "     yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+  "     yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"    
+  " }\n"
 
   " yuv = yuv + yuvOffset1;\n"
   " yuv = yuv * yuvMul;\n"
@@ -79,6 +92,9 @@ static char *shaderUYVYSrc=
   "uniform float Yheight, Ywidth;\n"  
   "uniform float CHsubsample, CVsubsample;\n"
 
+  "uniform bool interlacedSource;\n"
+  "uniform bool deinterlace;\n"  
+  "uniform int  field;\n"
   "uniform vec3 yuvOffset1;\n"
   "uniform vec3 yuvMul;\n"
   "uniform vec3 yuvOffset2;\n"
@@ -88,18 +104,32 @@ static char *shaderUYVYSrc=
   " float nx,ny,a;\n"
   " vec3 yuv;\n"
   " vec4 rgba;\n"
+  " vec4 above;\n"
+  " vec4 below;\n"
   " vec3 rgb;\n"
-
+    
   " nx=gl_TexCoord[0].x;\n"
   " ny=Yheight-gl_TexCoord[0].y;\n"
  
-  " rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"	 //sample every other RGBA quad to get luminance
-  " yuv[0] = (fract(nx/2) < 0.5) ? rgba.g : rgba.a;\n"   //pick the correct luminance from G or A for this pixel
+  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + field, 2.0) > 0.5)) {\n"   
+  "     //interpolated line in a field\n"
+  "     above = textureRect(Ytex, vec2(floor(nx/2), ny+1));\n"
+  "     below = textureRect(Ytex, vec2(floor(nx/2), ny-1));\n"
 
-  " rgba = textureRect(Ytex, vec2((nx/2), ny));\n"		 //sample chrominance at 0, 0.5, 1.0, 1.5... to get interpolation to 4:4:4
-  " yuv[1] = rgba.r;\n"
-  " yuv[2] = rgba.b;\n"
-  
+  "     yuv[0]  = (fract(nx/2) < 0.5) ? above.g : above.a;\n"
+  "     yuv[0] += (fract(nx/2) < 0.5) ? below.g : below.a;\n"
+  "     yuv[1] = above.r + below.r;\n"
+  "     yuv[2] = above.b + below.b;\n"
+  "     yuv = yuv / 2.0;"
+  " }\n"
+  " else {\n"
+  "     //non interpolated line in a field, or non interlaced\n"
+  "     rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"	 //sample every other RGBA quad to get luminance
+  "     yuv[0] = (fract(nx/2) < 0.5) ? rgba.g : rgba.a;\n"   //pick the correct luminance from G or A for this pixel
+  "     yuv[1] = rgba.r;\n"
+  "     yuv[2] = rgba.b;\n"  
+  " }\n"
+
   " yuv = yuv + yuvOffset1;\n"
   " yuv = yuv * yuvMul;\n"
   " yuv = yuv + yuvOffset2;\n"  
@@ -110,6 +140,7 @@ static char *shaderUYVYSrc=
   " gl_FragColor=vec4(rgb, a);\n"
   "}\n";
 
+#ifndef Q_OS_MAC
 PFNGLLINKPROGRAMARBPROC glLinkProgramARB;
 PFNGLATTACHOBJECTARBPROC glAttachObjectARB;
 PFNGLCREATEPROGRAMOBJECTARBPROC glCreateProgramObjectARB;
@@ -129,10 +160,12 @@ PFNGLUNIFORMMATRIX3FVARBPROC glUniformMatrix3fvARB;
 PFNGLUNIFORM1FARBPROC glUniform1fARB;
 PFNGLUSEPROGRAMOBJECTARBPROC glUseProgramObjectARB;
 PFNGLGENBUFFERSPROC glGenBuffers;
-
-//#ifndef GL_VERSION_1_3
 PFNGLACTIVETEXTUREPROC glActiveTexture;
-//#endif
+#endif
+
+
+
+
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
@@ -144,7 +177,9 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_changeFont = false;
 	m_showLuminance = true;
 	m_showChrominance = true;
-
+	m_interlacedSource = false;
+	m_deinterlace = false;
+	
 	m_luminanceOffset1 = -0.0625;	//video luminance has black at 16/255
 	m_chrominanceOffset1 = -0.5;    //video chrominace is centered at 128/255
 	
@@ -310,6 +345,40 @@ void GLvideo_rt::toggleOSD(void)
 	mutex.unlock();		
 }
 
+void GLvideo_rt::setInterlacedSource(bool i)
+{
+	mutex.lock();
+	
+	m_interlacedSource = i;
+	if(m_interlacedSource == false) m_deinterlace=false;
+		
+	mutex.unlock();		
+}
+
+void GLvideo_rt::setDeinterlace(bool d)
+{
+	mutex.lock();
+	
+	if(m_interlacedSource)
+		m_deinterlace = d;
+	else
+		m_deinterlace = false;
+			
+	mutex.unlock();		
+}
+
+void GLvideo_rt::toggleDeinterlace(void)
+{
+	mutex.lock();
+	
+	if(m_interlacedSource)
+		m_deinterlace = not m_deinterlace;
+	else
+		m_deinterlace = false;
+			
+	mutex.unlock();		
+}
+
 void GLvideo_rt::toggleLuminance(void)
 {
 	mutex.lock();
@@ -401,6 +470,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 	switch (osd) {
 	case 1: sprintf(str, "%06ld", videoData->frameNum); break;
 	case 2: sprintf(str, "%06ld, fps:%3.2f", videoData->frameNum, fps); break;
+	case 3: sprintf(str, "%06ld, %s:%s", videoData->frameNum, m_interlacedSource ? "Int" : "Prog", m_deinterlace ? "On" : "Off"); break;	
 	default: str[0] = '\0';
 	}
 			
@@ -427,10 +497,8 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 }
 #endif
 
-void GLvideo_rt::renderVideo(VideoData *videoData)
-{		
-	glClear(GL_COLOR_BUFFER_BIT);
-
+void GLvideo_rt::uploadTextures(VideoData *videoData)
+{
 	void *ioMem;
 
 	if(videoData->isPlanar) {
@@ -462,7 +530,12 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
 	memcpy(ioMem, videoData->Ydata, videoData->YdataSize);
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->glYTextureWidth, videoData->Yheight, videoData->glFormat, videoData->glType, NULL);
-	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);	
+}
+
+void GLvideo_rt::renderVideo(VideoData *videoData)
+{		
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	glBegin(GL_QUADS);
 		glTexCoord2i(0,0);
@@ -503,6 +576,7 @@ void GLvideo_rt::run()
 #define XglGetProcAddress(str) wglGetProcAddress((LPCSTR)str)
 #endif
 
+#ifndef Q_OS_MAC
     glLinkProgramARB = (PFNGLLINKPROGRAMARBPROC) XglGetProcAddress("glLinkProgramARB");
     glAttachObjectARB = (PFNGLATTACHOBJECTARBPROC) XglGetProcAddress("glAttachObjectARB");
     glCreateProgramObjectARB = (PFNGLCREATEPROGRAMOBJECTARBPROC) XglGetProcAddress("glCreateProgramObjectARB");
@@ -523,6 +597,7 @@ void GLvideo_rt::run()
     glUniform1fARB = (PFNGLUNIFORM1FARBPROC) XglGetProcAddress("glUniform1fARB");
     glUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC) XglGetProcAddress("glUseProgramObjectARB");
     glGenBuffers = (PFNGLGENBUFFERSPROC) XglGetProcAddress("glGenBuffers");
+#endif
 
 //#ifndef GL_VERSION_1_3
     glActiveTexture = (PFNGLACTIVETEXTUREPROC) XglGetProcAddress("glActiveTexture");
@@ -546,6 +621,9 @@ void GLvideo_rt::run()
 	int displayheight = m_displayheight;
 	int frameRepeats = m_frameRepeats;
 	int framePolarity = m_framePolarity;
+	bool interlacedSource = m_interlacedSource;
+	bool deinterlace = m_deinterlace;
+	int field = 0;
 	int currentShader = 0;	
 	int osd = m_osd;
 	float luminanceOffset1 = m_luminanceOffset1;
@@ -567,7 +645,7 @@ void GLvideo_rt::run()
     glLoadIdentity();
     glViewport(0,0, displayheight, displaywidth);
     glClearColor(0, 0, 0, 0);
-    glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
+    //glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
  	glEnable(GL_BLEND);
  	
@@ -641,18 +719,29 @@ void GLvideo_rt::run()
 				updateShaderVars = true;	
 			}
 
+			if(interlacedSource != m_interlacedSource) {
+				interlacedSource = m_interlacedSource;
+				updateShaderVars = true;	
+			}
+
+			if(deinterlace != m_deinterlace) {
+				deinterlace = m_deinterlace;
+				updateShaderVars = true;	
+			}
+	
 		mutex.unlock();
 
-		//read frame data
-		videoData = glw.vr.getNextFrame();
-
+		//read frame data, one frame at a time, or after we have displayed the second field
+		if(interlacedSource == 0 || field == 1) {
+			videoData = glw.vr.getNextFrame();
+		}
+		
 		//check for v210 data - it's very difficult to write a shader for this
 		//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
 		if(videoData) {
 			if(videoData->renderFormat == VideoData::V210)
 				videoData->convertV210();
 		}
-
 
 		//check for video dimensions changing
 		if(videoData != NULL) {
@@ -752,7 +841,12 @@ void GLvideo_rt::run()
 		    i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
 		    float matrix[9] = {1.0, 0.0, 1.5958, 1.0, -0.39173, -0.8129, 1.0, 2.017, 0.0};	    
     		glUniformMatrix3fvARB(i, 1, false, &matrix[0]);
-			
+
+		   	i=glGetUniformLocationARB(programs[currentShader], "interlacedSource");
+    		glUniform1iARB(i, interlacedSource);
+
+		   	i=glGetUniformLocationARB(programs[currentShader], "deinterlace");
+    		glUniform1iARB(i, deinterlace);
 			updateShaderVars = false;	
 		}	
 												
@@ -797,26 +891,38 @@ void GLvideo_rt::run()
         if (frameRepeats > 1)
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
 																			
+		if(interlacedSource) {
+		   	int i=glGetUniformLocationARB(programs[currentShader], "field");
+    		glUniform1iARB(i, field);    		
+		}	
+																			
 		if(videoData) {
 			
-			//if(DEBUG) printf("Rendering...\n");												
+			//upload the texture data for each new frame, or for before we render the first field
+			if(interlacedSource == 0 || field == 0) uploadTextures(videoData);
 			renderVideo(videoData);
 			
 #ifdef HAVE_FTGL
 			glUseProgramObjectARB(0);							
 			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
 			glUseProgramObjectARB(programs[currentShader]);			
-#endif
-																								   			   																									   			  
-			glFlush();
-			glw.swapBuffers();
+#endif			
 		}
+																															   			   																									   			  
+		glFlush();
+		glw.swapBuffers();
+		
+		if(interlacedSource) {
+			//move to the next field			
+			field++;
+			if(field > 1) field = 0;	
+		}
+		
 		//get the current frame count
         unsigned int retraceCount2;
        	glXGetVideoSyncSGI(&retraceCount2);
        	
-  		//calculate FPS
-  		
+  		//calculate FPS  		
   		if (fpsAvgPeriod == 0) {
   			int fintvl = frameIntervalTime.elapsed();
   			if (fintvl) fps = 10*1e3/fintvl;
