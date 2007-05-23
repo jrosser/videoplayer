@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.11 2007-05-18 14:29:04 jrosser Exp $
+* $Id: videoRead.cpp,v 1.12 2007-05-23 13:41:06 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -135,6 +135,25 @@ void VideoRead::setFileName(const QString &fn)
 		lastFrameNum--; 			
 	}
 	
+}
+
+int VideoRead::getDirection()
+{
+	QMutexLocker transportLocker(&transportMutex);
+	TransportControls ts = transportStatus;
+	
+	//stopped or paused
+	int direction = 0;
+	
+	//any forward speed
+	if(ts == Fwd1 || ts == Fwd2 || ts == Fwd5 || ts == Fwd10 || ts == Fwd20 || ts == Fwd50 || ts == Fwd100 || ts == JogFwd)
+		direction = 1;
+
+	//any reverse speed
+	if(ts == Rev1 || ts == Rev2 || ts == Rev5 || ts == Rev10 || ts == Rev20 || ts == Rev50 || ts == Rev100 || ts == JogRev)
+		direction = -1;
+		
+	return direction;	
 }
 
 //called from the openGL display widget to get frame data for display

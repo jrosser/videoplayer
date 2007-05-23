@@ -43,6 +43,7 @@ static char *shaderPlanarSrc=
   "uniform bool interlacedSource;\n"
   "uniform bool deinterlace;\n"  
   "uniform int  field;\n"
+  "uniform int  direction;\n"  
   "uniform vec3 yuvOffset1;\n"
   "uniform vec3 yuvMul;\n"
   "uniform vec3 yuvOffset2;\n"
@@ -55,6 +56,8 @@ static char *shaderPlanarSrc=
   
   " nx=gl_TexCoord[0].x;\n"
   " ny=Yheight-gl_TexCoord[0].y;\n"
+
+  " if(direction < 0) field = 1 - field;\n"		//swap field order when playing interlaced pictures backwards
 
   " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + field, 2.0) > 0.5)) {\n"   
   "     //interpolated line in a field\n"
@@ -95,6 +98,7 @@ static char *shaderUYVYSrc=
   "uniform bool interlacedSource;\n"
   "uniform bool deinterlace;\n"  
   "uniform int  field;\n"
+  "uniform int  direction;\n"  
   "uniform vec3 yuvOffset1;\n"
   "uniform vec3 yuvMul;\n"
   "uniform vec3 yuvOffset2;\n"
@@ -110,6 +114,8 @@ static char *shaderUYVYSrc=
     
   " nx=gl_TexCoord[0].x;\n"
   " ny=Yheight-gl_TexCoord[0].y;\n"
+ 
+  " if(direction < 0) field = 1 - field;\n"		//swap field order when playing interlaced pictures backwards	
  
   " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + field, 2.0) > 0.5)) {\n"   
   "     //interpolated line in a field\n"
@@ -162,10 +168,6 @@ PFNGLUSEPROGRAMOBJECTARBPROC glUseProgramObjectARB;
 PFNGLGENBUFFERSPROC glGenBuffers;
 PFNGLACTIVETEXTUREPROC glActiveTexture;
 #endif
-
-
-
-
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
@@ -626,6 +628,7 @@ void GLvideo_rt::run()
 	bool interlacedSource = m_interlacedSource;
 	bool deinterlace = m_deinterlace;
 	int field = 0;
+	int direction = 0;
 	int currentShader = 0;	
 	int osd = m_osd;
 	float luminanceOffset1 = m_luminanceOffset1;
@@ -673,7 +676,11 @@ void GLvideo_rt::run()
 						
 			//boolean flags
 			doRendering = m_doRendering;
-			changeFont = m_changeFont;
+			
+			if(m_changeFont) {
+				changeFont = true;
+				m_changeFont = false;	
+			}
 			
 			//check for changed aspect ratio lock
 			if(aspectLock != m_aspectLock) {
@@ -737,6 +744,7 @@ void GLvideo_rt::run()
 		//read frame data, one frame at a time, or after we have displayed the second field
 		if(interlacedSource == 0 || field == 1) {
 			videoData = glw.vr.getNextFrame();
+			direction = glw.vr.getDirection();
 		}
 		
 		printf("  readData %d\n", perfTimer.elapsed());
@@ -889,6 +897,7 @@ void GLvideo_rt::run()
 		
 #ifdef HAVE_FTGL
 		if(changeFont) {
+			printf("Changing font!!!!\n");
 			if(font) 
 				delete font;
 			
@@ -909,7 +918,12 @@ void GLvideo_rt::run()
 																			
 		if(interlacedSource) {
 		   	int i=glGetUniformLocationARB(programs[currentShader], "field");
-    		glUniform1iARB(i, field);    		
+	   		glUniform1iARB(i, field);
+	   		
+		   	i=glGetUniformLocationARB(programs[currentShader], "direction");
+    		glUniform1iARB(i, direction);
+    		
+    		printf("Direction = %d\n", direction);    			   		    		
 		}			
 		printf("  field %d\n", perfTimer.elapsed());
 																					

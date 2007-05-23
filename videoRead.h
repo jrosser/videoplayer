@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.7 2007-05-18 14:29:05 jrosser Exp $
+* $Id: videoRead.h,v 1.8 2007-05-23 13:41:06 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -81,6 +81,7 @@ public:
 	QMutex transportMutex;				//protect the transport status
 
 	VideoData* getNextFrame(void);	//the frame that is currently being displayed, this pointer is only manipulated from the read thread
+	int getDirection();	            //return the current transport direction -1 reverse, 0 stopped/paused, 1 forward.
 			
 protected:
 
