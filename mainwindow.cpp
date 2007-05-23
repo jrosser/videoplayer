@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.22 2007-05-22 14:56:28 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.23 2007-05-23 16:27:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -56,6 +56,7 @@ MainWindow::MainWindow()
 	deinterlace = false;	
 	fileName = "";
 	forceFileType = false;
+	matrixScaling = false;
 	fileType = "";
 	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
 		
@@ -138,7 +139,8 @@ MainWindow::MainWindow()
 	glvideo_mt->setLuminanceOffset2(luminanceOffset2);
 	glvideo_mt->setChrominanceOffset2(chrominanceOffset2);
 	glvideo_mt->setInterlacedSource(interlacedSource);
-	glvideo_mt->setDeinterlace(deinterlace);		
+	glvideo_mt->setDeinterlace(deinterlace);
+	glvideo_mt->setMatrixScaling(matrixScaling);			
 }
 
 void MainWindow::parseCommandLine()
@@ -334,6 +336,22 @@ void MainWindow::parseCommandLine()
 			}				
 		}
 
+		//colour matrix scaling to 0-255 RGB levels
+		if(args[i] == "-m") {
+			bool ok;
+			bool val;
+			
+			parsed[i] = true;
+			val = (bool)args[i+1].toInt(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				matrixScaling = val;
+			}				
+		}
+
+
 		//specify OSD font file
 		if(args[i] == "-f") {			
 			parsed[i] = true;
@@ -448,14 +466,15 @@ void MainWindow::usage()
     printf("\nh                 ulong   1080            Height of video luminance component");
     printf("\nr                 ulong   0               Number of additional times each frame is displayed");
     printf("\np                 ulong   0               Set frame to display video on (0,r-1)");
-    printf("\ni                 bool    0               Source video is interlaced (1), progressive (0)");
-    printf("\nd                 bool    0               Deinterlace video if source is interlaced (1), no deinterlacing (0)");        
+    printf("\ni                 bool    0               Source video is interlaced [1], progressive [0]");
+    printf("\nd                 bool    0               Deinterlace video if source is interlaced [1], no deinterlacing [0]");        
     printf("\nyo                float   -0.0625         Luminance data values offset");
     printf("\nco                float   -0.5            Chrominance data values offset");                        
     printf("\nym                float   1.0             Luminance multipler");
     printf("\ncm                float   1.0             Chrominance multipler");
     printf("\nyo2               float   0.0             Multiplied Luminance offset 2");
-    printf("\nco2               float   0.0             Multiplied Chrominance offset 2");                    
+    printf("\nco2               float   0.0             Multiplied Chrominance offset 2");
+    printf("\nm                 bool    0               Colour Matrix scaling,  Y*1.0 C*1.0 [0], Y*(255.0/219.0) C*(255.0/224.0) [1]");                        
     printf("\nf                 string                  TrueType font file for OSD");
     printf("\nt                 string  FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");
 	printf("\nh                                         Show this usage information");            
@@ -464,6 +483,7 @@ void MainWindow::usage()
     printf("\n========               ======");
     printf("\no                      Toggle OSD on/off");
 	printf("\nf                      Toggle full screen mode");
+	printf("\nm                      Toggle colour matrix scaling");
 	printf("\nEsc                    Return from full screen mode to windowed");
 	printf("\na                      Toggle aspect ratio lock");
 	printf("\nSpace                  Play/Pause");
@@ -486,6 +506,11 @@ void MainWindow::createActions()
 	quitAct->setShortcut(tr("Q"));
 	addAction(quitAct);
 	connect(quitAct, SIGNAL(triggered()), this, SLOT(quit()));
+
+	toggleMatrixScalingAct = new QAction("Toggle Colour Matrix Scaling", this);
+	toggleMatrixScalingAct ->setShortcut(tr("m"));
+	addAction(toggleMatrixScalingAct);
+	connect(toggleMatrixScalingAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleMatrixScaling()));
 
 	toggleDeinterlaceAct = new QAction("Toggle Deinterlacing", this);
 	toggleDeinterlaceAct->setShortcut(tr("i"));

@@ -27,7 +27,7 @@
 #include <assert.h>
 
 #define DEBUG 1
-
+#define PERF 0
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
 //should work with all planar chroma subsamplings
@@ -181,6 +181,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_showChrominance = true;
 	m_interlacedSource = false;
 	m_deinterlace = false;
+	m_matrixScaling = false;
+	m_changeMatrix = true;			//always compute colour matrix at least once
 	
 	m_luminanceOffset1 = -0.0625;	//video luminance has black at 16/255
 	m_chrominanceOffset1 = -0.5;    //video chrominace is centered at 128/255
@@ -191,6 +193,47 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_luminanceOffset2 = 0.0;		//no offset
 	m_chrominanceOffset2 = 0.0;
 }
+
+void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale)
+{
+	//R row
+	matrix[0] = 1.0;				//Y	column
+	matrix[1] = 0.0;				//Cb
+	matrix[2] = 2.0 * (1-Kr);	//Cr	
+	
+	//G row
+	matrix[3] = 1.0;
+	matrix[4] = -1.0 * ( (2.0*(1.0-Kb)*Kb)/Kg );
+	matrix[5] = -1.0 * ( (2.0*(1.0-Kr)*Kr)/Kg );
+	
+	//B row
+	matrix[6] = 1.0;
+	matrix[7] = 2.0 * (1.0-Kb);
+	matrix[8] = 0.0;
+
+	float Ys = Yscale ? (255.0/219.0) : 1.0;
+	float Cs = Cscale ? (255.0/224.0) : 1.0;
+
+	//apply any necessary scaling
+	matrix[0] *= Ys;
+	matrix[1] *= Cs;
+	matrix[2] *= Cs;
+	matrix[3] *= Ys;
+	matrix[4] *= Cs;
+	matrix[5] *= Cs;
+	matrix[6] *= Ys;
+	matrix[7] *= Cs;
+	matrix[8] *= Cs;
+
+	if(DEBUG) {
+		printf("Building YUV->RGB matrix with Kr=%f Kg=%f, Kb=%f\n", Kr, Kg, Kb);
+		printf("%f %f %f\n", matrix[0], matrix[1], matrix[2]);
+		printf("%f %f %f\n", matrix[3], matrix[4], matrix[5]);
+		printf("%f %f %f\n", matrix[6], matrix[7], matrix[8]);
+		printf("\n");
+	}			
+}
+
 
 void GLvideo_rt::compileFragmentShaders()
 {
@@ -393,6 +436,22 @@ void GLvideo_rt::toggleChrominance(void)
 	mutex.lock();
 	m_showChrominance = not m_showChrominance;	
 	mutex.unlock();		
+}
+
+void GLvideo_rt::setMatrixScaling(bool s)
+{
+	mutex.lock();
+	m_matrixScaling = s;
+	m_changeMatrix = true;
+	mutex.unlock();	
+}
+
+void GLvideo_rt::toggleMatrixScaling()
+{
+	mutex.lock();
+	m_matrixScaling = not m_matrixScaling;
+	m_changeMatrix = true;
+	mutex.unlock();	
 }
 
 void GLvideo_rt::setLuminanceMultiplier(float m)
@@ -627,6 +686,8 @@ void GLvideo_rt::run()
 	int framePolarity = m_framePolarity;
 	bool interlacedSource = m_interlacedSource;
 	bool deinterlace = m_deinterlace;
+	bool matrixScaling = m_matrixScaling;
+	bool changeMatrix = m_changeMatrix;
 	int field = 0;
 	int direction = 0;
 	int currentShader = 0;	
@@ -636,7 +697,9 @@ void GLvideo_rt::run()
 	float luminanceMultiplier = m_luminanceMultiplier;
 	float chrominanceMultiplier = m_chrominanceMultiplier;
 	float luminanceOffset2 = m_luminanceOffset2;
-	float chrominanceOffset2 = m_chrominanceOffset2;	
+	float chrominanceOffset2 = m_chrominanceOffset2;
+	float colourMatrix[9];
+		
 	mutex.unlock();
 
 #ifdef HAVE_FTGL
@@ -676,6 +739,13 @@ void GLvideo_rt::run()
 						
 			//boolean flags
 			doRendering = m_doRendering;
+			
+			if(m_changeMatrix == true) {
+				matrixScaling = m_matrixScaling;
+				changeMatrix = true;
+				updateShaderVars = true;				
+				m_changeMatrix = false;
+			}	
 			
 			if(m_changeFont) {
 				changeFont = true;
@@ -739,7 +809,12 @@ void GLvideo_rt::run()
 			}
 	
 		mutex.unlock();
-		printf("  getparams %d\n", perfTimer.elapsed());
+		if(PERF) printf("  getparams %d\n", perfTimer.elapsed());
+
+		if(changeMatrix) {
+			buildColourMatrix(colourMatrix, 0.2126, 0.7152, 0.0722, matrixScaling, matrixScaling);
+			changeMatrix = false;	
+		}
 
 		//read frame data, one frame at a time, or after we have displayed the second field
 		if(interlacedSource == 0 || field == 1) {
@@ -747,7 +822,7 @@ void GLvideo_rt::run()
 			direction = glw.vr.getDirection();
 		}
 		
-		printf("  readData %d\n", perfTimer.elapsed());
+		if(PERF) printf("  readData %d\n", perfTimer.elapsed());
 		
 		//check for v210 data - it's very difficult to write a shader for this
 		//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
@@ -770,7 +845,7 @@ void GLvideo_rt::run()
 				lastsrcheight = videoData->Yheight;
 			}
 		}
-		printf("  dimensions %d\n", perfTimer.elapsed());
+		if(PERF) printf("  dimensions %d\n", perfTimer.elapsed());
 		
 		//check for the shader changing
 		
@@ -806,7 +881,7 @@ void GLvideo_rt::run()
     			glUseProgramObjectARB(programs[currentShader]);					
 			}							
 		}		
-		printf("  shader %d\n", perfTimer.elapsed());
+		if(PERF) printf("  shader %d\n", perfTimer.elapsed());
 		
 		if(createGLTextures) {
 			if(DEBUG) printf("Creating GL textures\n");
@@ -814,7 +889,7 @@ void GLvideo_rt::run()
 			createTextures(videoData, currentShader);
 			createGLTextures = false;
 		}
-		printf("  createTexture %d\n", perfTimer.elapsed());			
+		if(PERF) printf("  createTexture %d\n", perfTimer.elapsed());			
 		
 		if(updateShaderVars && videoData) {
 			if(DEBUG) printf("Updating fragment shader variables\n");
@@ -854,9 +929,8 @@ void GLvideo_rt::run()
 		    offset2[2] = chrominanceOffset2;
 			glUniform3fvARB(i, 1, &offset2[0]);		    
     			    					
-		    i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
-		    float matrix[9] = {1.0, 0.0, 1.5958, 1.0, -0.39173, -0.8129, 1.0, 2.017, 0.0};	    
-    		glUniformMatrix3fvARB(i, 1, false, &matrix[0]);
+		    i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");	    
+    		glUniformMatrix3fvARB(i, 1, false, colourMatrix);
 
 		   	i=glGetUniformLocationARB(programs[currentShader], "interlacedSource");
     		glUniform1iARB(i, interlacedSource);
@@ -865,7 +939,7 @@ void GLvideo_rt::run()
     		glUniform1iARB(i, deinterlace);
 			updateShaderVars = false;	
 		}	
-		printf("  shaderVars %d\n", perfTimer.elapsed());
+		if(PERF) printf("  shaderVars %d\n", perfTimer.elapsed());
 												
 		if(doResize && videoData != NULL) {
 			
@@ -893,7 +967,7 @@ void GLvideo_rt::run()
 			}			
 			doResize = false;
 		}
-		printf("  resize %d\n", perfTimer.elapsed());
+		if(PERF) printf("  resize %d\n", perfTimer.elapsed());
 		
 #ifdef HAVE_FTGL
 		if(changeFont) {
@@ -906,7 +980,7 @@ void GLvideo_rt::run()
 			font->CharMap(ft_encoding_unicode);
 			changeFont = false;	
 		}		
-		printf("  changefont %d %d\n", perfTimer.elapsed(), changeFont);		
+		if(PERF) printf("  changefont %d %d\n", perfTimer.elapsed(), changeFont);		
 #endif
 
 		
@@ -914,7 +988,7 @@ void GLvideo_rt::run()
 		
         if (frameRepeats > 1)
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
-		printf("  syncwait %d %d\n", perfTimer.elapsed(), frameRepeats);
+		if(PERF) printf("  syncwait %d %d\n", perfTimer.elapsed(), frameRepeats);
 																			
 		if(interlacedSource) {
 		   	int i=glGetUniformLocationARB(programs[currentShader], "field");
@@ -922,32 +996,30 @@ void GLvideo_rt::run()
 	   		
 		   	i=glGetUniformLocationARB(programs[currentShader], "direction");
     		glUniform1iARB(i, direction);
-    		
-    		printf("Direction = %d\n", direction);    			   		    		
 		}			
-		printf("  field %d\n", perfTimer.elapsed());
+		if(PERF) printf("  field %d\n", perfTimer.elapsed());
 																					
 		if(videoData) {
 			
 			//upload the texture data for each new frame, or for before we render the first field
 			if(interlacedSource == 0 || field == 0) uploadTextures(videoData);
-			printf("  upload %d\n", perfTimer.elapsed());
+			if(PERF) printf("  upload %d\n", perfTimer.elapsed());
 						
 			renderVideo(videoData);			
-			printf("  render %d\n", perfTimer.elapsed());
+			if(PERF) printf("  render %d\n", perfTimer.elapsed());
 						
 #ifdef HAVE_FTGL
 			glUseProgramObjectARB(0);							
 			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
 			glUseProgramObjectARB(programs[currentShader]);
-			printf("  osd %d\n", perfTimer.elapsed());			
+			if(PERF) printf("  osd %d\n", perfTimer.elapsed());			
 #endif			
 		}
 																															   			   																									   			  
 		glFlush();
-		printf("  flush %d\n", perfTimer.elapsed());		
+		if(PERF) printf("  flush %d\n", perfTimer.elapsed());		
 		glw.swapBuffers();
-		printf("  swapbuffers %d\n", perfTimer.elapsed());		
+		if(PERF) printf("  swapbuffers %d\n", perfTimer.elapsed());		
 		
 		if(interlacedSource) {
 			//move to the next field			
@@ -961,8 +1033,8 @@ void GLvideo_rt::run()
        	
   		//calculate FPS
   		int intvl = perfTimer.restart();
-  		assert(intvl < 100);
-  		printf("interval = %d\n", frameIntervalTime.restart());   		
+  		if(PERF) assert(intvl < 100);
+  		if(PERF) printf("interval = %d\n", frameIntervalTime.restart());   		
   		if (fpsAvgPeriod == 0) {
   			int fintvl = frameIntervalTime.elapsed();
   			if (fintvl) fps = 10*1e3/fintvl;

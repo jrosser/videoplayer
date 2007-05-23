@@ -28,6 +28,7 @@ public:
 	void toggleLuminance();
 	void toggleChrominance();
 	void toggleDeinterlace();	
+	void toggleMatrixScaling();
 	void setLuminanceOffset1(float o);
 	void setChrominanceOffset1(float o);	
 	void setLuminanceMultiplier(float m);
@@ -35,9 +36,11 @@ public:
 	void setLuminanceOffset2(float o);
 	void setChrominanceOffset2(float o);
 	void setDeinterlace(bool d);
+	void setMatrixScaling(bool s);
 					        
 private:
 	//void setUpFonts(const char* fontfile);
+	void buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale);
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
 	void createTextures(VideoData *videoData, int currentShader);
@@ -56,6 +59,8 @@ private:
 	bool m_showChrominance;		//use C data or 0.5
 	bool m_interlacedSource;	//is the source video interlaced?
 	bool m_deinterlace;			//do we try to deinterlace an interlaced source?
+	bool m_matrixScaling;		//is the colour matrix scaled to produce 0-255 computer levels or 16-235 video levels
+	bool m_changeMatrix;
 	
 	float m_luminanceOffset1;		//Y & C offsets applied to data passed to the shader directly from the file
 	float m_chrominanceOffset1;

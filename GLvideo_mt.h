@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.15 2007-05-22 14:56:28 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.16 2007-05-23 16:27:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -70,6 +70,7 @@ public slots:
 	void toggleLuminance();
 	void toggleChrominance();
     void toggleDeinterlace();
+	void toggleMatrixScaling();    
     void setInterlacedSource(bool i);
     void setDeinterlace(bool d);
 	void setLuminanceOffset1(float o);
@@ -78,6 +79,7 @@ public slots:
 	void setChrominanceMultiplier(float m);
 	void setLuminanceOffset2(float o);
 	void setChrominanceOffset2(float o);	
+	void setMatrixScaling(bool s);
 		
 private slots:
 	void hideMouse();

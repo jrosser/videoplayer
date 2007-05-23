@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.15 2007-05-22 14:56:29 jrosser Exp $
+* $Id: mainwindow.h,v 1.16 2007-05-23 16:27:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -74,6 +74,7 @@ private:
 	QAction *quitAct;
 
 	//display actions
+	QAction *toggleMatrixScalingAct;
 	QAction *toggleOSDAct;
 	QAction *toggleAspectLockAct;		
 	QAction *viewFullScreenAct;
@@ -125,7 +126,8 @@ private:
 	float luminanceOffset2;
 	float chrominanceOffset2;
 	bool  interlacedSource;
-	bool  deinterlace;			
+	bool  deinterlace;
+	bool  matrixScaling;			
 };
 
 #endif
