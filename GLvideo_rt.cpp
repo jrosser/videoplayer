@@ -930,7 +930,7 @@ void GLvideo_rt::run()
 			//settings from the c++ program to the shader
 		    i=glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
 		    float offset1[3];
-		    offset1[0] = luminanceOffset1;
+		    offset1[0] = matrixScaling ? luminanceOffset1 : 0.0;	//don't subtract the initial Y offset if the matrix is unscaled
 		    offset1[1] = chrominanceOffset1;
 		    offset1[2] = chrominanceOffset1;
 			glUniform3fvARB(i, 1, &offset1[0]);		    
