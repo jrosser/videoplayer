@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.24 2007-05-24 13:45:43 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.25 2007-05-24 16:15:31 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -544,7 +544,7 @@ void MainWindow::usage()
     printf("\nkg     float   0.0722     Colour Matrix Kb |");
     printf("\nsd                        As '-kr 0.299 -kg 0.587 -kb 0.114', ITU-R BT601 / ITU-R BT470 / SMPTE170M, SMPTE293M");                                       
     printf("\nf      string             TrueType font file for OSD");    
-    printf("\nt      string             FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");
+    printf("\nt      string  FileExt    Force input file type to [i420|yv12|uyvy|v210|v216]");
     printf("\nfull                      Start in full screen mode");    
 	printf("\nh                         Show this usage information");            
     printf("\n");
@@ -744,13 +744,11 @@ void MainWindow::setFullScreen(bool fullscreen)
 
 void MainWindow::setHDTVMatrix()
 {
-	printf("Setting HD matrix\n");
 	glvideo_mt->setMatrix(0.2126, 0.7152, 0.0722);
 }
 
 void MainWindow::setSDTVMatrix()
 {
-	printf("Setting SD matrix\n");
 	glvideo_mt->setMatrix(0.299, 0.587, 0.114);
 }
 
