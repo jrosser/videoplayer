@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.17 2007-05-24 13:45:43 jrosser Exp $
+* $Id: mainwindow.h,v 1.18 2007-05-24 16:29:31 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -62,6 +62,7 @@ private slots:
 	void escapeFullScreen();
 	void setHDTVMatrix();
 	void setSDTVMatrix();
+	void setUserMatrix();
 	void quit();
 	        
 private:
@@ -76,6 +77,7 @@ private:
 	QAction *quitAct;
 
 	//display actions
+	QAction *setUserMatrixAct;	
 	QAction *setHDTVMatrixAct;
 	QAction *setSDTVMatrixAct;	
 	QAction *toggleMatrixScalingAct;

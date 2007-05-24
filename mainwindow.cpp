@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.25 2007-05-24 16:15:31 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.26 2007-05-24 16:29:31 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -363,7 +363,7 @@ void MainWindow::parseCommandLine()
 			float val;
 			
 			parsed[i] = true;
-			val = (bool)args[i+1].toFloat(&ok);
+			val = args[i+1].toFloat(&ok);
 				
 			if(ok) {
 				i++;
@@ -378,7 +378,7 @@ void MainWindow::parseCommandLine()
 			float val;
 			
 			parsed[i] = true;
-			val = (bool)args[i+1].toFloat(&ok);
+			val = args[i+1].toFloat(&ok);
 				
 			if(ok) {
 				i++;
@@ -393,7 +393,7 @@ void MainWindow::parseCommandLine()
 			float val;
 			
 			parsed[i] = true;
-			val = (bool)args[i+1].toFloat(&ok);
+			val = args[i+1].toFloat(&ok);
 				
 			if(ok) {
 				i++;
@@ -405,9 +405,7 @@ void MainWindow::parseCommandLine()
 		//use SDTV colour matrix
 		if(args[i] == "-sd") {			
 			parsed[i] = true;
-			matrixKr = 0.299;
-			matrixKg = 0.587;
-			matrixKb = 0.114;
+			setHDTVMatrix();
 		}
 
 		//specify OSD font file
@@ -563,8 +561,9 @@ void MainWindow::usage()
 	printf("\n<                      Jog one frame backward when paused");
 	printf("\ny                      Toggle display of luminance  on/off");
 	printf("\nc                      Toggle display of chrominance on/off");
-	printf("\nh                      Use HDTV colour matrix kr=0.2126 kg=0.7152 kb=0.0722");
-	printf("\nj                      Use SDTV colour matrix kr=0.2990 kg=0.5870 kb=0.1140");			
+	printf("\nh                      Switch to HDTV colour matrix kr=0.2126 kg=0.7152 kb=0.0722");
+	printf("\nj                      Switch to SDTV colour matrix kr=0.2990 kg=0.5870 kb=0.1140");
+	printf("\nk                      Switch to colour matrix kr, kg, kb from user flags");				
 	printf("\nq                      Quit");	
     printf("\n");
     printf("\n");        
@@ -577,6 +576,11 @@ void MainWindow::createActions()
 	quitAct->setShortcut(tr("Q"));
 	addAction(quitAct);
 	connect(quitAct, SIGNAL(triggered()), this, SLOT(quit()));
+
+	setUserMatrixAct = new QAction("Set user Matrix", this);
+	setUserMatrixAct->setShortcut(tr("k"));
+	addAction(setUserMatrixAct);
+	connect(setUserMatrixAct, SIGNAL(triggered()), this, SLOT(setUserMatrix()));
 
 	setHDTVMatrixAct = new QAction("Set HDTV Matrix", this);
 	setHDTVMatrixAct->setShortcut(tr("h"));
@@ -750,6 +754,11 @@ void MainWindow::setHDTVMatrix()
 void MainWindow::setSDTVMatrix()
 {
 	glvideo_mt->setMatrix(0.299, 0.587, 0.114);
+}
+
+void MainWindow::setUserMatrix()
+{
+	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
 }
 
 void MainWindow::quit()
