@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <assert.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #define PERF 0
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -192,6 +192,10 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	
 	m_luminanceOffset2 = 0.0;		//no offset
 	m_chrominanceOffset2 = 0.0;
+	
+	m_matrixKr = 0.2126;	//colour matrix for HDTV
+	m_matrixKg = 0.7152;
+	m_matrixKb = 0.0722;
 }
 
 void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale)
@@ -454,6 +458,16 @@ void GLvideo_rt::toggleMatrixScaling()
 	mutex.unlock();	
 }
 
+void GLvideo_rt::setMatrix(float Kr, float Kg, float Kb)
+{
+	mutex.lock();
+	m_matrixKr = Kr;
+	m_matrixKg = Kg;
+	m_matrixKb = Kb;
+	m_changeMatrix = true;
+	mutex.unlock();		
+}
+
 void GLvideo_rt::setLuminanceMultiplier(float m)
 {
 	mutex.lock();
@@ -699,6 +713,9 @@ void GLvideo_rt::run()
 	float luminanceOffset2 = m_luminanceOffset2;
 	float chrominanceOffset2 = m_chrominanceOffset2;
 	float colourMatrix[9];
+	float matrixKr = m_matrixKr;
+	float matrixKg = m_matrixKg;
+	float matrixKb = m_matrixKb;
 		
 	mutex.unlock();
 
@@ -742,6 +759,9 @@ void GLvideo_rt::run()
 			
 			if(m_changeMatrix == true) {
 				matrixScaling = m_matrixScaling;
+				matrixKr = m_matrixKr;
+				matrixKg = m_matrixKg;
+				matrixKb = m_matrixKb;								
 				changeMatrix = true;
 				updateShaderVars = true;				
 				m_changeMatrix = false;
@@ -812,7 +832,7 @@ void GLvideo_rt::run()
 		if(PERF) printf("  getparams %d\n", perfTimer.elapsed());
 
 		if(changeMatrix) {
-			buildColourMatrix(colourMatrix, 0.2126, 0.7152, 0.0722, matrixScaling, matrixScaling);
+			buildColourMatrix(colourMatrix, matrixKr, matrixKg, matrixKb, matrixScaling, matrixScaling);
 			changeMatrix = false;	
 		}
 

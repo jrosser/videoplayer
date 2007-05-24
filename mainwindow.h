@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.16 2007-05-23 16:27:23 jrosser Exp $
+* $Id: mainwindow.h,v 1.17 2007-05-24 13:45:43 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -59,7 +59,9 @@ protected:
 
 private slots:
 	void toggleFullScreen();
-	void escapeFullScreen(); 
+	void escapeFullScreen();
+	void setHDTVMatrix();
+	void setSDTVMatrix();
 	void quit();
 	        
 private:
@@ -74,6 +76,8 @@ private:
 	QAction *quitAct;
 
 	//display actions
+	QAction *setHDTVMatrixAct;
+	QAction *setSDTVMatrixAct;	
 	QAction *toggleMatrixScalingAct;
 	QAction *toggleOSDAct;
 	QAction *toggleAspectLockAct;		
@@ -127,7 +131,11 @@ private:
 	float chrominanceOffset2;
 	bool  interlacedSource;
 	bool  deinterlace;
-	bool  matrixScaling;			
+	bool  matrixScaling;
+	float matrixKr;
+	float matrixKg;
+	float matrixKb;
+	bool startFullScreen;		
 };
 
 #endif

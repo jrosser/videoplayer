@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.23 2007-05-23 16:27:23 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.24 2007-05-24 13:45:43 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -59,6 +59,10 @@ MainWindow::MainWindow()
 	matrixScaling = false;
 	fileType = "";
 	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
+	matrixKr = 0.2126;
+	matrixKg = 0.7152;
+	matrixKb = 0.0722;
+	startFullScreen = false;
 		
 	//override settings with command line
 	parseCommandLine();
@@ -67,6 +71,7 @@ MainWindow::MainWindow()
 		return;
 	
 	setWindowTitle("VideoPlayer");
+	setFullScreen(startFullScreen);
 	
 	videoRead = NULL;
 	glvideo_mt = NULL;
@@ -140,7 +145,8 @@ MainWindow::MainWindow()
 	glvideo_mt->setChrominanceOffset2(chrominanceOffset2);
 	glvideo_mt->setInterlacedSource(interlacedSource);
 	glvideo_mt->setDeinterlace(deinterlace);
-	glvideo_mt->setMatrixScaling(matrixScaling);			
+	glvideo_mt->setMatrixScaling(matrixScaling);
+	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);			
 }
 
 void MainWindow::parseCommandLine()
@@ -351,6 +357,58 @@ void MainWindow::parseCommandLine()
 			}				
 		}
 
+		//colour matrix Kr
+		if(args[i] == "-kr") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = (bool)args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				matrixKr = val;
+			}				
+		}
+
+		//colour matrix Kg
+		if(args[i] == "-kg") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = (bool)args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				matrixKg = val;
+			}				
+		}
+
+		//colour matrix Kb
+		if(args[i] == "-kb") {
+			bool ok;
+			float val;
+			
+			parsed[i] = true;
+			val = (bool)args[i+1].toFloat(&ok);
+				
+			if(ok) {
+				i++;
+				parsed[i] = true;
+				matrixKb = val;
+			}				
+		}
+
+		//use SDTV colour matrix
+		if(args[i] == "-sd") {			
+			parsed[i] = true;
+			matrixKr = 0.299;
+			matrixKg = 0.587;
+			matrixKb = 0.114;
+		}
 
 		//specify OSD font file
 		if(args[i] == "-f") {			
@@ -378,6 +436,12 @@ void MainWindow::parseCommandLine()
 		//display usage
 		if(args[i] == "-h") {			
 			showUsage = true;
+			parsed[i] = true;			
+		}
+
+		//go directly to full screen mode
+		if(args[i] == "-full") {			
+			startFullScreen = true;
 			parsed[i] = true;			
 		}
 
@@ -460,28 +524,33 @@ void MainWindow::usage()
     printf("\n  .v210         4:2:2 YUV 10 bit packed");
     printf("\n  .v216         4:2:2 YUV 16 bit packed");
     printf("\n");                            
-    printf("\nFlag              Type    Default Value   Description");
-    printf("\n====              ====    =============== ===========");
-    printf("\nw                 ulong   1920            Width of video luminance component");
-    printf("\nh                 ulong   1080            Height of video luminance component");
-    printf("\nr                 ulong   0               Number of additional times each frame is displayed");
-    printf("\np                 ulong   0               Set frame to display video on (0,r-1)");
-    printf("\ni                 bool    0               Source video is interlaced [1], progressive [0]");
-    printf("\nd                 bool    0               Deinterlace video if source is interlaced [1], no deinterlacing [0]");        
-    printf("\nyo                float   -0.0625         Luminance data values offset");
-    printf("\nco                float   -0.5            Chrominance data values offset");                        
-    printf("\nym                float   1.0             Luminance multipler");
-    printf("\ncm                float   1.0             Chrominance multipler");
-    printf("\nyo2               float   0.0             Multiplied Luminance offset 2");
-    printf("\nco2               float   0.0             Multiplied Chrominance offset 2");
-    printf("\nm                 bool    0               Colour Matrix scaling,  Y*1.0 C*1.0 [0], Y*(255.0/219.0) C*(255.0/224.0) [1]");                        
-    printf("\nf                 string                  TrueType font file for OSD");
-    printf("\nt                 string  FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");
-	printf("\nh                                         Show this usage information");            
+    printf("\nFlag   Type    Default    Description");
+    printf("\n====   ====    =======    ===========");
+    printf("\nw      ulong   1920       Width of video luminance component");
+    printf("\nh      ulong   1080       Height of video luminance component");
+    printf("\nr      ulong   0          Number of additional times each frame is displayed");
+    printf("\np      ulong   0          Set frame to display video on (0,r-1)");
+    printf("\ni      bool    0          Source video is interlaced [1], progressive [0]");
+    printf("\nd      bool    0          Deinterlace video if source is interlaced [1], no deinterlacing [0]");        
+    printf("\nyo     float   -0.0625    Luminance data values offset");
+    printf("\nco     float   -0.5       Chrominance data values offset");                        
+    printf("\nym     float   1.0        Luminance multiplier");
+    printf("\ncm     float   1.0        Chrominance multiplier");
+    printf("\nyo2    float   0.0        Multiplied Luminance offset 2");
+    printf("\nco2    float   0.0        Multiplied Chrominance offset 2");
+    printf("\nm      bool    0          Colour Matrix scaling,  Y*1.0 C*1.0 [0], Y*(255.0/219.0) C*(255.0/224.0) [1]"); 
+    printf("\nkr     float   0.2126     Colour Matrix Kr |");
+    printf("\nkg     float   0.7152     Colour Matrix Kg | Defaults to ITU-R BT709 / ITU-R BT1361 / SMPTE274M / SMPTE296M");
+    printf("\nkg     float   0.0722     Colour Matrix Kb |");
+    printf("\nsd                        As '-kr 0.299 -kg 0.587 -kb 0.114', ITU-R BT601 / ITU-R BT470 / SMPTE170M, SMPTE293M");                                       
+    printf("\nf      string             TrueType font file for OSD");    
+    printf("\nt      string             FileExtension   Force input file type to [i420|yv12|uyvy|v210|v216]");
+    printf("\nfull                      Start in full screen mode");    
+	printf("\nh                         Show this usage information");            
     printf("\n");
 	printf("\nKeypress               Action");
     printf("\n========               ======");
-    printf("\no                      Toggle OSD on/off");
+    printf("\no                      Toggle OSD state");
 	printf("\nf                      Toggle full screen mode");
 	printf("\nm                      Toggle colour matrix scaling");
 	printf("\nEsc                    Return from full screen mode to windowed");
@@ -493,7 +562,9 @@ void MainWindow::usage()
 	printf("\n>                      Jog one frame forward when paused");
 	printf("\n<                      Jog one frame backward when paused");
 	printf("\ny                      Toggle display of luminance  on/off");
-	printf("\nc                      Toggle display of chrominance on/off");	
+	printf("\nc                      Toggle display of chrominance on/off");
+	printf("\nh                      Use HDTV colour matrix kr=0.2126 kg=0.7152 kb=0.0722");
+	printf("\nj                      Use SDTV colour matrix kr=0.2990 kg=0.5870 kb=0.1140");			
 	printf("\nq                      Quit");	
     printf("\n");
     printf("\n");        
@@ -507,6 +578,16 @@ void MainWindow::createActions()
 	addAction(quitAct);
 	connect(quitAct, SIGNAL(triggered()), this, SLOT(quit()));
 
+	setHDTVMatrixAct = new QAction("Set HDTV Matrix", this);
+	setHDTVMatrixAct->setShortcut(tr("h"));
+	addAction(setHDTVMatrixAct);
+	connect(setHDTVMatrixAct, SIGNAL(triggered()), this, SLOT(setHDTVMatrix()));
+
+	setSDTVMatrixAct = new QAction("Set SDTV Matrix", this);
+	setSDTVMatrixAct->setShortcut(tr("j"));
+	addAction(setSDTVMatrixAct);
+	connect(setSDTVMatrixAct, SIGNAL(triggered()), this, SLOT(setSDTVMatrix()));
+	
 	toggleMatrixScalingAct = new QAction("Toggle Colour Matrix Scaling", this);
 	toggleMatrixScalingAct ->setShortcut(tr("m"));
 	addAction(toggleMatrixScalingAct);
@@ -659,6 +740,18 @@ void MainWindow::setFullScreen(bool fullscreen)
 	else {
 		showNormal();
 	}	
+}
+
+void MainWindow::setHDTVMatrix()
+{
+	printf("Setting HD matrix\n");
+	glvideo_mt->setMatrix(0.2126, 0.7152, 0.0722);
+}
+
+void MainWindow::setSDTVMatrix()
+{
+	printf("Setting SD matrix\n");
+	glvideo_mt->setMatrix(0.299, 0.587, 0.114);
 }
 
 void MainWindow::quit()

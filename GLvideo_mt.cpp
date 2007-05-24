@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.17 2007-05-23 16:27:23 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.18 2007-05-24 13:45:43 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -109,6 +109,11 @@ void GLvideo_mt::setDeinterlace(bool d)
 void GLvideo_mt::setMatrixScaling(bool s)
 {
 	renderThread.setMatrixScaling(s);	
+}
+
+void GLvideo_mt::setMatrix(float Kr, float Kg, float Kb)
+{
+	renderThread.setMatrix(Kr, Kg, Kb);	
 }
 
 void GLvideo_mt::toggleMatrixScaling()

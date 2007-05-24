@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.16 2007-05-23 16:27:23 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.17 2007-05-24 13:45:43 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -80,6 +80,7 @@ public slots:
 	void setLuminanceOffset2(float o);
 	void setChrominanceOffset2(float o);	
 	void setMatrixScaling(bool s);
+	void setMatrix(float Kr, float Kg, float Kb);
 		
 private slots:
 	void hideMouse();

@@ -37,6 +37,7 @@ public:
 	void setChrominanceOffset2(float o);
 	void setDeinterlace(bool d);
 	void setMatrixScaling(bool s);
+	void setMatrix(float Kr, float Kg, float Kb);
 					        
 private:
 	//void setUpFonts(const char* fontfile);
@@ -68,6 +69,9 @@ private:
 	float m_chrominanceMultiplier;
 	float m_luminanceOffset2;		//Y & C offsets applied to scaled data
 	float m_chrominanceOffset2;
+	float m_matrixKr;				//colour matrix specification
+	float m_matrixKg;
+	float m_matrixKb;
 	
 	static const int MAX_OSD = 4;
 				
