@@ -292,7 +292,9 @@ void ReadThread::run()
 		}
 #ifdef Q_OS_UNIX
 /* Broken under win32? */
+		vr.frameMutex.lock();
 		vr.frameConsumed.wait(&(vr.frameMutex));
+		vr.frameMutex.unlock();		
 #endif						
 	}
 }

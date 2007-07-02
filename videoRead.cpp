@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.12 2007-05-23 13:41:06 jrosser Exp $
+* $Id: videoRead.cpp,v 1.13 2007-07-02 13:57:51 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -48,7 +48,6 @@ VideoRead::VideoRead()
 	lastFrameNum=0;
 	
 	displayFrame = NULL;
-	frameMutex.lock();	//required for QWaitCondition
 	readThread.start();
 	
 	transportMutex.lock();
@@ -63,9 +62,11 @@ VideoRead::VideoRead()
 void VideoRead::stop()
 {
 	readThread.stop();
-	frameMutex.unlock();
-	frameConsumed.wakeOne();
 	
+	frameMutex.lock();
+	frameConsumed.wakeOne();
+	frameMutex.unlock();
+		
 	readThread.wait();
 }
 
@@ -217,7 +218,9 @@ VideoData* VideoRead::getNextFrame()
 	}
 	
 	//wake the reader thread - done each time as jogging may move the frame number
+	frameMutex.lock();	
 	frameConsumed.wakeOne();
+	frameMutex.unlock();	
 		
 	return displayFrame;
 }

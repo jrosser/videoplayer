@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.26 2007-05-24 16:29:31 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.27 2007-07-02 13:57:51 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -528,7 +528,7 @@ void MainWindow::usage()
     printf("\nh      ulong   1080       Height of video luminance component");
     printf("\nr      ulong   0          Number of additional times each frame is displayed");
     printf("\np      ulong   0          Set frame to display video on (0,r-1)");
-    printf("\ni      bool    0          Source video is interlaced [1], progressive [0]");
+    printf("\ni      bool    0          Source video is interlaced (convert fields to frames) [1], progressive [0]");
     printf("\nd      bool    0          Deinterlace video if source is interlaced [1], no deinterlacing [0]");        
     printf("\nyo     float   -0.0625    Luminance data values offset");
     printf("\nco     float   -0.5       Chrominance data values offset");                        
@@ -553,6 +553,7 @@ void MainWindow::usage()
 	printf("\nm                      Toggle colour matrix scaling");
 	printf("\nEsc                    Return from full screen mode to windowed");
 	printf("\na                      Toggle aspect ratio lock");
+    printf("\nd                      Toggle deinterlacing of an interlaced source");	
 	printf("\nSpace                  Play/Pause");
 	printf("\ns                      Stop");
 	printf("\n1,2,3,4,5,6,7          Play forward at 1,2,5,10,20,50,100x");
