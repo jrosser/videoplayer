@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.4 2007-04-25 10:03:58 jrosser Exp $
+* $Id: main.cpp,v 1.5 2007-11-28 17:38:35 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -59,5 +59,8 @@ int main(int argc, char **argv)
     	return app.exec();
     }
     else
+    {
+    	printf("Error parsing command line - terminating\n");
     	return -1;
+    }
 }
