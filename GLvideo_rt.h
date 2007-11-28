@@ -4,6 +4,12 @@
 #include <QtGui>
 #include <QGLWidget>
 
+#ifdef Q_OS_UNIX
+#include "GL/glx.h"
+#endif
+
+#include "glext.h"
+
 class GLvideo_mt;
 class FTFont;
 class VideoData;
@@ -40,7 +46,43 @@ public:
 	void setMatrix(float Kr, float Kg, float Kb);
 					        
 private:
-	//void setUpFonts(const char* fontfile);
+
+	//openGL function pointers 
+	
+#ifdef Q_OS_UNIX	
+	//unix
+	PFNGLXWAITVIDEOSYNCSGIPROC glXWaitVideoSyncSGI;
+	PFNGLXGETVIDEOSYNCSGIPROC glXGetVideoSyncSGI;
+#endif
+
+#ifdef Q_OS_WIN32	
+	//windows - header file? what header file!!!
+	typedef bool (APIENTRY *PFNWGLSWAPINTERVALFARPROC) (int);
+	PFNWGLSWAPINTERVALFARPROC wglSwapIntervalEXT;	
+#endif
+
+	PFNGLLINKPROGRAMARBPROC glLinkProgramARB;
+	PFNGLATTACHOBJECTARBPROC glAttachObjectARB;
+	PFNGLCREATEPROGRAMOBJECTARBPROC glCreateProgramObjectARB;
+	PFNGLGETINFOLOGARBPROC glGetInfoLogARB;
+	PFNGLGETOBJECTPARAMETERIVARBPROC glGetObjectParameterivARB;
+	PFNGLCOMPILESHADERARBPROC glCompileShaderARB;
+	PFNGLSHADERSOURCEARBPROC glShaderSourceARB;
+	PFNGLCREATESHADEROBJECTARBPROC glCreateShaderObjectARB;
+	PFNGLBUFFERDATAPROC glBufferData;
+	PFNGLBINDBUFFERPROC glBindBuffer;
+	PFNGLUNIFORM1IARBPROC glUniform1iARB;
+	PFNGLGETUNIFORMLOCATIONARBPROC glGetUniformLocationARB;
+	PFNGLUNMAPBUFFERPROC glUnmapBuffer;
+	PFNGLMAPBUFFERPROC glMapBuffer;
+	PFNGLUNIFORM3FVARBPROC glUniform3fvARB;
+	PFNGLUNIFORMMATRIX3FVARBPROC glUniformMatrix3fvARB;
+	PFNGLUNIFORM1FARBPROC glUniform1fARB;
+	PFNGLUSEPROGRAMOBJECTARBPROC glUseProgramObjectARB;
+	PFNGLGENBUFFERSPROC glGenBuffers;
+	PFNGLACTIVETEXTUREPROC glActiveTexture;
+
+	void getGLfunctions();
 	void buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale);
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);

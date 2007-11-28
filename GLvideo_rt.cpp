@@ -1,10 +1,6 @@
 #include "GLvideo_rt.h"
 #include "GLvideo_mt.h"
 
-#ifdef Q_OS_UNIX
-#include "GL/glx.h"
-#endif
-
 #ifdef HAVE_FTGL
 #include "FTGL/FTGLPolygonFont.h"
 #endif
@@ -145,29 +141,6 @@ static char *shaderUYVYSrc=
       
   " gl_FragColor=vec4(rgb, a);\n"
   "}\n";
-
-#ifndef Q_OS_MAC
-PFNGLLINKPROGRAMARBPROC glLinkProgramARB;
-PFNGLATTACHOBJECTARBPROC glAttachObjectARB;
-PFNGLCREATEPROGRAMOBJECTARBPROC glCreateProgramObjectARB;
-PFNGLGETINFOLOGARBPROC glGetInfoLogARB;
-PFNGLGETOBJECTPARAMETERIVARBPROC glGetObjectParameterivARB;
-PFNGLCOMPILESHADERARBPROC glCompileShaderARB;
-PFNGLSHADERSOURCEARBPROC glShaderSourceARB;
-PFNGLCREATESHADEROBJECTARBPROC glCreateShaderObjectARB;
-PFNGLBUFFERDATAPROC glBufferData;
-PFNGLBINDBUFFERPROC glBindBuffer;
-PFNGLUNIFORM1IARBPROC glUniform1iARB;
-PFNGLGETUNIFORMLOCATIONARBPROC glGetUniformLocationARB;
-PFNGLUNMAPBUFFERPROC glUnmapBuffer;
-PFNGLMAPBUFFERPROC glMapBuffer;
-PFNGLUNIFORM3FVARBPROC glUniform3fvARB;
-PFNGLUNIFORMMATRIX3FVARBPROC glUniformMatrix3fvARB;
-PFNGLUNIFORM1FARBPROC glUniform1fARB;
-PFNGLUSEPROGRAMOBJECTARBPROC glUseProgramObjectARB;
-PFNGLGENBUFFERSPROC glGenBuffers;
-PFNGLACTIVETEXTUREPROC glActiveTexture;
-#endif
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl) 
       : QThread(), glw(gl)
@@ -421,7 +394,7 @@ void GLvideo_rt::toggleDeinterlace(void)
 	mutex.lock();
 	
 	if(m_interlacedSource)
-		m_deinterlace = not m_deinterlace;
+		m_deinterlace = !m_deinterlace;
 	else
 		m_deinterlace = false;
 			
@@ -431,14 +404,14 @@ void GLvideo_rt::toggleDeinterlace(void)
 void GLvideo_rt::toggleLuminance(void)
 {
 	mutex.lock();
-	m_showLuminance = not m_showLuminance;	
+	m_showLuminance = !m_showLuminance;	
 	mutex.unlock();		
 }
 
 void GLvideo_rt::toggleChrominance(void)
 {
 	mutex.lock();
-	m_showChrominance = not m_showChrominance;	
+	m_showChrominance = !m_showChrominance;	
 	mutex.unlock();		
 }
 
@@ -453,7 +426,7 @@ void GLvideo_rt::setMatrixScaling(bool s)
 void GLvideo_rt::toggleMatrixScaling()
 {
 	mutex.lock();
-	m_matrixScaling = not m_matrixScaling;
+	m_matrixScaling = !m_matrixScaling;
 	m_changeMatrix = true;
 	mutex.unlock();	
 }
@@ -625,35 +598,36 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
 	glEnd();				
 }
 
-
-void GLvideo_rt::run()
+//get pointers to openGL functions and extensions
+//FIXME - this does nothing if any of these calls fail
+//FIXME - this is totally different on OSX - thanks Apple. Details are on the apple developer site
+//FIXME - 
+void GLvideo_rt::getGLfunctions()
 {
-	if(DEBUG) printf("Starting renderthread\n");
-	
-	VideoData *videoData = NULL;
-
-	QTime frameIntervalTime;
-	QTime perfTimer;
-	int fpsAvgPeriod=1;
-	float fps = 0;
-	
-	int (*glXWaitVideoSyncSGI)(int , int , unsigned int *) = NULL;
-	int (*glXGetVideoSyncSGI)(unsigned int *) = NULL;
-		
-	//get addresses of VSYNC extensions
-#ifdef Q_OS_UNIX	
-	glXGetVideoSyncSGI = (int (*)(unsigned int *))glXGetProcAddress((GLubyte *)"glXGetVideoSyncSGI");
-	glXWaitVideoSyncSGI = (int (*)(int, int, unsigned int *))glXGetProcAddress((GLubyte *)"glXWaitVideoSyncSGI");		
-	if(DEBUG) printf("pget=%p pwait=%p\n", glXGetVideoSyncSGI, glXWaitVideoSyncSGI);
-#endif
-
-#ifdef Q_OS_UNIX
+#ifdef Q_WS_X11
 #define XglGetProcAddress(str) glXGetProcAddress((GLubyte *)str)
 #else
 #define XglGetProcAddress(str) wglGetProcAddress((LPCSTR)str)
 #endif
+	
+#ifdef Q_OS_WIN32
+	//enable openGL vsync on windows	
+	wglSwapIntervalEXT = (PFNWGLSWAPINTERVALFARPROC) XglGetProcAddress("wglSwapIntervalEXT");
+	if (wglSwapIntervalEXT)
+		wglSwapIntervalEXT(true);		
+#endif
+	
+#ifdef Q_WS_X11
+	//functions for controlling vsync on X11	
+	glXGetVideoSyncSGI = (PFNGLXGETVIDEOSYNCSGIPROC) XglGetProcAddress("glXGetVideoSyncSGI");
+	glXWaitVideoSyncSGI = (PFNGLXWAITVIDEOSYNCSGIPROC) XglGetProcAddress("glXWaitVideoSyncSGI");
 
-#ifndef Q_OS_MAC
+	if(DEBUG) {
+		printf("glXGetVideoSyncSGI=%p\n",  glXGetVideoSyncSGI);
+		printf("glXWaitVideoSyncSGI=%p\n",  glXWaitVideoSyncSGI);			
+	}	
+#endif
+	
     glLinkProgramARB = (PFNGLLINKPROGRAMARBPROC) XglGetProcAddress("glLinkProgramARB");
     glAttachObjectARB = (PFNGLATTACHOBJECTARBPROC) XglGetProcAddress("glAttachObjectARB");
     glCreateProgramObjectARB = (PFNGLCREATEPROGRAMOBJECTARBPROC) XglGetProcAddress("glCreateProgramObjectARB");
@@ -674,12 +648,22 @@ void GLvideo_rt::run()
     glUniform1fARB = (PFNGLUNIFORM1FARBPROC) XglGetProcAddress("glUniform1fARB");
     glUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC) XglGetProcAddress("glUseProgramObjectARB");
     glGenBuffers = (PFNGLGENBUFFERSPROC) XglGetProcAddress("glGenBuffers");
-#endif
 
-//#ifndef GL_VERSION_1_3
-    glActiveTexture = (PFNGLACTIVETEXTUREPROC) XglGetProcAddress("glActiveTexture");
-//#endif
+	glActiveTexture = (PFNGLACTIVETEXTUREPROC) XglGetProcAddress("glActiveTexture");
+}
+
+
+void GLvideo_rt::run()
+{
+	if(DEBUG) printf("Starting renderthread\n");
 	
+	VideoData *videoData = NULL;
+
+	QTime frameIntervalTime;
+	QTime perfTimer;
+	int fpsAvgPeriod=1;
+	float fps = 0;
+				
 	//flags and status
 	int lastsrcwidth = 0;
 	int lastsrcheight = 0;
@@ -723,7 +707,8 @@ void GLvideo_rt::run()
 	FTFont *font = NULL;
 #endif 	
             	
-	//initialise OpenGL		
+	//initialise OpenGL	
+	getGLfunctions();	
 	glw.makeCurrent();	
     glGenBuffers(3, io_buf);	
     glMatrixMode(GL_PROJECTION);
@@ -733,8 +718,10 @@ void GLvideo_rt::run()
     //glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
     glEnable(GL_TEXTURE_2D);
  	glEnable(GL_BLEND);
- 	
+
+#ifdef Q_WS_X11 	
 	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
+#endif
 
 	compileFragmentShaders();		
     glUseProgramObjectARB(programs[currentShader]);
@@ -1005,11 +992,12 @@ void GLvideo_rt::run()
 
 		
 
-		
+#ifdef Q_WS_X11		
         if (frameRepeats > 1)
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
 		if(PERF) printf("  syncwait %d %d\n", perfTimer.elapsed(), frameRepeats);
-																			
+#endif
+
 		if(interlacedSource) {
 		   	int i=glGetUniformLocationARB(programs[currentShader], "field");
 	   		glUniform1iARB(i, field);
@@ -1046,11 +1034,7 @@ void GLvideo_rt::run()
 			field++;
 			if(field > 1) field = 0;	
 		}
-		
-		//get the current frame count
-        //unsigned int retraceCount2;
-       	//glXGetVideoSyncSGI(&retraceCount2);
-       	
+		       	
   		//calculate FPS
   		int intvl = perfTimer.restart();
   		if(PERF) assert(intvl < 100);
