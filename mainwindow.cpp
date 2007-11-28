@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.27 2007-07-02 13:57:51 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.28 2007-11-28 18:07:53 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -491,6 +491,7 @@ void MainWindow::parseCommandLine()
 		}
 	}
 
+#ifdef HAVE_FTGL
 	//check OSD font file exists
 	info.setFile(fontFile);
 	if(info.exists() == false) {
@@ -503,6 +504,7 @@ void MainWindow::parseCommandLine()
 			allParsed = false;		
 		}
 	}
+#endif
 	
 	if(showUsage == true || allParsed == false) usage();	
 }
