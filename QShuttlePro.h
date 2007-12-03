@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.h,v 1.4 2007-04-18 15:54:36 jrosser Exp $
+* $Id: QShuttlePro.h,v 1.5 2007-12-03 11:06:49 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -104,7 +104,7 @@ private:
 
 	int fd;
 	struct timeval lastshuttle;
-	int need_synthetic_shuttle;
+	int need_shuttle_center;
 	unsigned int jogvalue;
 	int shuttlevalue;
 
