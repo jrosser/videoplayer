@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.28 2007-11-28 18:07:53 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.29 2007-12-03 11:04:52 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -39,8 +39,13 @@
 
 #include <QtGui>
 
-MainWindow::MainWindow()
-{
+#include <iostream>
+#include <boost/program_options.hpp>
+namespace po = boost::program_options;
+using namespace std;
+
+MainWindow::MainWindow(int argc, char **argv)
+{		
 	//some defaults in the abscence of any settings	
 	videoWidth = 1920;
 	videoHeight = 1080;
@@ -65,7 +70,7 @@ MainWindow::MainWindow()
 	startFullScreen = false;
 		
 	//override settings with command line
-	parseCommandLine();
+	parseCommandLine(argc, argv);
 	
 	if(allParsed == false)
 		return;
@@ -149,364 +154,146 @@ MainWindow::MainWindow()
 	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);			
 }
 
-void MainWindow::parseCommandLine()
+void MainWindow::parseCommandLine(int argc, char **argv)
 {
-	QVector<bool> parsed(qApp->arguments().size());
-	const QStringList &args = qApp->arguments();
-	bool showUsage = false;
+	allParsed = true;	//default to command line parsing succeeding
 	
-	for(int i=1; i<parsed.size(); i++)
-		parsed[i] = false;
-			
-	for(int i=1; i<parsed.size(); i++) {
-		
-		//video width
-		if(args[i] == "-w") {
-			bool ok;
-			int val;
-			
-			if(parsed.size() > i) {
-				parsed[i] = true;
-				val = args[i+1].toInt(&ok);
+	try {
+						
+		// Declare the supported options.
+		po::options_description desc("Allowed options            type   default  description\n"
+		                             "===============            ====   =======  ===========");		
+		desc.add_options()
+    		("width,w",       po::value(&videoWidth),         "int    1920    Width of video luminance component")
+    		("height,h",      po::value(&videoHeight),        "int    1080    Height of video luminance component")    	
+    		("repeats,r",     po::value(&frameRepeats),       "int    0       Frame is repeated r extra times")
+    		("polarity,p",    po::value(&framePolarity),      "int    0       Set frame to display video on (0, r-1)")    	
+    		("interlace,i",   po::value(&interlacedSource),   "bool   false   Interlaced source [1], progressive[0]")
+    		("deinterlace,d", po::value(&deinterlace),        "bool   false   Deinterlace on [1], off [0]")
+    		("yoffset",       po::value(&luminanceOffset1),   "float -0.0625  Luminance data values offset")
+    		("coffset",       po::value(&chrominanceOffset1), "float -0.5     Chrominance data values offset")
+    		("ymult",         po::value(&luminanceMul),       "float  1.0     Luminance multipler")
+    		("cmult",         po::value(&chrominanceMul),     "float  1.0     Chrominance multiplier")
+    		("yoffset2",      po::value(&luminanceOffset2),   "float  0.0     Multiplied Luminance offset 2")
+    		("coffset2",      po::value(&chrominanceOffset2), "float  0.0     Multiplied Chrominance offset 2")
+    		("mscale,m",      po::value(&matrixScaling),      "bool   0       Matrix scale [0] Y*1.0, C*1.0,\n"
+    		                                                  "               [1] Y*(255/219) C*(255/224)")
+    		("matrixkr,r",    po::value(&matrixKr),           "float  0.2126  Colour Matrix Kr")
+    		("matrixkg,g",    po::value(&matrixKg),           "float  0.7152  Colour Matrix Kg")    	        
+    		("matrixkb,b",    po::value(&matrixKb),           "float  0.0722  Colour Matrix Kb\n"
+    		                                                  "               ITU-R BT709/BT1361, SMPTE274M/296M")
+    		("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
+    		                                                  "               ITU-R BT601/BT470, SMPTE170M/293M")
+    		("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")    	    	        
+    		("filetype,t",    po::value<string>(),            "string         Force file type\n"
+    		                                                  "               [i420|yv12|uyvy|v210|v216]")
+    		("full,f",                                        "               Start in full screen mode")
+    		("video",                                         "               Video file to play")
+    		("help",                                          "               Show usage information");
+    	
+		//file filename is a 'positional option' that we give the name 'video' to
+		po::positional_options_description p;
+		p.add("video", -1);
+    	    	    
+		po::variables_map vm;
+		po::store(po::command_line_parser(argc, argv). options(desc).positional(p).run(), vm);	
+		po::notify(vm);    
+
+		if (vm.count("help")) {
+			usage();			
+	   		std::cout << desc << std::endl;						
+		}
 				
-				if(ok) {
-					i++;
-					parsed[i] = true;
-					videoWidth = val;	
-				}
-			}				
+		if (vm.count("sd")) {
+			setSDTVMatrix();	
 		}
 
-		//video height
-		if(args[i] == "-h") {
-			bool ok;
-			int val;
-			
-			parsed[i] = true;
-			val = args[i+1].toInt(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				videoHeight = val;
-			}				
-		}
-		
-		//frame repeats
-		if(args[i] == "-r") {
-			bool ok;
-			int val;
-			
-			parsed[i] = true;
-			val = args[i+1].toInt(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				frameRepeats = val;
-			}				
-		}
-
-		//frame in sequence 0...repeats-1 on which to show new frame
-		if(args[i] == "-p") {
-			bool ok;
-			int val;
-			
-			parsed[i] = true;
-			val = args[i+1].toInt(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				framePolarity = val;
-			}				
-		}
-
-		//luminance values data offset
-		if(args[i] == "-yo") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				luminanceOffset1 = val;
-			}				
-		}
-
-		//chrominance values data offset
-		if(args[i] == "-co") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				chrominanceOffset1 = val;
-			}				
-		}
-
-		//luminance values data offset
-		if(args[i] == "-yo2") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				luminanceOffset2 = val;
-			}				
-		}
-
-		//chrominance values data offset
-		if(args[i] == "-co2") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				chrominanceOffset2 = val;
-			}				
-		}
-
-		//luminance values multipler
-		if(args[i] == "-ym") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				luminanceMul = val;
-			}				
-		}
-
-		//luminance values multipler
-		if(args[i] == "-cm") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				chrominanceMul = val;
-			}				
-		}
-
-		//source pictures interlace
-		if(args[i] == "-i") {
-			bool ok;
-			bool val;
-			
-			parsed[i] = true;
-			val = (bool)args[i+1].toInt(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				interlacedSource = val;
-			}				
-		}
-
-		//deinterlace interlaced pictures
-		if(args[i] == "-d") {
-			bool ok;
-			bool val;
-			
-			parsed[i] = true;
-			val = (bool)args[i+1].toInt(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				deinterlace = val;
-			}				
-		}
-
-		//colour matrix scaling to 0-255 RGB levels
-		if(args[i] == "-m") {
-			bool ok;
-			bool val;
-			
-			parsed[i] = true;
-			val = (bool)args[i+1].toInt(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				matrixScaling = val;
-			}				
-		}
-
-		//colour matrix Kr
-		if(args[i] == "-kr") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				matrixKr = val;
-			}				
-		}
-
-		//colour matrix Kg
-		if(args[i] == "-kg") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				matrixKg = val;
-			}				
-		}
-
-		//colour matrix Kb
-		if(args[i] == "-kb") {
-			bool ok;
-			float val;
-			
-			parsed[i] = true;
-			val = args[i+1].toFloat(&ok);
-				
-			if(ok) {
-				i++;
-				parsed[i] = true;
-				matrixKb = val;
-			}				
-		}
-
-		//use SDTV colour matrix
-		if(args[i] == "-sd") {			
-			parsed[i] = true;
-			setHDTVMatrix();
-		}
-
-		//specify OSD font file
-		if(args[i] == "-f") {			
-			parsed[i] = true;
-			fontFile = args[i+1];
-			i++;
-			parsed[i] = true;
-		}
-
-		//force yuv file type
-		if(args[i] == "-t") {			
-			parsed[i] = true;
-			forceFileType = true;
-			fileType = args[i+1];
-			i++;
-			
-			parsed[i] = false;
-			if(fileType.toLower() == "i420") parsed[i] = true;
-			if(fileType.toLower() == "yv12") parsed[i] = true;
-			if(fileType.toLower() == "uyvy") parsed[i] = true;
-			if(fileType.toLower() == "v216") parsed[i] = true;
-			if(fileType.toLower() == "v210") parsed[i] = true;															
+		if (vm.count("full")) {
+			startFullScreen=true;	
 		}
 		
-		//display usage
-		if(args[i] == "-h") {			
-			showUsage = true;
-			parsed[i] = true;			
-		}
-
-		//go directly to full screen mode
-		if(args[i] == "-full") {			
-			startFullScreen = true;
-			parsed[i] = true;			
-		}
-
-	}
-		
-	fileName = args.last();
-	QFileInfo fi(fileName);	
-	
-	if(fi.exists()) {
-		
-		parsed[parsed.size()-1] = true;
-		
-		if(forceFileType == false) {
-
-			//file extension must be one we know about
-			parsed[parsed.size()-1] = false;			
-			if(fi.suffix().toLower() == "i420") parsed[parsed.size()-1] = true;
-			if(fi.suffix().toLower() == "yv12") parsed[parsed.size()-1] = true;
-			if(fi.suffix().toLower() == "uyvy") parsed[parsed.size()-1] = true;
-			if(fi.suffix().toLower() == "v216") parsed[parsed.size()-1] = true;
-			if(fi.suffix().toLower() == "v210") parsed[parsed.size()-1] = true;		
-		
-			if(parsed[parsed.size()-1] == false) {
-				printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
-				printf("Please specify file format with the -t flag\n");
-			}																					
-		}
-	}
-	
-	//check all args are parsed
-	allParsed = true;	
-	for(int i=1; i<args.size(); i++) {
-		if(parsed[i] == false) {
-			allParsed = false;
-			printf("Unknown parameter %s\n", args[i].toLatin1().data());	
-		}	
-	}
-	
-	//check video file exists
-	QFileInfo info(fileName);
-	if(info.exists() == false) {
-		printf("Cannot find input file %s\n", fileName.toLatin1().data());
-		allParsed = false;	
-	} 
-	else {
-		if(info.isReadable() == false) {
-			printf("Cannot read input file %s\n", fileName.toLatin1().data());
-			allParsed = false;		
-		}
-	}
-
+		if (vm.count("f")) {
+			string tmp = vm["f"].as<string>(); 
+			fontFile = tmp.data();
+			
 #ifdef HAVE_FTGL
-	//check OSD font file exists
-	info.setFile(fontFile);
-	if(info.exists() == false) {
-		printf("Cannot find OSD font file %s\n", fontFile.toLatin1().data());
-		allParsed = false;	
-	} 
-	else {
-		if(info.isReadable() == false) {
-			printf("Cannot read OSD font file %s\n", fontFile.toLatin1().data());
-			allParsed = false;		
-		}
-	}
+			//check OSD font file exists
+			QFileInfo fi(fontFile);			
+			if(fi.exists() == false) {
+				printf("Cannot find OSD font file %s\n", fontFile.toLatin1().data());
+				allParsed = false;	
+			} 
+			else {
+				if(fi.isReadable() == false) {
+				printf("Cannot read OSD font file %s\n", fontFile.toLatin1().data());
+				allParsed = false;		
+				}
+			}
 #endif
-	
-	if(showUsage == true || allParsed == false) usage();	
+		}
+		
+		if (vm.count("t")) {
+			string tmp = vm["t"].as<string>(); 
+			fileType = tmp.data();
+			
+			if((fileType.toLower() == "i420") ||
+			   (fileType.toLower() == "yv12") ||
+			   (fileType.toLower() == "uyvy") ||
+			   (fileType.toLower() == "v216") ||
+			   (fileType.toLower() == "v210")) {
+
+					forceFileType=true;			   	
+			   }															
+			else {
+				printf("Unknown file type %s\n", fileType.toLatin1().data());
+				allParsed = false;	
+			}
+
+		}
+		
+		if (vm.count("video") == 0) {
+			printf("No file to play!\n");
+			allParsed = false;	
+		}
+		else {
+			string tmp = vm["video"].as<string>(); 
+			fileName = tmp.data();
+			
+			QFileInfo fi(fileName);	
+			
+			if(fi.exists()) {
+								
+				if(forceFileType == false) {
+		
+					//file extension must be one we know about			
+					if((fi.suffix().toLower() == "i420") ||  
+					   (fi.suffix().toLower() == "yv12") || 
+					   (fi.suffix().toLower() == "uyvy") ||
+					   (fi.suffix().toLower() == "v216") ||
+					   (fi.suffix().toLower() == "v210")) {
+					   	
+					   }
+					else {
+						printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
+						printf("Please specify file format with the -t flag\n");
+						allParsed = false;					
+					}	   	
+				
+				}																					
+			}
+			else {
+				printf("File %s does not exist\n", fileName.toLatin1().data());
+				allParsed = false;
+			}
+		}
+						
+	}
+    catch(exception& e)
+    {
+    	printf("Command line error : ");
+        cout << e.what() << "\n";        
+        allParsed = false;
+    }    
 }
 
 void MainWindow::usage()
@@ -514,7 +301,6 @@ void MainWindow::usage()
     printf("\nOpenGL accelerated YUV video player.");
     printf("\n");
     printf("\nUsage: progname -<flag1> [<flag1_val>] ... <input>");
-    printf("\nIn case of multiple assignment to the same parameter, the last holds.");
     printf("\n");
     printf("\nSupported file formats:");
     printf("\n");
@@ -524,30 +310,7 @@ void MainWindow::usage()
     printf("\n  .v210         4:2:2 YUV 10 bit packed");
     printf("\n  .v216         4:2:2 YUV 16 bit packed");
     printf("\n");                            
-    printf("\nFlag   Type    Default    Description");
-    printf("\n====   ====    =======    ===========");
-    printf("\nw      ulong   1920       Width of video luminance component");
-    printf("\nh      ulong   1080       Height of video luminance component");
-    printf("\nr      ulong   0          Number of additional times each frame is displayed");
-    printf("\np      ulong   0          Set frame to display video on (0,r-1)");
-    printf("\ni      bool    0          Source video is interlaced (convert fields to frames) [1], progressive [0]");
-    printf("\nd      bool    0          Deinterlace video if source is interlaced [1], no deinterlacing [0]");        
-    printf("\nyo     float   -0.0625    Luminance data values offset");
-    printf("\nco     float   -0.5       Chrominance data values offset");                        
-    printf("\nym     float   1.0        Luminance multiplier");
-    printf("\ncm     float   1.0        Chrominance multiplier");
-    printf("\nyo2    float   0.0        Multiplied Luminance offset 2");
-    printf("\nco2    float   0.0        Multiplied Chrominance offset 2");
-    printf("\nm      bool    0          Colour Matrix scaling,  Y*1.0 C*1.0 [0], Y*(255.0/219.0) C*(255.0/224.0) [1]"); 
-    printf("\nkr     float   0.2126     Colour Matrix Kr |");
-    printf("\nkg     float   0.7152     Colour Matrix Kg | Defaults to ITU-R BT709 / ITU-R BT1361 / SMPTE274M / SMPTE296M");
-    printf("\nkg     float   0.0722     Colour Matrix Kb |");
-    printf("\nsd                        As '-kr 0.299 -kg 0.587 -kb 0.114', ITU-R BT601 / ITU-R BT470 / SMPTE170M, SMPTE293M");                                       
-    printf("\nf      string             TrueType font file for OSD");    
-    printf("\nt      string  FileExt    Force input file type to [i420|yv12|uyvy|v210|v216]");
-    printf("\nfull                      Start in full screen mode");    
-	printf("\nh                         Show this usage information");            
-    printf("\n");
+
 	printf("\nKeypress               Action");
     printf("\n========               ======");
     printf("\no                      Toggle OSD state");
