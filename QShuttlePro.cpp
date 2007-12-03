@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.cpp,v 1.6 2007-05-15 16:53:35 jrosser Exp $
+* $Id: QShuttlePro.cpp,v 1.7 2007-12-03 11:06:31 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -140,7 +140,10 @@ exit:
 void QShuttlePro::shuttle(int value)
 {
 	gettimeofday( &lastshuttle, 0 );
-	need_synthetic_shuttle = value != 0;
+	
+	//if the shuttle is not in the center position, we
+	//will need to generate an event when it returns to the center
+	need_shuttle_center = value != 0;
 
 	if( value == shuttlevalue )
 		return;
@@ -171,17 +174,12 @@ void QShuttlePro::shuttle(int value)
 	if(DEBUG) printf("Shuttle value is %d\n", shuttlevalue);
 }
 
-
-/*
- * Due to a bug (?) in the way Linux HID handles the ShuttlePro, the
- * center position is not reported for the shuttle wheel.  Instead,
- * a jog event is generated immediately when it returns.  We check to
- * see if the time since the last shuttle was more than a few ms ago
- * and generate a shuttle of 0 if so.
- */
+//check to see if a jog event is generated very quickly after a
+//shuttle event. This means that the shuttle has returned to
+//the middle position
 void QShuttlePro::check_shuttle_center()
 {
-	if( !need_synthetic_shuttle )
+	if( !need_shuttle_center )
 		return;
 
 	struct timeval now, delta;
@@ -191,15 +189,15 @@ void QShuttlePro::check_shuttle_center()
 	if( delta.tv_sec < 1 && delta.tv_usec < 5000 )
 		return;
 	
-	shuttle( 0 );
-	need_synthetic_shuttle = 0;
+	shuttle(0);
+	need_shuttle_center = 0;
 }
 
 
 void QShuttlePro::jog(unsigned int value)
 {
-	// We should generate a synthetic event for the shuttle going
-	// to the home position if we have not seen one recently
+	//a jog event is generated when the shuttle returns to the
+	//home position. Strange but true.
 	check_shuttle_center();
 
 	if(value == jogvalue)
