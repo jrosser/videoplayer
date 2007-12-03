@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.18 2007-05-24 16:29:31 jrosser Exp $
+* $Id: mainwindow.h,v 1.19 2007-12-03 11:07:10 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -52,7 +52,7 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    MainWindow();
+    MainWindow(int argc, char **argv);
 	bool allParsed;		//flag to say that all commandline parameters were parsed OK.
 	    
 protected:
@@ -67,7 +67,7 @@ private slots:
 	        
 private:
 	void createActions(void);
-	void parseCommandLine();
+	void parseCommandLine(int argc, char **argv);
 	void usage();
 
 #ifdef Q_OS_LINUX	
