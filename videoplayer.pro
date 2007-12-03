@@ -5,9 +5,10 @@
 TEMPLATE = app
 TARGET = 
 INCLUDEPATH += . /usr/include  /usr/include/freetype2
+LIBS += -lboost_program_options
 
 QT += opengl
-CONFIG += thread console debug
+CONFIG += thread console
 
 # Input
 HEADERS = mainwindow.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h
