@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.5 2007-11-28 17:38:35 jrosser Exp $
+* $Id: main.cpp,v 1.6 2007-12-03 11:05:17 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	
     QApplication app(argc, argv);
 
-    MainWindow window;
+    MainWindow window(argc, argv);
     
     if(window.allParsed) {
     	//only run application if command line parameters all OK
@@ -60,7 +60,6 @@ int main(int argc, char **argv)
     }
     else
     {
-    	printf("Error parsing command line - terminating\n");
     	return -1;
     }
 }
