@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.29 2007-12-03 11:04:52 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.30 2007-12-04 13:52:22 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -212,8 +212,8 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 			startFullScreen=true;	
 		}
 		
-		if (vm.count("f")) {
-			string tmp = vm["f"].as<string>(); 
+		if (vm.count("fontfile")) {
+			string tmp = vm["fontfile"].as<string>(); 
 			fontFile = tmp.data();
 			
 #ifdef HAVE_FTGL
@@ -232,8 +232,8 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 #endif
 		}
 		
-		if (vm.count("t")) {
-			string tmp = vm["t"].as<string>(); 
+		if (vm.count("filetype")) {
+			string tmp = vm["filetype"].as<string>(); 
 			fileType = tmp.data();
 			
 			if((fileType.toLower() == "i420") ||
