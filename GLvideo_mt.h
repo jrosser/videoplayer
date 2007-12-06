@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.17 2007-05-24 13:45:43 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.18 2007-12-06 16:30:03 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -38,13 +38,15 @@
 #ifndef GLVIDEO_MT_H
 #define GLVIDEO_MT_H
 
+#define GL_GLEXT_LEGACY
+#include <GL/gl.h>
+#include "glext.h"
+
 #include <QtGui>
 #include <QGLWidget>
 
 #include "GLvideo_rt.h"
 #include "videoRead.h"
-
-#include "glext.h"
 
 class MainWindow;
 
