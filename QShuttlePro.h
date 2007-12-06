@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.h,v 1.5 2007-12-03 11:06:49 jrosser Exp $
+* $Id: QShuttlePro.h,v 1.6 2007-12-06 17:19:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -49,7 +49,7 @@ class QShuttlePro : public QThread
 
 public:
 
-	QShuttlePro(QObject *parent);
+	QShuttlePro();
 	void stop();
 					
 signals:

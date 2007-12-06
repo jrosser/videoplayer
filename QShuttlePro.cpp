@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.cpp,v 1.7 2007-12-03 11:06:31 jrosser Exp $
+* $Id: QShuttlePro.cpp,v 1.8 2007-12-06 17:19:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -58,7 +58,7 @@
 #define MAX_JOG_VALUE           255
 
 
-QShuttlePro::QShuttlePro(QObject *parent = 0) 
+QShuttlePro::QShuttlePro() 
 {
 	if(DEBUG) printf("Starting ShuttlePro\n");
 	
