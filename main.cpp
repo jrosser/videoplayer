@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.6 2007-12-03 11:05:17 jrosser Exp $
+* $Id: main.cpp,v 1.7 2007-12-06 16:34:41 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -37,22 +37,30 @@
 
 #include "mainwindow.h"
 
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 #include "X11/Xlib.h"
+#endif
+
+#ifdef Q_OS_MACX
+#include "agl_getproc.h"
 #endif
 
 #include <QApplication>
 
 int main(int argc, char **argv)
 {
-#ifdef Q_OS_UNIX
+#ifdef Q_OS_LINUX
 	XInitThreads();	
+#endif
+
+#ifdef Q_OS_MACX
+	aglInitEntryPoints();
 #endif
 	
     QApplication app(argc, argv);
 
     MainWindow window(argc, argv);
-    
+   
     if(window.allParsed) {
     	//only run application if command line parameters all OK
     	window.show();   
@@ -63,3 +71,4 @@ int main(int argc, char **argv)
     	return -1;
     }
 }
+
