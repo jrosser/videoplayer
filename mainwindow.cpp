@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.30 2007-12-04 13:52:22 davidf Exp $
+* $Id: mainwindow.cpp,v 1.31 2007-12-06 17:19:30 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -95,7 +95,7 @@ MainWindow::MainWindow(int argc, char **argv)
 #ifdef Q_OS_LINUX		
 	//shuttlePro jog dial - linux only native support at the moment	
 	shuttle = NULL;	
-	shuttle = new QShuttlePro(this);
+	shuttle = new QShuttlePro();
         
     //shuttlepro jog wheel
 	connect(shuttle, SIGNAL(jogForward()), videoRead, SLOT(transportJogFwd()));
