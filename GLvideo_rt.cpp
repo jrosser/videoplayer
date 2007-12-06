@@ -633,7 +633,7 @@ void GLvideo_rt::getGLfunctions()
 	glXGetVideoSyncSGI = (PFNGLXGETVIDEOSYNCSGIPROC) XglGetProcAddress("glXGetVideoSyncSGI");
 	glXWaitVideoSyncSGI = (PFNGLXWAITVIDEOSYNCSGIPROC) XglGetProcAddress("glXWaitVideoSyncSGI");
 
-	if(1 /*DEBUG*/) {
+	if(DEBUG) {
 		printf("glXGetVideoSyncSGI=%p\n",  glXGetVideoSyncSGI);
 		printf("glXWaitVideoSyncSGI=%p\n",  glXWaitVideoSyncSGI);			
 	}	
