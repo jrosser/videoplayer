@@ -5,11 +5,12 @@
 #include "FTGL/FTGLPolygonFont.h"
 #endif
 
-#ifdef Q_OS_UNIX
-#include <unistd.h>
+#ifdef Q_OS_MACX
+#include "agl_getproc.h"
 #endif
 
 #ifdef Q_OS_UNIX
+#include <unistd.h>
 #include <sys/time.h>
 #else
 #include <time.h>
@@ -29,10 +30,9 @@
 //should work with all planar chroma subsamplings
 //glInternalFormat=GL_LUMINANCE glFormat=GL_LUMINANCE glType=GL_UNSIGNED_BYTE
 static char *shaderPlanarSrc=
-  "#extension ARB_texture_rectangle : enable\n"
-  "#extension GL_ARB_texture_rect : enable\n"
-  "uniform samplerRect Ytex;\n"
-  "uniform samplerRect Utex,Vtex;\n"
+  "#extension GL_ARB_texture_rectangle : require\n"
+  "uniform sampler2DRect Ytex;\n"
+  "uniform sampler2DRect Utex,Vtex;\n"
   "uniform float Yheight, Ywidth;\n"   
   "uniform float CHsubsample, CVsubsample;\n"
   
@@ -47,26 +47,28 @@ static char *shaderPlanarSrc=
           
   "void main(void) {\n"
   " float nx,ny,a;\n"
+  " int thisField;\n"
   " vec3 yuv;\n"
   " vec3 rgb;\n"
   
   " nx=gl_TexCoord[0].x;\n"
   " ny=Yheight-gl_TexCoord[0].y;\n"
 
-  " if(direction < 0) field = 1 - field;\n"		//swap field order when playing interlaced pictures backwards
+  " thisField = field;\n"		//swap field order when playing interlaced pictures backwards
+  " if(direction < 0) thisField = 1 - field;\n"		//swap field order when playing interlaced pictures backwards
 
-  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + field, 2.0) > 0.5)) {\n"   
+  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + float(thisField), 2.0) > 0.5)) {\n"   
   "     //interpolated line in a field\n"
-  "     yuv[0] = textureRect(Ytex,vec2(nx, (ny+1))).r + textureRect(Ytex,vec2(nx, (ny-1))).r;\n" 
-  "     yuv[1] = textureRect(Utex,vec2(nx/CHsubsample, (ny+1)/CVsubsample)).r + textureRect(Utex,vec2(nx/CHsubsample, (ny-1)/CVsubsample)).r;\n"
-  "     yuv[2] = textureRect(Vtex,vec2(nx/CHsubsample, (ny+1)/CVsubsample)).r + textureRect(Vtex,vec2(nx/CHsubsample, (ny-1)/CVsubsample)).r;\n"  
+  "     yuv[0] = texture2DRect(Ytex,vec2(nx, (ny+1.0))).r + texture2DRect(Ytex,vec2(nx, (ny-1.0))).r;\n" 
+  "     yuv[1] = texture2DRect(Utex,vec2(nx/CHsubsample, (ny+1.0)/CVsubsample)).r + texture2DRect(Utex,vec2(nx/CHsubsample, (ny-1.0)/CVsubsample)).r;\n"
+  "     yuv[2] = texture2DRect(Vtex,vec2(nx/CHsubsample, (ny+1.0)/CVsubsample)).r + texture2DRect(Vtex,vec2(nx/CHsubsample, (ny-1.0)/CVsubsample)).r;\n"  
   "     yuv = yuv / 2.0;"
   " }\n"
   " else {\n"
   "     //non interpolated line in a field, or non interlaced\n"
-  "     yuv[0]=textureRect(Ytex,vec2(nx,ny)).r;\n"
-  "     yuv[1]=textureRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
-  "     yuv[2]=textureRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"    
+  "     yuv[0]=texture2DRect(Ytex,vec2(nx,ny)).r;\n"
+  "     yuv[1]=texture2DRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+  "     yuv[2]=texture2DRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"    
   " }\n"
 
   " yuv = yuv + yuvOffset1;\n"
@@ -84,10 +86,9 @@ static char *shaderPlanarSrc=
 //shader program for v216 muxed 16 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_SHORT
 //there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
 static char *shaderUYVYSrc=
-  "#extension ARB_texture_rectangle : enable\n"
-  "#extension GL_ARB_texture_rect : enable\n"
-  "uniform samplerRect Ytex;\n"
-  "uniform samplerRect Utex,Vtex;\n"
+  "#extension GL_ARB_texture_rectangle : require\n"
+  "uniform sampler2DRect Ytex;\n"
+  "uniform sampler2DRect Utex,Vtex;\n"
   "uniform float Yheight, Ywidth;\n"  
   "uniform float CHsubsample, CVsubsample;\n"
 
@@ -107,27 +108,29 @@ static char *shaderUYVYSrc=
   " vec4 above;\n"
   " vec4 below;\n"
   " vec3 rgb;\n"
+  " int  thisField;\n"
     
   " nx=gl_TexCoord[0].x;\n"
   " ny=Yheight-gl_TexCoord[0].y;\n"
  
-  " if(direction < 0) field = 1 - field;\n"		//swap field order when playing interlaced pictures backwards	
+  " thisField = field;\n"	
+  " if(direction < 0) thisField = 1 - field;\n"		//swap field order when playing interlaced pictures backwards	
  
-  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + field, 2.0) > 0.5)) {\n"   
+  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + float(field), 2.0) > 0.5)) {\n"   
   "     //interpolated line in a field\n"
-  "     above = textureRect(Ytex, vec2(floor(nx/2), ny+1));\n"
-  "     below = textureRect(Ytex, vec2(floor(nx/2), ny-1));\n"
+  "     above = texture2DRect(Ytex, vec2(floor(nx/2.0), ny+1.0));\n"
+  "     below = texture2DRect(Ytex, vec2(floor(nx/2.0), ny-1.0));\n"
 
-  "     yuv[0]  = (fract(nx/2) < 0.5) ? above.g : above.a;\n"
-  "     yuv[0] += (fract(nx/2) < 0.5) ? below.g : below.a;\n"
+  "     yuv[0]  = (fract(nx/2.0) < 0.5) ? above.g : above.a;\n"
+  "     yuv[0] += (fract(nx/2.0) < 0.5) ? below.g : below.a;\n"
   "     yuv[1] = above.r + below.r;\n"
   "     yuv[2] = above.b + below.b;\n"
   "     yuv = yuv / 2.0;"
   " }\n"
   " else {\n"
   "     //non interpolated line in a field, or non interlaced\n"
-  "     rgba = textureRect(Ytex, vec2(floor(nx/2), ny));\n"	 //sample every other RGBA quad to get luminance
-  "     yuv[0] = (fract(nx/2) < 0.5) ? rgba.g : rgba.a;\n"   //pick the correct luminance from G or A for this pixel
+  "     rgba = texture2DRect(Ytex, vec2(floor(nx/2.0), ny));\n"	 //sample every other RGBA quad to get luminance
+  "     yuv[0] = (fract(nx/2.0) < 0.5) ? rgba.g : rgba.a;\n"   //pick the correct luminance from G or A for this pixel
   "     yuv[1] = rgba.r;\n"
   "     yuv[2] = rgba.b;\n"  
   " }\n"
@@ -267,7 +270,7 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     	glActiveTexture(GL_TEXTURE1);
     	i=glGetUniformLocationARB(programs[currentShader], "Utex");
     	glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
-    	glBindTexture(GL_TEXTURE_RECTANGLE_NV,1);
+    	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,1);
 
     	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
     	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
@@ -277,7 +280,7 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     	/* Select texture unit 2 as the active unit and bind the V texture. */
     	glActiveTexture(GL_TEXTURE2);
     	i=glGetUniformLocationARB(programs[currentShader], "Vtex");
-    	glBindTexture(GL_TEXTURE_RECTANGLE_NV,2);
+    	glBindTexture(GL_TEXTURE_RECTANGLE_ARB,2);
     	glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
 
     	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
@@ -290,7 +293,7 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     glActiveTexture(GL_TEXTURE3);
     i=glGetUniformLocationARB(programs[currentShader], "Ytex");
     glUniform1iARB(i,3);  /* Bind Ytex to texture unit 3 */
-    glBindTexture(GL_TEXTURE_RECTANGLE_NV,3);
+    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,3);
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
@@ -604,25 +607,33 @@ void GLvideo_rt::renderVideo(VideoData *videoData)
 //FIXME - 
 void GLvideo_rt::getGLfunctions()
 {
-#ifdef Q_WS_X11
+#ifdef Q_OS_LINUX
 #define XglGetProcAddress(str) glXGetProcAddress((GLubyte *)str)
-#else
+#endif
+
+#ifdef Q_OS_WIN32
 #define XglGetProcAddress(str) wglGetProcAddress((LPCSTR)str)
 #endif
 	
+#ifdef Q_OS_MAC
+#define XglGetProcAddress(str) aglGetProcAddress((char *)str)
+#endif
+
 #ifdef Q_OS_WIN32
 	//enable openGL vsync on windows	
-	wglSwapIntervalEXT = (PFNWGLSWAPINTERVALFARPROC) XglGetProcAddress("wglSwapIntervalEXT");
-	if (wglSwapIntervalEXT)
-		wglSwapIntervalEXT(true);		
+	wglSwapInterval = (PFNWGLSWAPINTERVALFARPROC) XglGetProcAddress("wglSwapIntervalEXT");
+	if (wglSwapInterval)
+		wglSwapInterval(1);
+
+	if(DEBUG) printf("wglSwapInterval=%p\n",  wglSwapInterval);
 #endif
-	
+
 #ifdef Q_WS_X11
 	//functions for controlling vsync on X11	
 	glXGetVideoSyncSGI = (PFNGLXGETVIDEOSYNCSGIPROC) XglGetProcAddress("glXGetVideoSyncSGI");
 	glXWaitVideoSyncSGI = (PFNGLXWAITVIDEOSYNCSGIPROC) XglGetProcAddress("glXWaitVideoSyncSGI");
 
-	if(DEBUG) {
+	if(1 /*DEBUG*/) {
 		printf("glXGetVideoSyncSGI=%p\n",  glXGetVideoSyncSGI);
 		printf("glXWaitVideoSyncSGI=%p\n",  glXWaitVideoSyncSGI);			
 	}	
@@ -709,17 +720,21 @@ void GLvideo_rt::run()
             	
 	//initialise OpenGL	
 	getGLfunctions();	
-	glw.makeCurrent();	
+	glw.makeCurrent();
+
+#ifdef Q_OS_MACX
+	my_aglSwapInterval(1);
+#endif
+		
     glGenBuffers(3, io_buf);	
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glViewport(0,0, displayheight, displaywidth);
     glClearColor(0, 0, 0, 0);
-    //glHint(GL_POLYGON_SMOOTH_HINT,GL_NICEST);
-    glEnable(GL_TEXTURE_2D);
- 	glEnable(GL_BLEND);
-
-#ifdef Q_WS_X11 	
+    glEnable(GL_TEXTURE_RECTANGLE_ARB);
+	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_BLEND);
+#ifdef Q_WS_X11
 	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
 #endif
 
@@ -992,7 +1007,7 @@ void GLvideo_rt::run()
 
 		
 
-#ifdef Q_WS_X11		
+#ifdef Q_WS_X11
         if (frameRepeats > 1)
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
 		if(PERF) printf("  syncwait %d %d\n", perfTimer.elapsed(), frameRepeats);

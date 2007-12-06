@@ -1,6 +1,10 @@
 #ifndef GLVIDEO_RT_H_
 #define GLVIDEO_RT_H_
 
+#define GL_GLEXT_LEGACY
+#include <GL/gl.h>
+#include "glext.h"
+
 #include <QtGui>
 #include <QGLWidget>
 
@@ -8,7 +12,7 @@
 #include "GL/glx.h"
 #endif
 
-#include "glext.h"
+
 
 class GLvideo_mt;
 class FTFont;
@@ -58,7 +62,12 @@ private:
 #ifdef Q_OS_WIN32	
 	//windows - header file? what header file!!!
 	typedef bool (APIENTRY *PFNWGLSWAPINTERVALFARPROC) (int);
-	PFNWGLSWAPINTERVALFARPROC wglSwapIntervalEXT;	
+	PFNWGLSWAPINTERVALFARPROC wglSwapInterval;	
+#endif
+
+#ifdef Q_OS_MACX
+	typedef bool (APIENTRY *PFNAGLSWAPINTERVALFARPROC) (int);
+	PFNAGLSWAPINTERVALFARPROC aglSwapInterval;	
 #endif
 
 	PFNGLLINKPROGRAMARBPROC glLinkProgramARB;
