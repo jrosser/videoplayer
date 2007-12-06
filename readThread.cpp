@@ -17,6 +17,11 @@
 #define off64_t qint64
 #endif
 
+#ifdef Q_OS_MAC
+#define lseek64 lseek
+#define off64_t off_t
+#endif
+
 #include "readThread.h"
 #include "videoRead.h"
 
