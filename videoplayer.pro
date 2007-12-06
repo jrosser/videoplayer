@@ -14,9 +14,23 @@ CONFIG += thread console
 HEADERS = mainwindow.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h
 SOURCES = main.cpp mainwindow.cpp GLvideo_mt.cpp GLvideo_rt.cpp videoRead.cpp readThread.cpp videoData.cpp
 
-unix {
+linux-g++ {
   SOURCES += QShuttlePro.cpp
   HEADERS += QShuttlePro.h
   LIBS += -lftgl
   DEFINES += HAVE_FTGL
 }
+
+macx {
+  QMAKE_CXXFLAGS += -fpascal-strings
+  SOURCES += agl_getproc.cpp
+  HEADERS += agl_getproc.h
+  SOURCES -= QShuttlePro.cpp
+  HEADERS -= QShuttlePro.hpp
+  INCLUDEPATH += /usr/X11R6/include
+  INCLUDEPATH += /usr/local/include/boost-1_34_1/
+  LIBS -= -lftgl
+  DEFINES -= HAVE_FTGL
+}
+
+
