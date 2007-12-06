@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.18 2007-05-24 13:45:43 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.19 2007-12-06 16:36:06 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -59,6 +59,8 @@ void GLvideo_mt::stop()
  * Cause it to be hidden 1second later */
 void GLvideo_mt::mouseMoveEvent(QMouseEvent *ev)
 {
+	ev=ev;
+	
 	if (!mouseHideTimer.isActive())
 		setCursor(QCursor(Qt::ArrowCursor));
 	mouseHideTimer.start(1000);
@@ -133,6 +135,7 @@ void GLvideo_mt::paintGL()
 
 void GLvideo_mt::paintEvent(QPaintEvent * event)
 {
+	event=event;
 	//absorb any paint events - let the worker thread update the window	
 }
 
