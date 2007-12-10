@@ -1,6 +1,6 @@
 #include "videoData.h"
 
-#include <malloc.h>
+#include <stdlib.h>
 
 #ifdef Q_OS_WIN32
 #define valloc malloc
