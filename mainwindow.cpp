@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.32 2007-12-10 10:29:17 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.33 2007-12-10 10:50:09 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,6 +43,8 @@
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 using namespace std;
+
+#include "agl_getproc.h"
 
 MainWindow::MainWindow(int argc, char **argv)
 {		
@@ -550,6 +552,10 @@ void MainWindow::quit()
 	if(videoRead) {
 		videoRead->stop();
 	}
-				
+
+#ifdef Q_OS_MACX
+	aglDellocEntryPoints();
+#endif
+	
 	qApp->quit(); 
 }
