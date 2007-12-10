@@ -5,7 +5,6 @@
 CFBundleRef gBundleRefOpenGL = NULL;
 
 //nasty ugly code because including agl.h in elsewhere causes compile errors
-//hide agl behind a void*
 void my_aglSwapInterval(int interval)
 {
    AGLContext cx = aglGetCurrentContext();
