@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.31 2007-12-06 17:19:30 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.32 2007-12-10 10:29:17 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -63,11 +63,18 @@ MainWindow::MainWindow(int argc, char **argv)
 	forceFileType = false;
 	matrixScaling = false;
 	fileType = "";
-	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
 	matrixKr = 0.2126;
 	matrixKg = 0.7152;
 	matrixKb = 0.0722;
 	startFullScreen = false;
+
+#ifdef Q_OS_UNIX
+	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
+#endif
+
+#ifdef Q_OS_MACX
+	fontFile = "/Library/Fonts/GillSans.dfont";
+#endif
 		
 	//override settings with command line
 	parseCommandLine(argc, argv);
