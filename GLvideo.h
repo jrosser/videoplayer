@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo.h,v 1.2 2007-04-25 12:56:59 jrosser Exp $
+* $Id: GLvideo.h,v 1.3 2007-12-10 10:24:47 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -44,6 +44,10 @@
 #include <QGLWidget>
 
 #ifdef Q_OS_UNIX
+#include <sys/time.h>
+#endif
+
+#ifdef Q_OS_MACX
 #include <sys/time.h>
 #endif
 
