@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.cpp,v 1.15 2007-12-10 16:43:18 davidf Exp $
+* $Id: videoData.cpp,v 1.16 2007-12-10 16:57:27 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -245,7 +245,21 @@ void unpackv210line(uint8_t* dst, uint8_t* src, uint_t luma_width)
 		dst[x++] = readv210sample_pos1of3(src + 12) >> 2;
 		dst[x++] = readv210sample_pos2of3(src + 12) >> 2;
 	}
-	/* TODO, mop up last subblock (less than 6 active samples) */
+	/* mop up last subblock (4 or 2 active samples) */
+
+	if (x < 2*luma_width) {
+		dst[x++] = readv210sample_pos0of3(src + 0) >> 2; /* Cb */
+		dst[x++] = readv210sample_pos1of3(src + 0) >> 2; /* Y' */
+		dst[x++] = readv210sample_pos2of3(src + 0) >> 2; /* Cr */
+		dst[x++] = readv210sample_pos0of3(src + 4) >> 2; /* Y' */
+	}
+
+	if (x < 2*luma_width) {
+		dst[x++] = readv210sample_pos1of3(src + 4) >> 2;
+		dst[x++] = readv210sample_pos2of3(src + 4) >> 2;
+		dst[x++] = readv210sample_pos0of3(src + 8) >> 2;
+		dst[x++] = readv210sample_pos1of3(src + 8) >> 2;
+	}
 }
 
 
