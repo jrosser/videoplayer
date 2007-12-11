@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.33 2007-12-10 10:50:09 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.34 2007-12-11 11:37:57 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -249,7 +249,10 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 			   (fileType.toLower() == "yv12") ||
 			   (fileType.toLower() == "uyvy") ||
 			   (fileType.toLower() == "v216") ||
-			   (fileType.toLower() == "v210")) {
+			   (fileType.toLower() == "v210") ||
+			   (fileType.toLower() == "16p4") ||
+			   (fileType.toLower() == "16p2") ||
+			   (fileType.toLower() == "16p0")) {
 
 					forceFileType=true;			   	
 			   }															
@@ -279,7 +282,10 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 					   (fi.suffix().toLower() == "yv12") || 
 					   (fi.suffix().toLower() == "uyvy") ||
 					   (fi.suffix().toLower() == "v216") ||
-					   (fi.suffix().toLower() == "v210")) {
+					   (fi.suffix().toLower() == "v210") ||
+						(fi.suffix().toLower() == "16p4") ||
+						(fi.suffix().toLower() == "16p2") ||
+						(fi.suffix().toLower() == "16p0")) {
 					   	
 					   }
 					else {
