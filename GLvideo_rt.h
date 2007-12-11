@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.h,v 1.24 2007-12-10 10:49:32 jrosser Exp $
+* $Id: GLvideo_rt.h,v 1.25 2007-12-11 11:37:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -57,7 +57,7 @@ class GLvideo_rt : public QThread
 {
 public:
 
-	enum ShaderPrograms { shaderPlanar, shaderUYVY, shaderV216, shaderMax };
+	enum ShaderPrograms { shaderPlanar, shaderUYVY, shaderMax };
 
 	GLvideo_rt(GLvideo_mt &glWidget);
 	void resizeViewport(int w, int h);
