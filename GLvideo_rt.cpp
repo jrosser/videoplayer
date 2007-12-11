@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.36 2007-12-10 10:49:16 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.37 2007-12-11 11:36:54 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -255,8 +255,7 @@ void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg
 void GLvideo_rt::compileFragmentShaders()
 {
 	compileFragmentShader((int)shaderPlanar, shaderPlanarSrc);
-	compileFragmentShader((int)shaderUYVY,   shaderUYVYSrc);
-	compileFragmentShader((int)shaderV216,   shaderUYVYSrc);						
+	compileFragmentShader((int)shaderUYVY,   shaderUYVYSrc);						
 }
 
 void GLvideo_rt::compileFragmentShader(int n, const char *src)
@@ -311,7 +310,6 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
 
     	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
     	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-    	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
     
     	/* Select texture unit 2 as the active unit and bind the V texture. */
@@ -322,7 +320,6 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
 
     	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
     	glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-    	//glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
 	}
     
@@ -334,7 +331,6 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
 
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
     glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-    //glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->glYTextureWidth, videoData->Yheight, 0, videoData->glFormat, videoData->glType, NULL);
 
 	//create buffer objects that are used to transfer the texture data to the card
@@ -883,11 +879,29 @@ void GLvideo_rt::run()
 		
 		if(PERF) printf("  readData %d\n", perfTimer.elapsed());
 		
-		//check for v210 data - it's very difficult to write a shader for this
-		//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
 		if(videoData) {
-			if(videoData->renderFormat == VideoData::V210)
-				videoData->convertV210();
+			
+			switch(videoData->renderFormat) {
+			
+				case VideoData::V210:
+					//check for v210 data - it's very difficult to write a shader for this
+					//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
+					videoData->convertV210();			
+					break;
+					
+				case VideoData::V16P4:
+				case VideoData::V16P2:
+				case VideoData::V16P0:
+					//convert 16 bit data to 8bit
+					//this avoids endian-ness issues between the host and the GPU
+					//and reduces the bandwidth to the GPU
+					videoData->convertPlanar16();
+					break;
+					
+				default:
+					//no conversion needed
+					break;
+			}
 		}
 
 		//check for video dimensions changing		
@@ -911,27 +925,11 @@ void GLvideo_rt::run()
 		if(videoData) {
 			int newShader = currentShader;
 			
-			switch(videoData->renderFormat) {
-				case VideoData::YV12:
-				case VideoData::I420:
-				case VideoData::Planar411:
-				case VideoData::Planar444: 
-					newShader = shaderPlanar;
-					break;
-					
-				case VideoData::UYVY:
-					newShader = shaderUYVY;
-					break;
-					
-				case VideoData::V216:
-					newShader = shaderV216;
-					break;
-															
-				default:
-					//uh-oh!
-					break;
-			}	
-			
+			if(videoData->isPlanar)
+				newShader = shaderPlanar;
+			else
+				newShader = shaderUYVY;
+														
 			if(newShader != currentShader) {
 				if(DEBUG) printf("Changing shader from %d to %d\n", currentShader, newShader);
 				createGLTextures = true;
