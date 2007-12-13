@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.cpp,v 1.16 2007-12-10 16:57:27 davidf Exp $
+* $Id: videoData.cpp,v 1.17 2007-12-13 12:12:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -43,7 +43,6 @@
 #define valloc malloc
 #endif
 
-
 VideoData::VideoData(int w, int h, DataFmt f)
 	: diskFormat(f)
 	, Ywidth(w)
@@ -51,50 +50,61 @@ VideoData::VideoData(int w, int h, DataFmt f)
 {
 	switch(diskFormat) {
 	
-		case Planar444:
+		case V8P4:				//8 bit 444 planar
 			Cwidth  = Ywidth;
 			Cheight = Yheight;
 			YdataSize = Ywidth * Yheight;
-			UdataSize = Ywidth * Yheight;
-			VdataSize = Ywidth * Yheight;						
-			dataSize  = Ywidth * Yheight * 3;
+			UdataSize = YdataSize;
+			VdataSize = YdataSize;						
 			break;
-			
-		case Planar422:
+
+		case V16P4:				//16 bit 444 planar
+			Cwidth  = Ywidth;
+			Cheight = Yheight;
+			YdataSize = Ywidth * Yheight * 2;
+			UdataSize = YdataSize;
+			VdataSize = YdataSize;						
+			break;
+
+		case V8P2:				//8 bit 422 planar
 			Cwidth  = Ywidth / 2;
 			Cheight = Yheight;		
 			YdataSize = Ywidth * Yheight;
-			UdataSize = Ywidth * Yheight / 2;
-			VdataSize = Ywidth * Yheight / 2;								
-			dataSize = Ywidth * Yheight * 2;
+			UdataSize = YdataSize / 2;
+			VdataSize = YdataSize / 2;								
 			break;
-					
+
+		case V16P2:				//16 bit 422 planar
+			Cwidth  = Ywidth / 2;
+			Cheight = Yheight;		
+			YdataSize = Ywidth * Yheight * 2;
+			UdataSize = YdataSize / 2;
+			VdataSize = YdataSize / 2;								
+			break;
+			
+		case V16P0:			//16 bit 420
+			Cwidth  = Ywidth / 2;
+			Cheight = Yheight / 2;		
+			YdataSize = Ywidth * Yheight * 2;
+			UdataSize = YdataSize / 4;
+			VdataSize = YdataSize / 4;								
+			break;
+		
+		case V8P0:			//8 bit 420, YUV		
+		case YV12:			//8 bit 420, YVU
+			Cwidth  = Ywidth / 2;
+			Cheight = Yheight / 2;		
+			YdataSize = Ywidth * Yheight;
+			UdataSize = YdataSize / 4;
+			VdataSize = YdataSize / 4;								
+			break;
+			
 		case UYVY:
 			Cwidth  = Ywidth / 2;
 			Cheight = Yheight;		
 			YdataSize = Ywidth * Yheight * 2;
 			UdataSize = 0;
 			VdataSize = 0;								
-			dataSize = Ywidth * Yheight * 2;
-			break;
-
-		case Planar411:
-			Cwidth  = Ywidth / 4;
-			Cheight = Yheight;		
-			YdataSize = Ywidth * Yheight;
-			UdataSize = Ywidth * Yheight / 4;
-			VdataSize = Ywidth * Yheight / 4;								
-			dataSize = (Ywidth * Yheight * 3) / 2;
-			break;
-								
-		case I420:
-		case YV12:
-			Cwidth  = Ywidth / 2;
-			Cheight = Yheight / 2;		
-			YdataSize = Ywidth * Yheight;
-			UdataSize = Ywidth * Yheight / 4;
-			VdataSize = Ywidth * Yheight / 4;								
-			dataSize = (Ywidth * Yheight * 3) / 2;
 			break;
 			
 		case V216:
@@ -103,7 +113,6 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			YdataSize = Ywidth * Yheight * 4;
 			UdataSize = 0;
 			VdataSize = 0;
-			dataSize = Ywidth * Yheight * 4;
 			break;
 			
 		case V210:
@@ -113,7 +122,6 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			YdataSize = (Ywidth * Yheight * 2 * 4) / 3;
 			UdataSize = 0;
 			VdataSize = 0;			
-			dataSize = (Ywidth * Yheight * 2 * 4) / 3;
 			break;
 			
 		default:
@@ -121,19 +129,26 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			break;
 	}
 	
+	//total size of the frame
+	dataSize = YdataSize + UdataSize + VdataSize;
+	
 	//get some nicely page aligned memory 
 	data = (char *)valloc(dataSize);
 	Ydata = data;
 	isPlanar = false;
 	glMinMaxFilter = GL_LINEAR;	//linear interpolation
+	Udata = Ydata;
+	Vdata = Ydata;
 	renderFormat = diskFormat;
 	
 	switch(diskFormat) {
-		//planar formats
-		case Planar444:
-		case Planar422:
-		case Planar411:
-		case I420:
+		//planar formats YUV
+		case V16P4:
+		case V16P2:
+		case V16P0:
+		case V8P4:
+		case V8P2:
+		case V8P0:
 			glYTextureWidth = Ywidth;		
 			glInternalFormat = GL_LUMINANCE;
 			glFormat = GL_LUMINANCE;
@@ -142,7 +157,8 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			Udata = Ydata + YdataSize;
 			Vdata = Udata + UdataSize;
 			break;
-						
+		
+		//planar format, YVU
 		case YV12:
 			isPlanar = true;
 			glYTextureWidth = Ywidth;			
@@ -163,23 +179,19 @@ VideoData::VideoData(int w, int h, DataFmt f)
 			glMinMaxFilter = GL_NEAREST;					
 			break;
 					
-		case V210:
+		case V210:							//gets converted to UYVY
 			glYTextureWidth = Ywidth / 2;	//2 Y samples per RGBA quad			
 			glInternalFormat = GL_RGBA;
 			glFormat = GL_RGBA;
-			glType = GL_UNSIGNED_INT;
+			glType = GL_UNSIGNED_BYTE;
 			glMinMaxFilter = GL_NEAREST;
-			Udata = Ydata;
-			Vdata = Ydata;
 			break;
 			
 		case V216:
-			glYTextureWidth = Ywidth / 2;	//2 samples per YUV quad
+			glYTextureWidth = Ywidth / 2;	//2 Y samples per RGBA quad
 			glInternalFormat = GL_RGBA;
 			glFormat = GL_RGBA;
 			glType = GL_UNSIGNED_SHORT;			
-			Udata = Ydata;
-			Vdata = Ydata;
 			break;
 			
 		default:
@@ -285,10 +297,53 @@ void VideoData::convertV210()
 	//note that the dataSize stays the same
 	renderFormat = UYVY;
 	glYTextureWidth = Ywidth / 2;	//2 Y samples per RGBA quad
-	glInternalFormat = GL_RGBA;
-	glFormat = GL_RGBA;
-	glType = GL_UNSIGNED_BYTE;
 	YdataSize = Ywidth * Yheight * 2;
 	UdataSize = 0;
 	VdataSize = 0;
+}
+
+void VideoData::convertPlanar16()
+{
+	uint8_t *src=(uint8_t *)Ydata;
+	uint8_t *dst=(uint8_t *)Ydata;
+	const uint8_t *end=(uint8_t *)(Ydata+dataSize);
+		
+	//convert the 16 bit source to 8 bit destination, in place
+	//just throw away the LSBs
+	while(src < end) {
+		*dst++ = *src;
+		src+=2;	
+	}
+
+	//new data size
+	YdataSize = Ywidth * Yheight;
+		
+	//tell the renderer that this is now 8 bit data
+	switch(renderFormat) {
+		case V16P0:
+			renderFormat = V8P0;
+			UdataSize = YdataSize/4;
+			VdataSize = YdataSize/4;
+			break;
+			
+		case V16P2:
+			renderFormat = V8P2;
+			UdataSize = YdataSize/2;
+			VdataSize = YdataSize/2;			
+			break;
+			
+		case V16P4:
+			renderFormat = V8P4;
+			UdataSize = YdataSize;
+			VdataSize = YdataSize;			
+			break;
+			
+		default:
+			//doh!
+			break;
+	}
+		
+	//update pointers to the start of each plane
+	Udata = Ydata + YdataSize;
+	Vdata = Udata + UdataSize;
 }

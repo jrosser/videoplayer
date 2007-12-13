@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.h,v 1.9 2007-12-10 10:51:13 jrosser Exp $
+* $Id: videoData.h,v 1.10 2007-12-13 12:12:59 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -44,12 +44,13 @@ class VideoData
 {
 public:
 
-	enum DataFmt { Planar444, Planar422, I420, YV12, Planar411, UYVY, V216, V210 };	//how is the data packed?
+	enum DataFmt { V8P0, V8P2, V8P4, YV12, V16P0, V16P2, V16P4, UYVY, V216, V210};	//how is the data packed?
 		
 	VideoData(int width, int height, DataFmt f);
 	~VideoData();
 	
 	void convertV210();
+	void convertPlanar16();
 		
 	unsigned long frameNum;
 	
@@ -61,7 +62,7 @@ public:
 	GLenum		glInternalFormat;	//format used to describe which components of the texture are applied to the texels
 	GLenum		glFormat;			//format of the texture data, GL_LUMINANCE or GL_RGBA in these applications
 	GLenum		glType;				//the data type for the texture, GL_UNSIGNED_BYTE, GL_INT etc...
-	int			glMinMaxFilter;		//filter type for scaling the pixel data GL_LINEAR for filtering, GL_NEAREST for V210 specifically
+	int			glMinMaxFilter;		//filter type for scaling the pixel data GL_LINEAR for planar, or GL_NEAREST for packed
 	int 		glYTextureWidth;	//the width of the Y texture, which may actually be UYVY data packed as RGBA. There
 									//will be half the number of RGBA quads as Y pixels across the image as each quad
 									//stores two luminance samples	
