@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.34 2007-12-11 11:37:57 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.35 2007-12-13 12:15:16 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -324,6 +324,9 @@ void MainWindow::usage()
     printf("\n  .uyvy         4:2:2 YUV 8 bit packed");
     printf("\n  .v210         4:2:2 YUV 10 bit packed");
     printf("\n  .v216         4:2:2 YUV 16 bit packed");
+    printf("\n  .16p0         4:2:0 YUV 16 bit planar");
+    printf("\n  .16p2         4:2:2 YUV 16 bit planar");
+    printf("\n  .16p4         4:4:4 YUV 16 bit planar");            
     printf("\n");                            
 
 	printf("\nKeypress               Action");
