@@ -1,0 +1,18 @@
+TODO
+
+1) Add Windows compatibility.
+
+2) Going to / from fullscreen on OS X does not resize correctly sometimes
+
+3) Add the ability to repeat frames on OS X, as the glx SGI OpenGL extensions
+   used under Linux are not available
+   
+4) Add a control panel dialog box, to adjust the parameters that are currently
+   set on the command line.
+   
+5) Add a performance monitor dialog box showing transfer rates and time spent
+   copying texture data to the GPU
+
+6) Fix v210 format for 720P modes
+
+7) Write some better documentation

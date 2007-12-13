@@ -1,0 +1,79 @@
+Videoplayer is a program designed to allow the real time playback of raw,
+headerless YUV files that are encountered in video processing and broadcast
+applications.
+
+The source data should be a single file of concatenated video frames.
+
+Aims
+----
+
+* Play video locked exactly to the display device refresh rate (VSYNC)
+
+* Play back uncompressed video in real time
+
+* Offload chrominance upconversion and colour matrixing to the GPU
+  to permit high performance playback.
+
+Source Formats
+--------------
+
+Videoplayer provides compatibility with a wide range of YUV formats:
+
+FourCC code     Description
+-----------     -----------
+I420            YUV planar 8 bit data
+
+YV12            YVU planar 8 bit data
+
+UYVY            UYVY multiplexed 8 bit data
+
+V210            UYVY multiplexed 10 bit data, 3 components packed into 32 bits
+
+V216            UYVY multiplexed 8-16 bit data, little endian,
+				data packed to the most significant bits
+
+16P0            16 bit, MSbyte first, 16 bit planar data, 4:2:0 chroma
+
+16P2            16 bit, MSbyte first, 16 bit planar data, 4:2:2 chroma
+
+16P4            16 bit, MSbyte first, 16 bit planar data, 4:4:4 chroma
+
+Operating System Compatibility
+------------------------------
+
+Videoplayer has been developed using the Qt cross platform toolkit.
+
+Ubuntu Linux 7.10 has been the main development platform. Linux is the most
+stable platform for runnung Videoplayer.
+
+Videoplayer can be compiled and run on OS X 10.5. Stability problems exist
+with the ATI graphics in Intel iMacs, and Apple specific OpenGL optimisations
+have not been done. As a result, playback of full screen HD video is currently
+limited to 30fps on a Power Mac G5. Smaller windows will play at 60fps.
+
+There is currently no support for the Windows platform.
+				
+Hardware Requirements
+---------------------
+
+Playing uncompressed video sources requires significant read bandwidth from
+a storage device.
+
+Standard Definition video can be played from a single HDD.
+1920x1080 HDTV at 25/30fps can be played from four HDDs in software RAID-0.
+1920x1080 HDTV at 50/60fps can be played from eight HDDs in software RAID-0.
+
+It should be noted that the continuous read rate of a HDD varies across the 
+platters. It may be possible to play back from fewer disks than described 
+above, but frames may be dropped at certain filesystem occupancies.
+
+If a large disk array is not available, system RAM can be used to cache video
+files if enough is available. Source video can be copied to /tmp and then 
+played. Alternatively, video can be played from a slow HDD and will stutter 
+on the first loop of the file. Subsequent loops will play in real time as the
+video data is now cached by the operating system.
+
+Videoplayer uses OpenGL to accelerate playback. Development has been done with
+NVidia QuadroFX3450 cards. Recent PCIe graphics cards are recommended, but no
+testing of other models has been done.
+
