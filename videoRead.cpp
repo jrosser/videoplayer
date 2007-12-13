@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.13 2007-07-02 13:57:51 jrosser Exp $
+* $Id: videoRead.cpp,v 1.14 2007-12-13 12:13:45 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -100,9 +100,52 @@ void VideoRead::setFileName(const QString &fn)
 	QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
 	
 	printf("Playing file with type %s\n", type.toLatin1().data());
+
+	if(type == "16p0") {
+		dataFormat = VideoData::V16P0;
+		//420
+		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3 * 2) / 2);
+		lastFrameNum--; 						
+	}
 	
+	if(type == "16p2") {
+		dataFormat = VideoData::V16P2;
+		//422
+		lastFrameNum = info.size() / (videoWidth * videoHeight * 2 * 2);
+		lastFrameNum--; 						
+	}
+
+	if(type == "16p4") {
+		dataFormat = VideoData::V16P4;
+		//444
+		lastFrameNum = info.size() / (videoWidth * videoHeight * 3 * 2);
+		lastFrameNum--; 						
+	}
+
+	if(type == "420p") {
+		dataFormat = VideoData::V8P0;
+		//420
+		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
+		lastFrameNum--; 						
+	}
+	
+	if(type == "422p") {
+		dataFormat = VideoData::V8P2;
+		//422
+		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
+		lastFrameNum--; 						
+	}
+
+	if(type == "444p") {
+		dataFormat = VideoData::V8P4;
+		//444
+		lastFrameNum = info.size() / (videoWidth * videoHeight * 3);
+		lastFrameNum--; 						
+	}
+
+
 	if(type == "i420") {
-		dataFormat = VideoData::I420;
+		dataFormat = VideoData::V8P0;
 
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
 		lastFrameNum--; 						
