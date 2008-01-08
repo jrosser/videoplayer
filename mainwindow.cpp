@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.35 2007-12-13 12:15:16 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.36 2008-01-08 15:16:32 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -160,7 +160,8 @@ MainWindow::MainWindow(int argc, char **argv)
 	glvideo_mt->setInterlacedSource(interlacedSource);
 	glvideo_mt->setDeinterlace(deinterlace);
 	glvideo_mt->setMatrixScaling(matrixScaling);
-	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);			
+	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
+	glvideo_mt->setCaption(caption);			
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
@@ -197,6 +198,7 @@ void MainWindow::parseCommandLine(int argc, char **argv)
     		("filetype,t",    po::value<string>(),            "string         Force file type\n"
     		                                                  "               [i420|yv12|uyvy|v210|v216]")
     		("full,f",                                        "               Start in full screen mode")
+    		("caption",		  po::value<string>(),            "string         OSD Caption text")
     		("video",                                         "               Video file to play")
     		("help",                                          "               Show usage information");
     	
@@ -261,6 +263,11 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 				allParsed = false;	
 			}
 
+		}
+		
+		if(vm.count("caption")) {
+			string tmp = vm["caption"].as<string>();
+			caption = tmp.data();
 		}
 		
 		if (vm.count("video") == 0) {
@@ -390,6 +397,11 @@ void MainWindow::createActions()
 	toggleOSDAct->setShortcut(tr("o"));		
 	addAction(toggleOSDAct);			
 	connect(toggleOSDAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleOSD()));
+
+	togglePerfAct = new QAction("Toggle Performance", this);
+	togglePerfAct->setShortcut(tr("?"));		
+	addAction(togglePerfAct);			
+	connect(togglePerfAct, SIGNAL(triggered()), glvideo_mt, SLOT(togglePerf()));
 
 	toggleLuminanceAct = new QAction("Toggle Luminance", this);
 	toggleLuminanceAct->setShortcut(tr("y"));

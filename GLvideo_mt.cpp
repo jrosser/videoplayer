@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.19 2007-12-06 16:36:06 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.20 2008-01-08 15:16:32 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -71,7 +71,10 @@ void GLvideo_mt::hideMouse()
 	setCursor(QCursor(Qt::BlankCursor));
 }
 
-
+void GLvideo_mt::togglePerf() 
+{
+	renderThread.togglePerf();	
+}
 
 void GLvideo_mt::toggleOSD() 
 {
@@ -190,4 +193,9 @@ void GLvideo_mt::setLuminanceOffset2(float o)
 void GLvideo_mt::setChrominanceOffset2(float o)
 {
 	renderThread.setChrominanceOffset2(o);
+}
+
+void GLvideo_mt::setCaption(QString &caption)
+{
+	renderThread.setCaption(caption.toLatin1().data());	
 }

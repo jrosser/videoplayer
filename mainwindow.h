@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.19 2007-12-03 11:07:10 jrosser Exp $
+* $Id: mainwindow.h,v 1.20 2008-01-08 15:16:33 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -82,6 +82,7 @@ private:
 	QAction *setSDTVMatrixAct;	
 	QAction *toggleMatrixScalingAct;
 	QAction *toggleOSDAct;
+	QAction *togglePerfAct;	
 	QAction *toggleAspectLockAct;		
 	QAction *viewFullScreenAct;
 	QAction *escapeFullScreenAct;
@@ -124,6 +125,7 @@ private:
 	
 	bool forceFileType;
 	QString fileType;
+	QString caption;
 	
 	float luminanceOffset1;
 	float chrominanceOffset1;	

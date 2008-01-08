@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.h,v 1.25 2007-12-11 11:37:23 jrosser Exp $
+* $Id: GLvideo_rt.h,v 1.26 2008-01-08 15:16:33 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -70,6 +70,7 @@ public:
 	void stop();
 	void toggleAspectLock();
 	void toggleOSD();
+	void togglePerf();	
 	void toggleLuminance();
 	void toggleChrominance();
 	void toggleDeinterlace();	
@@ -83,6 +84,7 @@ public:
 	void setDeinterlace(bool d);
 	void setMatrixScaling(bool s);
 	void setMatrix(float Kr, float Kg, float Kb);
+	void setCaption(const char *caption);
 					        
 private:
 
@@ -135,6 +137,7 @@ private:
 	void renderVideo(VideoData *videoData);
 #ifdef HAVE_FTGL
 	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd);
+	void renderPerf(VideoData *videoData, FTFont *font);
 #endif	
 
 	bool m_doRendering;			//set to false to quit thread
@@ -142,6 +145,7 @@ private:
 	bool m_aspectLock;			//lock the aspect ratio of the source video
 	bool m_changeFont;			//set a new font for the OSD
 	int m_osd;					//type of OSD shown
+	bool m_perf;				//show performance data
 	bool m_showLuminance;		//use Y data or 0.5
 	bool m_showChrominance;		//use C data or 0.5
 	bool m_interlacedSource;	//is the source video interlaced?
@@ -159,7 +163,7 @@ private:
 	float m_matrixKg;
 	float m_matrixKb;
 	
-	static const int MAX_OSD = 4;
+	static const int MAX_OSD = 5;
 				
 	int m_displaywidth;			//width of parent widget
 	int m_displayheight;		//height of parent widget
@@ -174,7 +178,8 @@ private:
    	GLuint io_buf[3];			//io buffer objects   	
 	GLvideo_mt &glw;			//parent widget
 	
-	char fontFile[255];
+	char fontFile[255];			//truetype font used for on screen display
+	char caption[255];
 
 	QMutex mutex;	
 };

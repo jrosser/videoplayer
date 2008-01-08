@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.18 2007-12-06 16:30:03 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.19 2008-01-08 15:16:32 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -68,6 +68,7 @@ protected:
 	
 public slots:
 	void toggleOSD();
+	void togglePerf();
 	void toggleAspectLock();
 	void toggleLuminance();
 	void toggleChrominance();
@@ -83,6 +84,7 @@ public slots:
 	void setChrominanceOffset2(float o);	
 	void setMatrixScaling(bool s);
 	void setMatrix(float Kr, float Kg, float Kb);
+	void setCaption(QString&);
 		
 private slots:
 	void hideMouse();

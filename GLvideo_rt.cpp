@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.37 2007-12-11 11:36:54 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.38 2008-01-08 15:16:33 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -60,8 +60,21 @@
 #include <errno.h>
 #include <assert.h>
 
+//FIXME - nasty global variables
+//performance monitoring
+int perf_getParams;
+int perf_readData;
+int perf_convertFormat;
+int perf_updateVars;
+int perf_repeatWait;
+int perf_upload;
+int perf_renderVideo;
+int perf_renderOSD;
+int perf_swapBuffers;
+int perf_interval;
+
 #define DEBUG 0
-#define PERF 0
+
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
 //should work with all planar chroma subsamplings
@@ -189,6 +202,7 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_doRendering = true;
 	m_aspectLock = true;
 	m_osd = true;
+	m_perf = false;
 	m_changeFont = false;
 	m_showLuminance = true;
 	m_showChrominance = true;
@@ -209,6 +223,9 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_matrixKr = 0.2126;	//colour matrix for HDTV
 	m_matrixKg = 0.7152;
 	m_matrixKb = 0.0722;
+	
+	memset(caption, 0, sizeof(caption));
+	strcpy(caption, "Hello World");
 }
 
 void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale)
@@ -381,6 +398,13 @@ void GLvideo_rt::setFontFile(const char *f)
 	mutex.unlock();	
 }
 
+void GLvideo_rt::setCaption(const char *c)
+{
+	mutex.lock();
+	strncpy(caption, c, 255);
+	mutex.unlock();	
+}
+
 void GLvideo_rt::setFramePolarity(int p)
 {
 	mutex.lock();
@@ -402,6 +426,14 @@ void GLvideo_rt::toggleOSD(void)
 	m_osd = (m_osd + 1) % MAX_OSD;	
 	mutex.unlock();		
 }
+
+void GLvideo_rt::togglePerf(void)
+{
+	mutex.lock();
+	m_perf = !m_perf;	
+	mutex.unlock();		
+}
+
 
 void GLvideo_rt::setInterlacedSource(bool i)
 {
@@ -531,52 +563,156 @@ void GLvideo_rt::resizeViewport(int width, int height)
 #ifdef HAVE_FTGL
 void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int osd)
 {
-	//positions of text
-	float tx=0.05 * videoData->Ywidth;
-	float ty=0.05 * videoData->Yheight;
-	float border = 10;
-	
-	//character size for '0'
-	float cx1, cy1, cz1, cx2, cy2, cz2;	
-	font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2); 		
-	
-	//text box location
-	float bx1, by1, bx2, by2;
-	float charWidth = cx2 - cx1;
-	float charHeight = cy2 - cy1;
-	bx1 = tx - border; 
-	by1 = ty - border; 
-	bx2 = tx + charWidth + 2*border;
-	by2 = ty + charHeight + border;
-			
+	//bounding box of text
+	float cx1, cy1, cz1, cx2, cy2, cz2;	 		
+				
 	//text string
-	char str[20];
+	char str[255];
 	switch (osd) {
-	case 1: sprintf(str, "%06ld", videoData->frameNum); break;
-	case 2: sprintf(str, "%06ld, fps:%3.2f", videoData->frameNum, fps); break;
-	case 3: sprintf(str, "%06ld, %s:%s", videoData->frameNum, m_interlacedSource ? "Int" : "Prog", m_deinterlace ? "On" : "Off"); break;	
+	case 1: 
+		sprintf(str, "%06ld", videoData->frameNum);
+	 	font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2);
+		break;
+	
+	case 2: 
+		sprintf(str, "%06ld, fps:%3.2f", videoData->frameNum, fps);
+	 	font->BBox("000000, fps:000.00", cx1, cy1, cz1, cx2, cy2, cz2);
+		break;
+	
+	case 3: 
+		sprintf(str, "%06ld, %s:%s", videoData->frameNum, m_interlacedSource ? "Int" : "Prog", m_deinterlace ? "On" : "Off");
+	 	font->BBox("000000, Prog:Off", cx1, cy1, cz1, cx2, cy2, cz2);
+		break;
+		
+	case 4: 
+		sprintf(str, "%s", caption);
+	 	font->BBox(caption, cx1, cy1, cz1, cx2, cy2, cz2);
+		break;
+
+				
 	default: str[0] = '\0';
 	}
-			
+
+	//text box location, defaults to bottom left
+	float tx=0.05 * videoData->Ywidth;
+	float ty=0.05 * videoData->Yheight;
+
+	if(osd==4) {
+		//put the caption in the middle of the screen
+		tx = videoData->Ywidth - (cx2 - cx1);
+		tx/=2;	
+	}
+	
+	//black box that text is rendered onto, larger than the text by 'border'
+	float border = 10;	
+	float bx1, by1, bx2, by2;
+	bx1 = cx1 - border; 
+	by1 = cy1 - border; 
+	bx2 = cx2 + border;
+	by2 = cy2 + border;
+	
 	//box beind text													
 	glPushMatrix();
+	glTranslated(tx, ty, 0);	
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glColor4f(0.0, 0.0, 0.0, 0.7);
-	
-	//glTranslated(80, 80, 0);							
+								
 	glBegin(GL_QUADS);
 	glVertex2f(bx1, by1);
 	glVertex2f(bx1, by2);
 	glVertex2f(bx2, by2);
 	glVertex2f(bx2, by1);																				
 	glEnd();			
-	glPopMatrix();						
-
+						
 	//text
-	glPushMatrix();
-	glColor4f(1.0, 1.0, 1.0, 0.5);
-	glTranslated(tx, ty, 0);						
+	glColor4f(1.0, 1.0, 1.0, 0.5);						
 	font->Render(str);					
+	glPopMatrix();	
+}
+
+void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
+{
+	float tx = 0.05 * videoData->Ywidth;
+	float ty = 0.95 * videoData->Yheight;
+	char str[255];
+	float cx1, cy1, cz1, cx2, cy2, cz2;	
+	
+	font->BBox("0", cx1, cy1, cz1, cx2, cy2, cz2);	
+	float spacing = (cy2-cy1) * 1.5;
+
+	//black box that text is rendered onto, larger than the text by 'border'
+	float border = 10;	
+	float bx1, by1, bx2, by2;
+	bx1 = 0.05 * videoData->Ywidth; 
+	by1 = 0.95 * videoData->Yheight; 
+	bx2 = 0.95 * videoData->Ywidth;
+	by2 = 0.95 * videoData->Yheight - (spacing*10);
+	
+	//box beind text	
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glColor4f(0.0, 0.0, 0.0, 0.7);
+								
+	//glBegin(GL_QUADS);
+	//glVertex2f(bx1, by1);
+	//glVertex2f(bx1, by2);
+	//glVertex2f(bx2, by2);
+	//glVertex2f(bx2, by1);																				
+	//glEnd();
+	
+	glColor4f(1.0, 1.0, 1.0, 0.5);
+	
+	glPushMatrix();		
+	glTranslated(tx, ty-spacing, 0);
+	sprintf(str, "ReadData      : %d", perf_readData);
+	font->Render(str);
+	glPopMatrix();
+	
+	glPushMatrix();
+	glTranslated(tx, ty-spacing*2.0, 0);
+	sprintf(str, "ConvertFormat : %d", perf_convertFormat);
+	font->Render(str);
+	glPopMatrix();
+	
+	glPushMatrix();	
+	glTranslated(tx, ty-spacing*3.0, 0);
+	sprintf(str, "UpdateVars    : %d", perf_updateVars);
+	font->Render(str);
+	glPopMatrix();
+			
+	glPushMatrix();		
+	glTranslated(tx, ty-spacing*4.0, 0);
+	sprintf(str, "RepeatWait    : %d", perf_repeatWait);
+	font->Render(str);
+	glPopMatrix();
+		
+	glPushMatrix();	
+	glTranslated(tx, ty-spacing*5.0, 0);	
+	sprintf(str, "Upload        : %d", perf_upload);
+	font->Render(str);
+	glPopMatrix();
+		
+	glPushMatrix();	
+	glTranslated(tx, ty-spacing*6.0, 0);	
+	sprintf(str, "RenderVideo   : %d", perf_renderVideo);
+	font->Render(str);
+	glPopMatrix();
+		
+	glPushMatrix();	
+	glTranslated(tx, ty-spacing*7.0, 0);
+	sprintf(str, "RenderOSD     : %d", perf_renderOSD);
+	font->Render(str);
+	glPopMatrix();
+		
+	glPushMatrix();	
+	glTranslated(tx, ty-spacing*8.0, 0);
+	sprintf(str, "SwapBuffers   : %d", perf_swapBuffers);
+	font->Render(str);
+	glPopMatrix();
+	
+	glPushMatrix();	
+	glTranslated(tx, ty-spacing*9.0, 0);	
+	sprintf(str, "Interval      : %d", perf_interval);
+	font->Render(str);
 	glPopMatrix();	
 }
 #endif
@@ -703,8 +839,9 @@ void GLvideo_rt::run()
 	
 	VideoData *videoData = NULL;
 
-	QTime frameIntervalTime;
-	QTime perfTimer;
+	QTime fpsIntervalTime;		//measures FPS, averaged over several frames
+	QTime frameIntervalTime;	//measured the total period of each frame
+	QTime perfTimer;			//performance timer for measuring indivdual processes during rendering
 	int fpsAvgPeriod=1;
 	float fps = 0;
 				
@@ -734,6 +871,7 @@ void GLvideo_rt::run()
 	int direction = 0;
 	int currentShader = 0;	
 	int osd = m_osd;
+	bool perf = m_perf;
 	float luminanceOffset1 = m_luminanceOffset1;
 	float chrominanceOffset1 = m_chrominanceOffset1;
 	float luminanceMultiplier = m_luminanceMultiplier;
@@ -744,11 +882,12 @@ void GLvideo_rt::run()
 	float matrixKr = m_matrixKr;
 	float matrixKg = m_matrixKg;
 	float matrixKb = m_matrixKb;
-		
+	
 	mutex.unlock();
 
 #ifdef HAVE_FTGL
 	FTFont *font = NULL;
+	FTFont *perfFont = NULL;
 #endif 	
             	
 	//initialise OpenGL	
@@ -785,6 +924,7 @@ void GLvideo_rt::run()
 			frameRepeats = m_frameRepeats;
 			framePolarity = m_framePolarity;
 			osd = m_osd;
+			perf = m_perf;
 												
 			doResize = m_doResize;				
 			m_doResize = false;
@@ -864,7 +1004,7 @@ void GLvideo_rt::run()
 			}
 	
 		mutex.unlock();
-		if(PERF) printf("  getparams %d\n", perfTimer.elapsed());
+		perf_getParams = perfTimer.elapsed();
 
 		if(changeMatrix) {
 			buildColourMatrix(colourMatrix, matrixKr, matrixKg, matrixKb, matrixScaling, matrixScaling);
@@ -872,15 +1012,15 @@ void GLvideo_rt::run()
 		}
 
 		//read frame data, one frame at a time, or after we have displayed the second field
+		perfTimer.restart();		
 		if(interlacedSource == 0 || field == 1) {
 			videoData = glw.vr.getNextFrame();
 			direction = glw.vr.getDirection();
-		}
-		
-		if(PERF) printf("  readData %d\n", perfTimer.elapsed());
+			perf_readData = perfTimer.elapsed();
+		}		
 		
 		if(videoData) {
-			
+			perfTimer.restart();			
 			switch(videoData->renderFormat) {
 			
 				case VideoData::V210:
@@ -902,6 +1042,7 @@ void GLvideo_rt::run()
 					//no conversion needed
 					break;
 			}
+			perf_convertFormat = perfTimer.elapsed();
 		}
 
 		//check for video dimensions changing		
@@ -918,10 +1059,8 @@ void GLvideo_rt::run()
 				lastsrcheight = videoData->Yheight;
 			}
 		}
-		if(PERF) printf("  dimensions %d\n", perfTimer.elapsed());
 		
 		//check for the shader changing
-		
 		if(videoData) {
 			int newShader = currentShader;
 			
@@ -938,17 +1077,16 @@ void GLvideo_rt::run()
     			glUseProgramObjectARB(programs[currentShader]);					
 			}							
 		}		
-		if(PERF) printf("  shader %d\n", perfTimer.elapsed());
 		
 		if(createGLTextures) {
 			if(DEBUG) printf("Creating GL textures\n");
 			//create the textures on the GPU
 			createTextures(videoData, currentShader);
 			createGLTextures = false;
-		}
-		if(PERF) printf("  createTexture %d\n", perfTimer.elapsed());			
+		}			
 		
 		if(updateShaderVars && videoData) {
+			perfTimer.restart();
 			if(DEBUG) printf("Updating fragment shader variables\n");
 
 			//data about the input file to the shader			
@@ -994,12 +1132,11 @@ void GLvideo_rt::run()
 
 		   	i=glGetUniformLocationARB(programs[currentShader], "deinterlace");
     		glUniform1iARB(i, deinterlace);
-			updateShaderVars = false;	
+			updateShaderVars = false;
+			perf_updateVars = perfTimer.elapsed();
 		}	
-		if(PERF) printf("  shaderVars %d\n", perfTimer.elapsed());
 												
 		if(doResize && videoData != NULL) {
-			
 			//resize the viewport, once we have some video
 			if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
 			
@@ -1024,28 +1161,35 @@ void GLvideo_rt::run()
 			}			
 			doResize = false;
 		}
-		if(PERF) printf("  resize %d\n", perfTimer.elapsed());
 		
 #ifdef HAVE_FTGL
 		if(changeFont) {
-			printf("Changing font!!!!\n");
 			if(font) 
 				delete font;
+			
+			if(perfFont)
+				delete perfFont;
 			
 			font = new FTGLPolygonFont((const char *)fontFile);
 			font->FaceSize(144);
 			font->CharMap(ft_encoding_unicode);
+			
+			perfFont = new FTGLPolygonFont((const char *)fontFile);
+			perfFont->FaceSize(30);
+			perfFont->CharMap(ft_encoding_unicode);
+			
 			changeFont = false;	
-		}		
-		if(PERF) printf("  changefont %d %d\n", perfTimer.elapsed(), changeFont);		
+		}				
 #endif
 
 		
 
 #ifdef Q_WS_X11
-        if (frameRepeats > 1)
+        if (frameRepeats > 1) {
+        	perfTimer.restart();
          	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
-		if(PERF) printf("  syncwait %d %d\n", perfTimer.elapsed(), frameRepeats);
+         	perf_repeatWait = perfTimer.elapsed();
+        }
 #endif
 
 		if(interlacedSource) {
@@ -1055,44 +1199,49 @@ void GLvideo_rt::run()
 		   	i=glGetUniformLocationARB(programs[currentShader], "direction");
     		glUniform1iARB(i, direction);
 		}			
-		if(PERF) printf("  field %d\n", perfTimer.elapsed());
 																					
 		if(videoData) {
 			
 			//upload the texture data for each new frame, or for before we render the first field
+			perfTimer.restart();
 			if(interlacedSource == 0 || field == 0) uploadTextures(videoData);
-			if(PERF) printf("  upload %d\n", perfTimer.elapsed());
+			perf_upload = perfTimer.elapsed();
 						
+			perfTimer.restart();
 			renderVideo(videoData);			
-			if(PERF) printf("  render %d\n", perfTimer.elapsed());
+			perf_renderVideo = perfTimer.elapsed();
 						
 #ifdef HAVE_FTGL
+			perfTimer.restart();
 			glUseProgramObjectARB(0);							
 			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
 			glUseProgramObjectARB(programs[currentShader]);
-			if(PERF) printf("  osd %d\n", perfTimer.elapsed());			
+			perf_renderOSD = perfTimer.elapsed();			
+			
+			if(perf==true && perfFont != NULL) renderPerf(videoData, perfFont);
 #endif			
 		}
 																															   			   																									   			  
 		glFlush();
-		if(PERF) printf("  flush %d\n", perfTimer.elapsed());		
+		perfTimer.restart();		
 		glw.swapBuffers();
-		if(PERF) printf("  swapbuffers %d\n", perfTimer.elapsed());		
+		perf_swapBuffers = perfTimer.elapsed();		
 		
 		if(interlacedSource) {
 			//move to the next field			
 			field++;
 			if(field > 1) field = 0;	
 		}
-		       	
-  		//calculate FPS
-  		int intvl = perfTimer.restart();
-  		if(PERF) assert(intvl < 100);
-  		if(PERF) printf("interval = %d\n", frameIntervalTime.restart());   		
+
+		//measure overall frame period		
+  		perf_interval = frameIntervalTime.elapsed();
+  		frameIntervalTime.restart();
+		
+  		//calculate FPS  		
   		if (fpsAvgPeriod == 0) {
-  			int fintvl = frameIntervalTime.elapsed();
+  			int fintvl = fpsIntervalTime.elapsed();
   			if (fintvl) fps = 10*1e3/fintvl;
-  			frameIntervalTime.start();
+  			fpsIntervalTime.start();
   		}
 		fpsAvgPeriod = (fpsAvgPeriod + 1) %10;
 	}
