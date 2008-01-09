@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.14 2007-12-13 12:13:45 jrosser Exp $
+* $Id: videoRead.cpp,v 1.15 2008-01-09 11:15:03 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -199,6 +199,31 @@ int VideoRead::getDirection()
 		
 	return direction;	
 }
+
+int VideoRead::getFutureQueueLen()
+{
+	QMutexLocker listLocker(&listMutex);
+	return futureFrames.size();	
+}
+
+int VideoRead::getPastQueueLen()
+{
+	QMutexLocker listLocker(&listMutex);
+	return pastFrames.size();		
+}
+
+int VideoRead::getIOLoad()
+{
+	QMutexLocker perfLocker(&perfMutex);	
+	return ioLoad;
+}
+
+int VideoRead::getIOBandwidth()
+{
+	QMutexLocker perfLocker(&perfMutex);	
+	return ioBandwidth;
+}
+
 
 //called from the openGL display widget to get frame data for display
 VideoData* VideoRead::getNextFrame()

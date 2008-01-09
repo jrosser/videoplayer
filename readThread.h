@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: readThread.h,v 1.4 2007-12-10 10:50:48 jrosser Exp $
+* $Id: readThread.h,v 1.5 2008-01-09 11:15:03 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -77,6 +77,9 @@ private:
 	
 	//video file
 	int fd;
+	
+	//bandwidth counter
+	int bandwidth_count;
 	
 	//a list of used frames for recycling, so that we don't need to re-allocate storage
 	QList<VideoData *> usedFrames;

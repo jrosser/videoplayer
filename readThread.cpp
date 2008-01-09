@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: readThread.cpp,v 1.12 2007-12-10 10:50:28 jrosser Exp $
+* $Id: readThread.cpp,v 1.13 2008-01-09 11:15:03 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -71,6 +71,7 @@ ReadThread::ReadThread(VideoRead &v)
       : QThread(), vr(v)
 {
 	m_doReading = true;
+	bandwidth_count = 0;
 }
     
 void ReadThread::stop()
@@ -123,7 +124,8 @@ void ReadThread::addPastFrames()
 		off64_t sret = lseek64(fd, offset, SEEK_SET);
 		if(!sret && offset != 0) perror("LSEEK");
 																				
-		int rret = read(fd, newFrame->data, newFrame->dataSize);						
+		int rret = read(fd, newFrame->data, newFrame->dataSize);
+		bandwidth_count += newFrame->dataSize;						
 		if(!rret) perror("READ");
 									
 		listLocker.relock();
@@ -177,7 +179,8 @@ void ReadThread::addFutureFrames()
 		off64_t sret = lseek64(fd, offset, SEEK_SET);
 		if(!sret && offset != 0) perror("LSEEK");
 												
-		int rret = read(fd, newFrame->data, newFrame->dataSize);						
+		int rret = read(fd, newFrame->data, newFrame->dataSize);
+		bandwidth_count += newFrame->dataSize;								
 		if(!rret) perror("READ");
 										
 		listLocker.relock();
@@ -192,13 +195,21 @@ void ReadThread::run()
 	if(DEBUG) printf("Starting readThread\n");
 	fd = 0;
 	unsigned int preallocate = 20;
-
+	QTime activeTimer;
+	QTime idleTimer;
+	
+	int averaging=10;
+	int activeTime=0;
+	int idleTime=0;
+	
 	//get the last transport status to avoid deleting the frame lists first time round
 	QMutexLocker transportLocker(&vr.transportMutex);
 	lastSpeed = vr.transportSpeed;
 	transportLocker.unlock();
 
 	while(m_doReading) {
+
+		activeTimer.restart();
 						
 		//get the transport status
 		transportLocker.relock();
@@ -332,11 +343,37 @@ void ReadThread::run()
 				listLocker.unlock();							
 			}
 		}
+		
+		activeTime += activeTimer.elapsed();		
+		idleTimer.restart();
+		
 #ifdef Q_OS_UNIX
 /* Broken under win32? */
 		vr.frameMutex.lock();
 		vr.frameConsumed.wait(&(vr.frameMutex));
 		vr.frameMutex.unlock();		
 #endif						
+
+		idleTime += idleTimer.elapsed();
+
+		averaging--;
+		if(averaging==0) {
+			vr.perfMutex.lock();
+			
+			if(idleTime != 0)
+				vr.ioLoad = (100 * activeTime) / idleTime;
+			else
+				vr.ioLoad = 100;
+				
+			vr.ioBandwidth = bandwidth_count / ((idleTime + activeTime) * 1000);
+			
+			idleTime = 0;
+			activeTime = 0;				
+			bandwidth_count = 0;
+			
+			vr.perfMutex.unlock();
+			averaging=10;			
+		}
+
 	}
 }

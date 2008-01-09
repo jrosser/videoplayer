@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.39 2008-01-09 10:12:39 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.40 2008-01-09 11:15:03 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -61,7 +61,7 @@
 #include <assert.h>
 
 //FIXME - nasty global variables
-//performance monitoring
+//rendering performance monitoring
 int perf_getParams;
 int perf_readData;
 int perf_convertFormat;
@@ -72,6 +72,12 @@ int perf_renderVideo;
 int perf_renderOSD;
 int perf_swapBuffers;
 int perf_interval;
+
+//I/O performance
+int perf_futureQueue;
+int perf_pastQueue;
+int perf_IOLoad;
+int perf_IOBandwidth;
 
 #define DEBUG 0
 
@@ -637,11 +643,30 @@ void drawText(char *str, FTFont *font)
 	glPopMatrix();	
 }
 
+void draw2Text(char *str1, char *str2, int h_spacing, FTFont *font)
+{
+	glPushMatrix();
+	
+	glPushMatrix();		
+	font->Render(str1);
+	glPopMatrix();
+	
+	glTranslated(h_spacing, 0, 0);
+	
+	glPushMatrix();		
+	font->Render(str2);
+	glPopMatrix();	
+	
+	glPopMatrix();
+}
+
+
 void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 {
 	float tx = 0.05 * videoData->Ywidth;
 	float ty = 0.95 * videoData->Yheight;
 	char str[255];
+	char str2[255];	
 	float cx1, cy1, cz1, cx2, cy2, cz2;	
 	
 	font->BBox("0", cx1, cy1, cz1, cx2, cy2, cz2);	
@@ -653,8 +678,8 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 	float bx1, by1, bx2, by2;
 	bx1 = -border; 
 	by1 = spacing; 
-	bx2 = width * 20;
-	by2 = (spacing * -8) - border*2;
+	bx2 = width * 25;
+	by2 = (spacing * -15) - border*2;
 	
 	glPushMatrix();
 	glTranslated(tx, ty, 0);	//near the top left corner
@@ -671,42 +696,86 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 	glVertex2f(bx2, by1);																				
 	glEnd();
 
+	glColor4f(0.0, 1.0, 0.0, 0.5);
+
+	sprintf(str, "Rendering");
+	drawText(str, font);
+
 	glColor4f(1.0, 1.0, 1.0, 0.5);
-			
-	sprintf(str, "ReadData      : %d", perf_readData);
-	drawText(str, font);
 
 	glTranslated(0, -spacing, 0);
-	sprintf(str, "ConvertFormat : %d", perf_convertFormat);
-	drawText(str, font);
+	sprintf(str, "ReadData");
+	sprintf(str2, "%dms", perf_readData);
+	draw2Text(str, str2, (int)width*15, font);
 
 	glTranslated(0, -spacing, 0);
-	sprintf(str, "UpdateVars    : %d", perf_updateVars);
-	drawText(str, font);
+	sprintf(str, "ConvertFormat");
+	sprintf(str2, "%dms", perf_convertFormat);
+	draw2Text(str, str2, (int)width*15, font);
 
 	glTranslated(0, -spacing, 0);
-	sprintf(str, "RepeatWait    : %d", perf_repeatWait);
-	drawText(str, font);
+	sprintf(str, "UpdateVars");
+	sprintf(str2, "%dms", perf_updateVars);
+	draw2Text(str, str2, (int)width*15, font);
+
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "RepeatWait");
+	sprintf(str2, "%dms", perf_repeatWait);
+	draw2Text(str, str2, (int)width*15, font);
 
 	glTranslated(0, -spacing, 0);	
-	sprintf(str, "Upload        : %d", perf_upload);
-	drawText(str, font);
+	sprintf(str, "Upload");
+	sprintf(str2, "%dms", perf_upload);
+	draw2Text(str, str2, (int)width*15, font);
 
 	glTranslated(0, -spacing, 0);	
-	sprintf(str, "RenderVideo   : %d", perf_renderVideo);
-	drawText(str, font);
+	sprintf(str, "RenderVideo");
+	sprintf(str2, "%dms", perf_renderVideo);
+	draw2Text(str, str2, (int)width*15, font);
 
 	glTranslated(0, -spacing, 0);
-	sprintf(str, "RenderOSD     : %d", perf_renderOSD);
-	drawText(str, font);
+	sprintf(str, "RenderOSD");
+	sprintf(str2, "%dms", perf_renderOSD);
+	draw2Text(str, str2, (int)width*15, font);
 
 	glTranslated(0, -spacing, 0);
-	sprintf(str, "SwapBuffers   : %d", perf_swapBuffers);
-	drawText(str, font);
+	sprintf(str, "SwapBuffers");
+	sprintf(str2, "%dms", perf_swapBuffers);
+	draw2Text(str, str2, (int)width*15, font);
 
 	glTranslated(0, -spacing, 0);	
-	sprintf(str, "Interval      : %d", perf_interval);
+	sprintf(str, "Interval");
+	sprintf(str2, "%dms", perf_interval);
+	draw2Text(str, str2, (int)width*15, font);
+	
+	glColor4f(0.0, 1.0, 0.0, 0.5);
+
+	glTranslated(0, -spacing, 0);
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "I/O");
 	drawText(str, font);
+
+	glColor4f(1.0, 1.0, 1.0, 0.5);
+
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "Future Queue");
+	sprintf(str2, "%d", perf_futureQueue);
+	draw2Text(str, str2, (int)width*17, font);
+	
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "Past Queue");
+	sprintf(str2, "%d", perf_pastQueue);
+	draw2Text(str, str2, (int)width*17, font);
+
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "I/O Thread Load");
+	sprintf(str2, "%d%%", perf_IOLoad);
+	draw2Text(str, str2, (int)width*17, font);
+
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "Read Rate");
+	sprintf(str2, "%dMB/s", perf_IOBandwidth);
+	draw2Text(str, str2, (int)width*17, font);
 	
 	glPopMatrix();
 	
@@ -1011,6 +1080,10 @@ void GLvideo_rt::run()
 		if(interlacedSource == 0 || field == 1) {
 			videoData = glw.vr.getNextFrame();
 			direction = glw.vr.getDirection();
+			perf_futureQueue = glw.vr.getFutureQueueLen();
+			perf_pastQueue   = glw.vr.getPastQueueLen();
+			perf_IOLoad      = glw.vr.getIOLoad();
+			perf_IOBandwidth = glw.vr.getIOBandwidth();
 			perf_readData = perfTimer.elapsed();
 		}		
 		

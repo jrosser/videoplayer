@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.8 2007-05-23 13:41:06 jrosser Exp $
+* $Id: videoRead.h,v 1.9 2008-01-09 11:15:03 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -78,10 +78,18 @@ public:
 
 	TransportControls transportStatus;	//what we are doing now - shared with readThread
 	int transportSpeed;
-	QMutex transportMutex;				//protect the transport status
+	QMutex transportMutex;			//protect the transport status
+
+	QMutex perfMutex;				//protect the performance information
+	int ioLoad;
+	int ioBandwidth;
 
 	VideoData* getNextFrame(void);	//the frame that is currently being displayed, this pointer is only manipulated from the read thread
 	int getDirection();	            //return the current transport direction -1 reverse, 0 stopped/paused, 1 forward.
+	int getFutureQueueLen();		//number of frames in the future queue
+	int getPastQueueLen();			//number of frames in the past queue
+	int getIOLoad();				//percentage utilisation of the read thread
+	int getIOBandwidth();			//Mbytes/sec IO bandwidth
 			
 protected:
 
