@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.38 2008-01-08 15:16:33 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.39 2008-01-09 10:12:39 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -630,6 +630,13 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 	glPopMatrix();	
 }
 
+void drawText(char *str, FTFont *font)
+{
+	glPushMatrix();		
+	font->Render(str);
+	glPopMatrix();	
+}
+
 void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 {
 	float tx = 0.05 * videoData->Ywidth;
@@ -639,81 +646,70 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 	
 	font->BBox("0", cx1, cy1, cz1, cx2, cy2, cz2);	
 	float spacing = (cy2-cy1) * 1.5;
-
+	float width = cx2 - cx1;
+	
 	//black box that text is rendered onto, larger than the text by 'border'
 	float border = 10;	
 	float bx1, by1, bx2, by2;
-	bx1 = 0.05 * videoData->Ywidth; 
-	by1 = 0.95 * videoData->Yheight; 
-	bx2 = 0.95 * videoData->Ywidth;
-	by2 = 0.95 * videoData->Yheight - (spacing*10);
+	bx1 = -border; 
+	by1 = spacing; 
+	bx2 = width * 20;
+	by2 = (spacing * -8) - border*2;
+	
+	glPushMatrix();
+	glTranslated(tx, ty, 0);	//near the top left corner
+	glScalef(0.25, 0.25, 0);	//reduced in size compared to OSD
 	
 	//box beind text	
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glColor4f(0.0, 0.0, 0.0, 0.7);
 								
-	//glBegin(GL_QUADS);
-	//glVertex2f(bx1, by1);
-	//glVertex2f(bx1, by2);
-	//glVertex2f(bx2, by2);
-	//glVertex2f(bx2, by1);																				
-	//glEnd();
-	
+	glBegin(GL_QUADS);
+	glVertex2f(bx1, by1);
+	glVertex2f(bx1, by2);
+	glVertex2f(bx2, by2);
+	glVertex2f(bx2, by1);																				
+	glEnd();
+
 	glColor4f(1.0, 1.0, 1.0, 0.5);
-	
-	glPushMatrix();		
-	glTranslated(tx, ty-spacing, 0);
-	sprintf(str, "ReadData      : %d", perf_readData);
-	font->Render(str);
-	glPopMatrix();
-	
-	glPushMatrix();
-	glTranslated(tx, ty-spacing*2.0, 0);
-	sprintf(str, "ConvertFormat : %d", perf_convertFormat);
-	font->Render(str);
-	glPopMatrix();
-	
-	glPushMatrix();	
-	glTranslated(tx, ty-spacing*3.0, 0);
-	sprintf(str, "UpdateVars    : %d", perf_updateVars);
-	font->Render(str);
-	glPopMatrix();
 			
-	glPushMatrix();		
-	glTranslated(tx, ty-spacing*4.0, 0);
+	sprintf(str, "ReadData      : %d", perf_readData);
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "ConvertFormat : %d", perf_convertFormat);
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);
+	sprintf(str, "UpdateVars    : %d", perf_updateVars);
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);
 	sprintf(str, "RepeatWait    : %d", perf_repeatWait);
-	font->Render(str);
-	glPopMatrix();
-		
-	glPushMatrix();	
-	glTranslated(tx, ty-spacing*5.0, 0);	
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);	
 	sprintf(str, "Upload        : %d", perf_upload);
-	font->Render(str);
-	glPopMatrix();
-		
-	glPushMatrix();	
-	glTranslated(tx, ty-spacing*6.0, 0);	
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);	
 	sprintf(str, "RenderVideo   : %d", perf_renderVideo);
-	font->Render(str);
-	glPopMatrix();
-		
-	glPushMatrix();	
-	glTranslated(tx, ty-spacing*7.0, 0);
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);
 	sprintf(str, "RenderOSD     : %d", perf_renderOSD);
-	font->Render(str);
-	glPopMatrix();
-		
-	glPushMatrix();	
-	glTranslated(tx, ty-spacing*8.0, 0);
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);
 	sprintf(str, "SwapBuffers   : %d", perf_swapBuffers);
-	font->Render(str);
+	drawText(str, font);
+
+	glTranslated(0, -spacing, 0);	
+	sprintf(str, "Interval      : %d", perf_interval);
+	drawText(str, font);
+	
 	glPopMatrix();
 	
-	glPushMatrix();	
-	glTranslated(tx, ty-spacing*9.0, 0);	
-	sprintf(str, "Interval      : %d", perf_interval);
-	font->Render(str);
-	glPopMatrix();	
 }
 #endif
 
@@ -887,7 +883,6 @@ void GLvideo_rt::run()
 
 #ifdef HAVE_FTGL
 	FTFont *font = NULL;
-	FTFont *perfFont = NULL;
 #endif 	
             	
 	//initialise OpenGL	
@@ -1166,18 +1161,11 @@ void GLvideo_rt::run()
 		if(changeFont) {
 			if(font) 
 				delete font;
-			
-			if(perfFont)
-				delete perfFont;
-			
+						
 			font = new FTGLPolygonFont((const char *)fontFile);
 			font->FaceSize(144);
 			font->CharMap(ft_encoding_unicode);
-			
-			perfFont = new FTGLPolygonFont((const char *)fontFile);
-			perfFont->FaceSize(30);
-			perfFont->CharMap(ft_encoding_unicode);
-			
+						
 			changeFont = false;	
 		}				
 #endif
@@ -1215,10 +1203,9 @@ void GLvideo_rt::run()
 			perfTimer.restart();
 			glUseProgramObjectARB(0);							
 			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
-			glUseProgramObjectARB(programs[currentShader]);
-			perf_renderOSD = perfTimer.elapsed();			
-			
-			if(perf==true && perfFont != NULL) renderPerf(videoData, perfFont);
+			perf_renderOSD = perfTimer.elapsed();						
+			if(perf==true && font != NULL) renderPerf(videoData, font);
+			glUseProgramObjectARB(programs[currentShader]);			
 #endif			
 		}
 																															   			   																									   			  
