@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.36 2008-01-08 15:16:32 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.37 2008-01-15 14:25:22 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -69,7 +69,8 @@ MainWindow::MainWindow(int argc, char **argv)
 	matrixKg = 0.7152;
 	matrixKb = 0.0722;
 	startFullScreen = false;
-
+	osdScale = 1.0;
+	
 #ifdef Q_OS_UNIX
 	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
 #endif
@@ -161,7 +162,8 @@ MainWindow::MainWindow(int argc, char **argv)
 	glvideo_mt->setDeinterlace(deinterlace);
 	glvideo_mt->setMatrixScaling(matrixScaling);
 	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
-	glvideo_mt->setCaption(caption);			
+	glvideo_mt->setCaption(caption);
+	glvideo_mt->setOsdScale(osdScale);			
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
@@ -194,7 +196,8 @@ void MainWindow::parseCommandLine(int argc, char **argv)
     		                                                  "               ITU-R BT709/BT1361, SMPTE274M/296M")
     		("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
     		                                                  "               ITU-R BT601/BT470, SMPTE170M/293M")
-    		("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")    	    	        
+    		("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")
+    		("osdscale",      po::value(&osdScale),         "float  1.0     Scale the rendered OSD text by this factor")
     		("filetype,t",    po::value<string>(),            "string         Force file type\n"
     		                                                  "               [i420|yv12|uyvy|v210|v216]")
     		("full,f",                                        "               Start in full screen mode")

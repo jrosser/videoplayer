@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: readThread.cpp,v 1.13 2008-01-09 11:15:03 jrosser Exp $
+* $Id: readThread.cpp,v 1.14 2008-01-15 14:25:21 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -361,7 +361,7 @@ void ReadThread::run()
 			vr.perfMutex.lock();
 			
 			if(idleTime != 0)
-				vr.ioLoad = (100 * activeTime) / idleTime;
+				vr.ioLoad = (100 * activeTime) / (idleTime + activeTime);
 			else
 				vr.ioLoad = 100;
 				

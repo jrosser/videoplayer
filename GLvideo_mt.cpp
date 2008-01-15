@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.20 2008-01-08 15:16:32 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.21 2008-01-15 14:25:22 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -69,6 +69,11 @@ void GLvideo_mt::mouseMoveEvent(QMouseEvent *ev)
 void GLvideo_mt::hideMouse()
 {
 	setCursor(QCursor(Qt::BlankCursor));
+}
+
+void GLvideo_mt::setOsdScale(float s)
+{
+	renderThread.setOsdScale(s);
 }
 
 void GLvideo_mt::togglePerf() 

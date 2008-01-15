@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.h,v 1.26 2008-01-08 15:16:33 jrosser Exp $
+* $Id: GLvideo_rt.h,v 1.27 2008-01-15 14:25:23 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -85,6 +85,7 @@ public:
 	void setMatrixScaling(bool s);
 	void setMatrix(float Kr, float Kg, float Kb);
 	void setCaption(const char *caption);
+	void setOsdScale(float s);
 					        
 private:
 
@@ -136,10 +137,11 @@ private:
 	void uploadTextures(VideoData *videoData);
 	void renderVideo(VideoData *videoData);
 #ifdef HAVE_FTGL
-	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd);
+	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd, float osdScale);
 	void renderPerf(VideoData *videoData, FTFont *font);
 #endif	
 
+	float m_osdScale;			//caption / OSD font size
 	bool m_doRendering;			//set to false to quit thread
 	bool m_doResize;			//resize the openGL viewport
 	bool m_aspectLock;			//lock the aspect ratio of the source video

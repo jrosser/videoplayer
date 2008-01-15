@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.40 2008-01-09 11:15:03 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.41 2008-01-15 14:25:22 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -230,6 +230,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_matrixKg = 0.7152;
 	m_matrixKb = 0.0722;
 	
+	m_osdScale = 1.0;
+	
 	memset(caption, 0, sizeof(caption));
 	strcpy(caption, "Hello World");
 }
@@ -404,6 +406,14 @@ void GLvideo_rt::setFontFile(const char *f)
 	mutex.unlock();	
 }
 
+void GLvideo_rt::setOsdScale(float s)
+{
+	mutex.lock();
+	m_osdScale = s;
+	mutex.unlock();	
+}
+
+
 void GLvideo_rt::setCaption(const char *c)
 {
 	mutex.lock();
@@ -567,8 +577,8 @@ void GLvideo_rt::resizeViewport(int width, int height)
 }    
 
 #ifdef HAVE_FTGL
-void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int osd)
-{
+void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int osd, float osdScale)
+{	
 	//bounding box of text
 	float cx1, cy1, cz1, cx2, cy2, cz2;	 		
 				
@@ -619,7 +629,9 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 	
 	//box beind text													
 	glPushMatrix();
-	glTranslated(tx, ty, 0);	
+	glTranslated(tx, ty, 0);
+	glScalef(osdScale, osdScale, 0);	//scale the on screen display
+		
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glColor4f(0.0, 0.0, 0.0, 0.7);
 								
@@ -659,7 +671,6 @@ void draw2Text(char *str1, char *str2, int h_spacing, FTFont *font)
 	
 	glPopMatrix();
 }
-
 
 void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 {
@@ -778,7 +789,6 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 	draw2Text(str, str2, (int)width*17, font);
 	
 	glPopMatrix();
-	
 }
 #endif
 
@@ -947,6 +957,7 @@ void GLvideo_rt::run()
 	float matrixKr = m_matrixKr;
 	float matrixKg = m_matrixKg;
 	float matrixKb = m_matrixKb;
+	float osdScale = m_osdScale;
 	
 	mutex.unlock();
 
@@ -1231,12 +1242,12 @@ void GLvideo_rt::run()
 		}
 		
 #ifdef HAVE_FTGL
-		if(changeFont) {
+		if(changeFont && videoData != NULL) {
 			if(font) 
 				delete font;
 						
 			font = new FTGLPolygonFont((const char *)fontFile);
-			font->FaceSize(144);
+			font->FaceSize(72);
 			font->CharMap(ft_encoding_unicode);
 						
 			changeFont = false;	
@@ -1275,7 +1286,7 @@ void GLvideo_rt::run()
 #ifdef HAVE_FTGL
 			perfTimer.restart();
 			glUseProgramObjectARB(0);							
-			if(osd && font != NULL) renderOSD(videoData, font, fps, osd);
+			if(osd && font != NULL) renderOSD(videoData, font, fps, osd, osdScale);
 			perf_renderOSD = perfTimer.elapsed();						
 			if(perf==true && font != NULL) renderPerf(videoData, font);
 			glUseProgramObjectARB(programs[currentShader]);			
