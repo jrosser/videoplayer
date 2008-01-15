@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.10 2008-01-15 15:27:04 jrosser Exp $
+* $Id: videoRead.h,v 1.11 2008-01-15 16:52:17 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -94,6 +94,9 @@ public:
 	int getIOBandwidth();			//Mbytes/sec IO bandwidth
 			
 protected:
+
+signals:
+	void endOfFile(void);
 
 private slots:
 	void transportController(TransportControls c);

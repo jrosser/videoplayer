@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.23 2008-01-15 15:27:04 jrosser Exp $
+* $Id: mainwindow.h,v 1.24 2008-01-15 16:52:17 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -64,6 +64,7 @@ private slots:
 	void setSDTVMatrix();
 	void setUserMatrix();
 	void quit();
+	void endOfFile();
 	        
 private:
 	void createActions(void);
@@ -143,7 +144,8 @@ private:
 	float osdScale;
 	float osdBackTransparency;
 	float osdTextTransparency;
-	bool looping;		
+	bool looping;
+	bool quitAtEnd;		
 };
 
 #endif

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.16 2008-01-15 15:27:04 jrosser Exp $
+* $Id: videoRead.cpp,v 1.17 2008-01-15 16:52:17 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -272,6 +272,7 @@ VideoData* VideoRead::getNextFrame()
 			if(looping==false) {
 				QMutexLocker transportLocker(&transportMutex);
 				transportStatus = Stop;
+				emit(endOfFile());
 			}			
 		}		
 				
@@ -304,6 +305,7 @@ VideoData* VideoRead::getNextFrame()
 			if(looping==false) {
 				QMutexLocker transportLocker(&transportMutex);
 				transportStatus = Stop;
+				emit(endOfFile());				
 			}			
 		}		
 	}
