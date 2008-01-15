@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.38 2008-01-15 15:01:34 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.39 2008-01-15 15:27:04 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -76,6 +76,7 @@ MainWindow::MainWindow(int argc, char **argv)
 	osdScale = 1.0;
 	osdBackTransparency = 0.7;
 	osdTextTransparency = 0.5;
+	looping = true;
 	
 #ifdef Q_OS_UNIX
 	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
@@ -154,7 +155,8 @@ MainWindow::MainWindow(int argc, char **argv)
 	videoRead->setForceFileType(forceFileType);
 	videoRead->setFileType(fileType);	
 	videoRead->setFileName(fileName);
-	
+	videoRead->setLooping(looping);
+		
 	glvideo_mt->setFrameRepeats(frameRepeats);
 	glvideo_mt->setFramePolarity(framePolarity);
 	glvideo_mt->setFontFile(fontFile);	
@@ -171,7 +173,8 @@ MainWindow::MainWindow(int argc, char **argv)
 	glvideo_mt->setCaption(caption);
 	glvideo_mt->setOsdScale(osdScale);
 	glvideo_mt->setOsdTextTransparency(osdTextTransparency);
-	glvideo_mt->setOsdBackTransparency(osdBackTransparency);					
+	glvideo_mt->setOsdBackTransparency(osdBackTransparency);
+					
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
@@ -187,6 +190,7 @@ void MainWindow::parseCommandLine(int argc, char **argv)
     		("width,w",       po::value(&videoWidth),         "int    1920    Width of video luminance component")
     		("height,h",      po::value(&videoHeight),        "int    1080    Height of video luminance component")    	
     		("repeats,r",     po::value(&frameRepeats),       "int    0       Frame is repeated r extra times")
+    		("loop,l",        po::value(&looping),            "bool   1       Video file is played repeatedly")
     		("polarity,p",    po::value(&framePolarity),      "int    0       Set frame to display video on (0, r-1)")    	
     		("interlace,i",   po::value(&interlacedSource),   "bool   false   Interlaced source [1], progressive[0]")
     		("deinterlace,d", po::value(&deinterlace),        "bool   false   Deinterlace on [1], off [0]")

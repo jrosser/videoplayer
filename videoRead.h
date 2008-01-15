@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.h,v 1.9 2008-01-09 11:15:03 jrosser Exp $
+* $Id: videoRead.h,v 1.10 2008-01-15 15:27:04 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -57,6 +57,7 @@ public:
 	void setVideoHeight(int height);
 	void setForceFileType(bool flag);
 	void setFileType(const QString &t);
+	void setLooping(bool l);
 	void stop();
 	
 	QList<VideoData *> pastFrames;
@@ -66,6 +67,7 @@ public:
 	int currentFrameNum;
 	int firstFrameNum;
 	int lastFrameNum;
+	bool looping;
 	
 	int videoWidth;					//input file
 	int videoHeight;	

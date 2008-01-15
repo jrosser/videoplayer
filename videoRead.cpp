@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoRead.cpp,v 1.15 2008-01-09 11:15:03 jrosser Exp $
+* $Id: videoRead.cpp,v 1.16 2008-01-15 15:27:04 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -46,6 +46,7 @@ VideoRead::VideoRead()
 	currentFrameNum=0;
 	firstFrameNum=0;
 	lastFrameNum=0;
+	looping=true;
 	
 	displayFrame = NULL;
 	readThread.start();
@@ -68,6 +69,11 @@ void VideoRead::stop()
 	frameMutex.unlock();
 		
 	readThread.wait();
+}
+
+void VideoRead::setLooping(bool l)
+{
+	looping = l;	
 }
 
 void VideoRead::setVideoWidth(int width)
@@ -237,7 +243,7 @@ VideoData* VideoRead::getNextFrame()
 	if((ts == Pause || ts == Stop) && displayFrame == NULL) {
 		ts = JogFwd;
 	}
-	
+		
 	//forwards
 	if(ts == Fwd1 || ts == Fwd2 || ts == Fwd5 || ts == Fwd10 || ts == Fwd20 || ts == Fwd50 || ts == Fwd100 || ts == JogFwd) {
 						
@@ -259,7 +265,16 @@ VideoData* VideoRead::getNextFrame()
 			transportLocker.relock();
 			transportStatus = Stop;
 			transportLocker.unlock();				
+		}
+		
+		//stop if there is no looping - will break at speeds other than 1x		
+		if(currentFrameNum == lastFrameNum) {
+			if(looping==false) {
+				QMutexLocker transportLocker(&transportMutex);
+				transportStatus = Stop;
+			}			
 		}		
+				
 	}
 	
 	//backwards	
@@ -282,8 +297,17 @@ VideoData* VideoRead::getNextFrame()
 			transportLocker.relock();
 			transportStatus = Stop;
 			transportLocker.unlock();				
+		}
+
+		//stop if there is no looping - will break at speeds other than 1x		
+		if(currentFrameNum == 0) {
+			if(looping==false) {
+				QMutexLocker transportLocker(&transportMutex);
+				transportStatus = Stop;
+			}			
 		}		
 	}
+	
 	
 	//wake the reader thread - done each time as jogging may move the frame number
 	frameMutex.lock();	
