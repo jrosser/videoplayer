@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.43 2008-01-15 16:20:06 davidf Exp $
+* $Id: GLvideo_rt.cpp,v 1.44 2008-01-15 17:09:52 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -460,6 +460,13 @@ void GLvideo_rt::toggleOSD(void)
 	mutex.unlock();		
 }
 
+void GLvideo_rt::setOsdState(int s)
+{
+	mutex.lock();
+	m_osd = s % MAX_OSD;
+	mutex.unlock();	
+}
+
 void GLvideo_rt::togglePerf(void)
 {
 	mutex.lock();
@@ -632,7 +639,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 
 	if(osd==4) {
 		//put the caption in the middle of the screen
-		tx = videoData->Ywidth - (cx2 - cx1);
+		tx = videoData->Ywidth - ((cx2 - cx1) * osdScale);
 		tx/=2;	
 	}
 	

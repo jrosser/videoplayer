@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.h,v 1.28 2008-01-15 15:01:35 jrosser Exp $
+* $Id: GLvideo_rt.h,v 1.29 2008-01-15 17:09:53 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -86,6 +86,7 @@ public:
 	void setMatrix(float Kr, float Kg, float Kb);
 	void setCaption(const char *caption);
 	void setOsdScale(float s);
+	void setOsdState(int s);	
 	void setOsdTextTransparency(float t);
 	void setOsdBackTransparency(float t);
 							        

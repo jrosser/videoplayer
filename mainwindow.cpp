@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.40 2008-01-15 16:52:17 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.41 2008-01-15 17:09:52 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -175,6 +175,7 @@ MainWindow::MainWindow(int argc, char **argv)
 	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
 	glvideo_mt->setCaption(caption);
 	glvideo_mt->setOsdScale(osdScale);
+	glvideo_mt->setOsdState(osdState);	
 	glvideo_mt->setOsdTextTransparency(osdTextTransparency);
 	glvideo_mt->setOsdBackTransparency(osdBackTransparency);
 					
@@ -215,7 +216,8 @@ void MainWindow::parseCommandLine(int argc, char **argv)
     		("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")
     		("osdscale",      po::value(&osdScale),           "float  1.0     OSD size scaling factor")
     		("osdbackalpha",  po::value(&osdBackTransparency),"float  0.7     Transparency for OSD background")
-    		("osdtextalpha",  po::value(&osdTextTransparency),"float  0.5     Transparency for OSD text")    		    		
+    		("osdtextalpha",  po::value(&osdTextTransparency),"float  0.5     Transparency for OSD text")
+    		("osdstate",      po::value(&osdState),           "int    0       OSD initial state")        		    		
     		("filetype,t",    po::value<string>(),            "string         Force file type\n"
     		                                                  "               [i420|yv12|uyvy|v210|v216]")
     		("full,f",                                        "               Start in full screen mode")
