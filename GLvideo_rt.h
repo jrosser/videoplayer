@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.h,v 1.27 2008-01-15 14:25:23 jrosser Exp $
+* $Id: GLvideo_rt.h,v 1.28 2008-01-15 15:01:35 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -86,7 +86,9 @@ public:
 	void setMatrix(float Kr, float Kg, float Kb);
 	void setCaption(const char *caption);
 	void setOsdScale(float s);
-					        
+	void setOsdTextTransparency(float t);
+	void setOsdBackTransparency(float t);
+							        
 private:
 
 	//openGL function pointers 
@@ -142,6 +144,9 @@ private:
 #endif	
 
 	float m_osdScale;			//caption / OSD font size
+	float m_osdBackTransparency;
+	float m_osdTextTransparency;
+	
 	bool m_doRendering;			//set to false to quit thread
 	bool m_doResize;			//resize the openGL viewport
 	bool m_aspectLock;			//lock the aspect ratio of the source video

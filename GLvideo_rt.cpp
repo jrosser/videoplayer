@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.41 2008-01-15 14:25:22 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.42 2008-01-15 15:01:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -231,6 +231,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 	m_matrixKb = 0.0722;
 	
 	m_osdScale = 1.0;
+	m_osdBackTransparency = 0.7;
+	m_osdTextTransparency = 0.5;
 	
 	memset(caption, 0, sizeof(caption));
 	strcpy(caption, "Hello World");
@@ -412,6 +414,21 @@ void GLvideo_rt::setOsdScale(float s)
 	m_osdScale = s;
 	mutex.unlock();	
 }
+
+void GLvideo_rt::setOsdTextTransparency(float t)
+{
+	mutex.lock();
+	m_osdTextTransparency = t;
+	mutex.unlock();	
+}
+
+void GLvideo_rt::setOsdBackTransparency(float t)
+{
+	mutex.lock();
+	m_osdBackTransparency = t;
+	mutex.unlock();	
+}
+
 
 
 void GLvideo_rt::setCaption(const char *c)
@@ -633,7 +650,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 	glScalef(osdScale, osdScale, 0);	//scale the on screen display
 		
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glColor4f(0.0, 0.0, 0.0, 0.7);
+	glColor4f(0.0, 0.0, 0.0, m_osdBackTransparency);
 								
 	glBegin(GL_QUADS);
 	glVertex2f(bx1, by1);
@@ -643,7 +660,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 	glEnd();			
 						
 	//text
-	glColor4f(1.0, 1.0, 1.0, 0.5);						
+	glColor4f(1.0, 1.0, 1.0, m_osdTextTransparency);						
 	font->Render(str);					
 	glPopMatrix();	
 }

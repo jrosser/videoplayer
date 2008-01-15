@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.21 2008-01-15 14:25:22 jrosser Exp $
+* $Id: mainwindow.h,v 1.22 2008-01-15 15:01:35 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -140,7 +140,9 @@ private:
 	float matrixKg;
 	float matrixKb;
 	bool startFullScreen;
-	float osdScale;		
+	float osdScale;
+	float osdBackTransparency;
+	float osdTextTransparency;		
 };
 
 #endif

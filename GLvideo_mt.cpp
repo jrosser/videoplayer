@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.21 2008-01-15 14:25:22 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.22 2008-01-15 15:01:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -74,6 +74,16 @@ void GLvideo_mt::hideMouse()
 void GLvideo_mt::setOsdScale(float s)
 {
 	renderThread.setOsdScale(s);
+}
+
+void GLvideo_mt::setOsdTextTransparency(float t)
+{
+	renderThread.setOsdTextTransparency(t);
+}
+
+void GLvideo_mt::setOsdBackTransparency(float t)
+{
+	renderThread.setOsdBackTransparency(t);
 }
 
 void GLvideo_mt::togglePerf() 

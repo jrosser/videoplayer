@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.37 2008-01-15 14:25:22 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.38 2008-01-15 15:01:34 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -48,6 +48,10 @@ using namespace std;
 
 MainWindow::MainWindow(int argc, char **argv)
 {		
+	QPalette p = palette();
+	p.setColor(QPalette::Window, Qt::black);
+	setPalette(p);
+	
 	//some defaults in the abscence of any settings	
 	videoWidth = 1920;
 	videoHeight = 1080;
@@ -70,6 +74,8 @@ MainWindow::MainWindow(int argc, char **argv)
 	matrixKb = 0.0722;
 	startFullScreen = false;
 	osdScale = 1.0;
+	osdBackTransparency = 0.7;
+	osdTextTransparency = 0.5;
 	
 #ifdef Q_OS_UNIX
 	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
@@ -163,7 +169,9 @@ MainWindow::MainWindow(int argc, char **argv)
 	glvideo_mt->setMatrixScaling(matrixScaling);
 	glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
 	glvideo_mt->setCaption(caption);
-	glvideo_mt->setOsdScale(osdScale);			
+	glvideo_mt->setOsdScale(osdScale);
+	glvideo_mt->setOsdTextTransparency(osdTextTransparency);
+	glvideo_mt->setOsdBackTransparency(osdBackTransparency);					
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
@@ -197,7 +205,9 @@ void MainWindow::parseCommandLine(int argc, char **argv)
     		("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
     		                                                  "               ITU-R BT601/BT470, SMPTE170M/293M")
     		("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")
-    		("osdscale",      po::value(&osdScale),         "float  1.0     Scale the rendered OSD text by this factor")
+    		("osdscale",      po::value(&osdScale),           "float  1.0     OSD size scaling factor")
+    		("osdbackalpha",  po::value(&osdBackTransparency),"float  0.7     Transparency for OSD background")
+    		("osdtextalpha",  po::value(&osdTextTransparency),"float  0.5     Transparency for OSD text")    		    		
     		("filetype,t",    po::value<string>(),            "string         Force file type\n"
     		                                                  "               [i420|yv12|uyvy|v210|v216]")
     		("full,f",                                        "               Start in full screen mode")
