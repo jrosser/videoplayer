@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.42 2008-01-15 15:01:34 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.43 2008-01-15 16:20:06 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -998,6 +998,7 @@ void GLvideo_rt::run()
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
+	glClear(GL_COLOR_BUFFER_BIT);
 #ifdef Q_WS_X11
 	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
 #endif
@@ -1016,6 +1017,7 @@ void GLvideo_rt::run()
 			frameRepeats = m_frameRepeats;
 			framePolarity = m_framePolarity;
 			osd = m_osd;
+			osdScale = m_osdScale;
 			perf = m_perf;
 												
 			doResize = m_doResize;				
