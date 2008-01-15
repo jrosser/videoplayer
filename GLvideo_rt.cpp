@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.44 2008-01-15 17:09:52 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.45 2008-01-15 18:29:37 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -1005,6 +1005,7 @@ void GLvideo_rt::run()
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
+	glEnable(GL_POLYGON_SMOOTH);
 	glClear(GL_COLOR_BUFFER_BIT);
 #ifdef Q_WS_X11
 	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
