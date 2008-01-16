@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.45 2008-01-15 18:29:37 davidf Exp $
+* $Id: GLvideo_rt.cpp,v 1.46 2008-01-16 11:04:28 davidf Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -668,19 +668,24 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
 						
 	//text
 	glColor4f(1.0, 1.0, 1.0, m_osdTextTransparency);						
+	glEnable(GL_POLYGON_SMOOTH);
 	font->Render(str);					
+	glDisable(GL_POLYGON_SMOOTH);
 	glPopMatrix();	
 }
 
 void drawText(char *str, FTFont *font)
 {
+	glEnable(GL_POLYGON_SMOOTH);
 	glPushMatrix();		
 	font->Render(str);
 	glPopMatrix();	
+	glDisable(GL_POLYGON_SMOOTH);
 }
 
 void draw2Text(char *str1, char *str2, int h_spacing, FTFont *font)
 {
+	glEnable(GL_POLYGON_SMOOTH);
 	glPushMatrix();
 	
 	glPushMatrix();		
@@ -694,6 +699,7 @@ void draw2Text(char *str1, char *str2, int h_spacing, FTFont *font)
 	glPopMatrix();	
 	
 	glPopMatrix();
+	glDisable(GL_POLYGON_SMOOTH);
 }
 
 void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
@@ -1005,7 +1011,6 @@ void GLvideo_rt::run()
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
-	glEnable(GL_POLYGON_SMOOTH);
 	glClear(GL_COLOR_BUFFER_BIT);
 #ifdef Q_WS_X11
 	unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);

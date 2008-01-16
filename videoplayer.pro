@@ -6,7 +6,7 @@ TEMPLATE = app
 LIBS += -lboost_program_options
 
 QT += opengl
-CONFIG += thread console release
+CONFIG += thread console debug
 
 # Input
 HEADERS = mainwindow.h GLvideo_mt.h GLvideo_rt.h videoRead.h readThread.h videoData.h
