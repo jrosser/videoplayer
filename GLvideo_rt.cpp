@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.46 2008-01-16 11:04:28 davidf Exp $
+* $Id: GLvideo_rt.cpp,v 1.47 2008-01-17 11:24:05 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -1288,14 +1288,6 @@ void GLvideo_rt::run()
 
 		
 
-#ifdef Q_WS_X11
-        if (frameRepeats > 1) {
-        	perfTimer.restart();
-         	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
-         	perf_repeatWait = perfTimer.elapsed();
-        }
-#endif
-
 		if(interlacedSource) {
 		   	int i=glGetUniformLocationARB(programs[currentShader], "field");
 	   		glUniform1iARB(i, field);
@@ -1347,6 +1339,15 @@ void GLvideo_rt::run()
   			fpsIntervalTime.start();
   		}
 		fpsAvgPeriod = (fpsAvgPeriod + 1) %10;
+
+#ifdef Q_WS_X11
+        if (frameRepeats > 1) {
+        	perfTimer.restart();
+         	glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
+         	perf_repeatWait = perfTimer.elapsed();
+        }
+#endif
+
 	}
 }
 
