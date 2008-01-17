@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.23 2008-01-15 17:09:52 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.24 2008-01-17 10:54:00 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -39,11 +39,11 @@
 
 GLvideo_mt::GLvideo_mt(VideoRead &v) 
 	: vr(v), renderThread(*this)
-{
+{	
 	setMouseTracking(true);	
 	connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
 	mouseHideTimer.setSingleShot(true);
-
+	
     /* NB, a) this helps to be last
      *     b) don't put HideMouse anywhere near here */
 	renderThread.start();
@@ -61,7 +61,7 @@ void GLvideo_mt::mouseMoveEvent(QMouseEvent *ev)
 {
 	ev=ev;
 	
-	if (!mouseHideTimer.isActive())
+	if (!mouseHideTimer.isActive() && alwaysHideMouse==false)
 		setCursor(QCursor(Qt::ArrowCursor));
 	mouseHideTimer.start(1000);
 }
@@ -70,6 +70,14 @@ void GLvideo_mt::hideMouse()
 {
 	setCursor(QCursor(Qt::BlankCursor));
 }
+
+void GLvideo_mt::setAlwaysHideMouse(bool h)
+{
+	alwaysHideMouse=h;
+	
+	if(alwaysHideMouse) hideMouse();
+}
+
 
 void GLvideo_mt::setOsdScale(float s)
 {

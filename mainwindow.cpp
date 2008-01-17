@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.41 2008-01-15 17:09:52 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.42 2008-01-17 10:54:00 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -78,6 +78,7 @@ MainWindow::MainWindow(int argc, char **argv)
 	osdTextTransparency = 0.5;
 	looping = true;
 	quitAtEnd = false;
+	hideMouse = false;
 	
 #ifdef Q_OS_UNIX
 	fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
@@ -92,6 +93,11 @@ MainWindow::MainWindow(int argc, char **argv)
 	
 	if(allParsed == false)
 		return;
+	
+	if(hideMouse) {
+		//hide the mouse pointer from the start if requestes
+		setCursor(QCursor(Qt::BlankCursor));
+	}
 	
 	setWindowTitle("VideoPlayer");
 	setFullScreen(startFullScreen);
@@ -178,7 +184,8 @@ MainWindow::MainWindow(int argc, char **argv)
 	glvideo_mt->setOsdState(osdState);	
 	glvideo_mt->setOsdTextTransparency(osdTextTransparency);
 	glvideo_mt->setOsdBackTransparency(osdBackTransparency);
-					
+	glvideo_mt->setAlwaysHideMouse(hideMouse);
+						
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
@@ -221,6 +228,7 @@ void MainWindow::parseCommandLine(int argc, char **argv)
     		("filetype,t",    po::value<string>(),            "string         Force file type\n"
     		                                                  "               [i420|yv12|uyvy|v210|v216]")
     		("full,f",                                        "               Start in full screen mode")
+    		("hidemouse",                                     "               Never show the mouse pointer")    		
     		("caption",		  po::value<string>(),            "string         OSD Caption text")
     		("video",                                         "               Video file to play")
     		("help",                                          "               Show usage information");
@@ -248,6 +256,10 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 
 		if (vm.count("quit")) {
 			quitAtEnd=true;	
+		}
+
+		if (vm.count("hidemouse")) {
+			hideMouse=true;	
 		}
 
 		if (vm.count("fontfile")) {

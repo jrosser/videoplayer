@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.25 2008-01-15 17:09:53 jrosser Exp $
+* $Id: mainwindow.h,v 1.26 2008-01-17 10:54:00 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -146,7 +146,8 @@ private:
 	float osdBackTransparency;
 	float osdTextTransparency;
 	bool looping;
-	bool quitAtEnd;		
+	bool quitAtEnd;
+	bool hideMouse;		
 };
 
 #endif

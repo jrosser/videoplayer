@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.22 2008-01-15 17:09:52 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.23 2008-01-17 10:54:00 jrosser Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -89,6 +89,7 @@ public slots:
 	void setOsdState(int s);	
 	void setOsdTextTransparency(float t);
 	void setOsdBackTransparency(float t);
+	void setAlwaysHideMouse(bool h);
 			
 private slots:
 	void hideMouse();
@@ -101,6 +102,7 @@ private:
 	void resizeEvent(QResizeEvent * event);
 	
 	void mouseMoveEvent(QMouseEvent *ev);
+	bool alwaysHideMouse;
 	QTimer mouseHideTimer;
 };
 
