@@ -9,9 +9,7 @@ void my_aglSwapInterval(int interval)
 {
    AGLContext cx = aglGetCurrentContext();
 
-  printf("Context is %p\n", cx);
-
-    aglSetInteger(cx, AGL_SWAP_INTERVAL, (GLint*)&interval);
+   aglSetInteger(cx, AGL_SWAP_INTERVAL, (GLint*)&interval);
     
    if (interval != 0)
         aglEnable(cx, AGL_SWAP_INTERVAL);
