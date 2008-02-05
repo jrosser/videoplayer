@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo.cpp,v 1.3 2007-04-25 12:56:59 jrosser Exp $
+* $Id: GLvideo.cpp,v 1.4 2008-02-05 00:12:06 asuraparaju Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -61,67 +61,67 @@ static char *FProgram=
   "  r=y+1.5958*v;\n"
   "  g=y-0.39173*u-0.81290*v;\n"
   "  b=y+2.017*u;\n"
-  "	 a=1.0;\n"
-  
+  "  a=1.0;\n"
+
   " if(y > 235.0/255.0) {\n"
   "    r=1.0;\n"
   "    g=0.0;\n"
   "    b=0.0;\n"
-  "    r=1.0 * ((20.0/255.0)/(y-(235.0/255.0)));\n"  
+  "    r=1.0 * ((20.0/255.0)/(y-(235.0/255.0)));\n"
   "  }\n"
 
   " if(y < 16.0/255.0) {\n"
   "    r=0.0;\n"
   "    g=0.0;\n"
   "    b=1.0;\n"
-  "    b=1.0 * (16.0/y);\n"  
+  "    b=1.0 * (16.0/y);\n"
   "  }\n"
 
-   
+
 //  "  if(gl_TexCoord[0].x < 10 || gl_TexCoord[0].y < 10) {\n"
 //  "    r=1.0;\n"
 //  "    g=0.0;\n"
 //  "    b=0.0;\n"
 //  "  }\n"
-      
+
   "  gl_FragColor=vec4(r,g,b,a);\n"
   "}\n";
 
 GLvideo::GLvideo(QWidget *parent)
-{	
-	fp = NULL;
-	
-	srcwidth  = 1920;
-	srcheight = 1080;
+{
+    fp = NULL;
+
+    srcwidth  = 1920;
+    srcheight = 1080;
 
     /* Load the textures. */
     Ytex=(GLubyte *)malloc(srcwidth*srcheight);
     Utex=(GLubyte *)malloc(srcwidth*srcheight/4);
     Vtex=(GLubyte *)malloc(srcwidth*srcheight/4);
-    
+
     compiled = false;
 }
 
 void GLvideo::compileFragmentShader()
 {
-	GLint length;			//log length
-	
+    GLint length;            //log length
+
     shader=glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
-	printf("Shader program is %s\n", FProgram);
+    printf("Shader program is %s\n", FProgram);
 
-    glShaderSourceARB(shader ,1,(const GLcharARB**)&FProgram,NULL);    
-	glCompileShaderARB(shader);
-    
+    glShaderSourceARB(shader ,1,(const GLcharARB**)&FProgram,NULL);
+    glCompileShaderARB(shader);
+
     glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
-    glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length); 
-    printf("Compile status is %d, log length is %d\n", compiled, length);   
+    glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+    printf("Compile status is %d, log length is %d\n", compiled, length);
     char *s=(char *)malloc(length);
     glGetInfoLogARB(shader, length, &length ,s);
     printf("Compile Log: (%d) %s\n", length, s);
     free(s);
 
-   	/* Set up program objects. */
+    /* Set up program objects. */
     program=glCreateProgramObjectARB();
     glAttachObjectARB(program, shader);
     glLinkProgramARB(program);
@@ -129,7 +129,7 @@ void GLvideo::compileFragmentShader()
     /* And print the link log. */
     glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linked);
     glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
-    printf("Link status is %d, log length is %d\n", linked, length);            
+    printf("Link status is %d, log length is %d\n", linked, length);
     s=(char *)malloc(length);
     glGetInfoLogARB(shader, length, &length, s);
     printf("Link Log: (%d) %s\n", length, s);
@@ -137,14 +137,14 @@ void GLvideo::compileFragmentShader()
 
     /* Finally, use the program. */
     glUseProgramObjectARB(program);
-        	
-	//set this even if the compiltion failed     	
-    shaderCompiled = true;	
+
+    //set this even if the compiltion failed
+    shaderCompiled = true;
 }
 
 void GLvideo::initialiseGL()
-{  
-	// Set up the rendering context, define display lists etc.:
+{
+    // Set up the rendering context, define display lists etc.:
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(0, srcwidth ,0 ,srcheight ,-1 ,1);
@@ -156,50 +156,50 @@ void GLvideo::initialiseGL()
 }
 
 void GLvideo::resizeGL(int w, int h)
-{	
-	// setup viewport, projection etc.:
+{
+    // setup viewport, projection etc.:
 
     glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();	
-	glOrtho(0, srcwidth, 0, srcheight, -1, 1);
-	glViewport(0, 0, w, h);
+    glLoadIdentity();
+    glOrtho(0, srcwidth, 0, srcheight, -1, 1);
+    glViewport(0, 0, w, h);
 }
 
 void GLvideo::paintGL()
 {
-	if(shaderCompiled == FALSE)
-		compileFragmentShader();
-	
-	int i;
+    if(shaderCompiled == FALSE)
+        compileFragmentShader();
 
-	//loop at EOF
-	if(fp != NULL) {
-		if(feof(fp)) {		
-			fclose(fp);
-			fp = NULL;
-		}
-	}
-	
-	//open input
-	if(fp == NULL) {
-		//fp = fopen("/video/tc1080.i420", "rb");		
-		fp = fopen("/video/battle_hannibal_edit_25772_18.65Mbps_9.3.yuv", "rb");
-		framenum=0;
-	}
-			
-	//oh no!
-	if(fp == NULL)	
-		printf("Could not open input video\n");
-	
-	framenum++;
-	
-	if(framenum & 0x01) {
-		//read input
-		fread(Ytex,srcwidth*srcheight,1,fp);
-		fread(Utex,srcwidth*srcheight/4,1,fp);
-		fread(Vtex,srcwidth*srcheight/4,1,fp);
-	}
-	
+    int i;
+
+    //loop at EOF
+    if(fp != NULL) {
+        if(feof(fp)) {
+            fclose(fp);
+            fp = NULL;
+        }
+    }
+
+    //open input
+    if(fp == NULL) {
+        //fp = fopen("/video/tc1080.i420", "rb");
+        fp = fopen("/video/battle_hannibal_edit_25772_18.65Mbps_9.3.yuv", "rb");
+        framenum=0;
+    }
+
+    //oh no!
+    if(fp == NULL)
+        printf("Could not open input video\n");
+
+    framenum++;
+
+    if(framenum & 0x01) {
+        //read input
+        fread(Ytex,srcwidth*srcheight,1,fp);
+        fread(Utex,srcwidth*srcheight/4,1,fp);
+        fread(Vtex,srcwidth*srcheight/4,1,fp);
+    }
+
     /* Select texture unit 1 as the active unit and bind the U texture. */
     glActiveTexture(GL_TEXTURE1);
     i=glGetUniformLocationARB(program, "Utex");
@@ -233,26 +233,26 @@ void GLvideo::paintGL()
     glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_DECAL);
     glTexImage2D(GL_TEXTURE_RECTANGLE_NV,0,GL_LUMINANCE,1920,1080,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,Ytex);
 
-	glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-	glBegin(GL_QUADS);
-		glTexCoord2i(0,0);
-        glVertex2i(0,0);
-        glTexCoord2i(srcwidth,0);
-        glVertex2i(srcwidth,0);
-        glTexCoord2i(srcwidth,srcheight);
-        glVertex2i(srcwidth,srcheight);
-        glTexCoord2i(0,srcheight);
-        glVertex2i(0,srcheight);
-	glEnd();
+    glBegin(GL_QUADS);
+    glTexCoord2i(0,0);
+    glVertex2i(0,0);
+    glTexCoord2i(srcwidth,0);
+    glVertex2i(srcwidth,0);
+    glTexCoord2i(srcwidth,srcheight);
+    glVertex2i(srcwidth,srcheight);
+    glTexCoord2i(0,srcheight);
+    glVertex2i(0,srcheight);
+    glEnd();
 
-	glFlush();
-      
-	timeval tv;
-	timeval diff;
-	gettimeofday(&tv, NULL);
-	timersub(&tv, &last, &diff);
-	printf("Instantaneous fps %f\n", diff.tv_usec, 1000000.0/diff.tv_usec);
-	last = tv;
+    glFlush();
+
+    timeval tv;
+    timeval diff;
+    gettimeofday(&tv, NULL);
+    timersub(&tv, &last, &diff);
+    printf("Instantaneous fps %f\n", diff.tv_usec, 1000000.0/diff.tv_usec);
+    last = tv;
 }
 

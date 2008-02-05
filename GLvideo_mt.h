@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.24 2008-01-29 11:52:24 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.25 2008-02-05 00:12:06 asuraparaju Exp $
 *
 * The MIT License
 *
@@ -46,55 +46,55 @@ class GLvideo_mt : public QGLWidget
     Q_OBJECT
 
 public:
-	GLvideo_mt(VideoRead &vr);
-	void setFrameRepeats(int repeats);
-	void setFramePolarity(int p);
-	void setFontFile(QString &fontFile);	
-	VideoRead &vr;
-	void stop();
-	
-	GLvideo_rt renderThread;
-				
+    GLvideo_mt(VideoRead &vr);
+    void setFrameRepeats(int repeats);
+    void setFramePolarity(int p);
+    void setFontFile(QString &fontFile);
+    VideoRead &vr;
+    void stop();
+
+    GLvideo_rt renderThread;
+
 protected:
-	
+
 public slots:
-	void toggleOSD();
-	void togglePerf();
-	void toggleAspectLock();
-	void toggleLuminance();
-	void toggleChrominance();
+    void toggleOSD();
+    void togglePerf();
+    void toggleAspectLock();
+    void toggleLuminance();
+    void toggleChrominance();
     void toggleDeinterlace();
-	void toggleMatrixScaling();    
+    void toggleMatrixScaling();
     void setInterlacedSource(bool i);
     void setDeinterlace(bool d);
-	void setLuminanceOffset1(float o);
-	void setChrominanceOffset1(float o);	
-	void setLuminanceMultiplier(float m);
-	void setChrominanceMultiplier(float m);
-	void setLuminanceOffset2(float o);
-	void setChrominanceOffset2(float o);	
-	void setMatrixScaling(bool s);
-	void setMatrix(float Kr, float Kg, float Kb);
-	void setCaption(QString&);
-	void setOsdScale(float s);
-	void setOsdState(int s);	
-	void setOsdTextTransparency(float t);
-	void setOsdBackTransparency(float t);
-	void setAlwaysHideMouse(bool h);
-			
-private slots:
-	void hideMouse();
-        
-private:
-	void initializeGL();
+    void setLuminanceOffset1(float o);
+    void setChrominanceOffset1(float o);
+    void setLuminanceMultiplier(float m);
+    void setChrominanceMultiplier(float m);
+    void setLuminanceOffset2(float o);
+    void setChrominanceOffset2(float o);
+    void setMatrixScaling(bool s);
+    void setMatrix(float Kr, float Kg, float Kb);
+    void setCaption(QString&);
+    void setOsdScale(float s);
+    void setOsdState(int s);
+    void setOsdTextTransparency(float t);
+    void setOsdBackTransparency(float t);
+    void setAlwaysHideMouse(bool h);
 
-	void paintGL();
-	void paintEvent(QPaintEvent * event);
-	void resizeEvent(QResizeEvent * event);
-	
-	void mouseMoveEvent(QMouseEvent *ev);
-	bool alwaysHideMouse;
-	QTimer mouseHideTimer;
+private slots:
+    void hideMouse();
+
+private:
+    void initializeGL();
+
+    void paintGL();
+    void paintEvent(QPaintEvent * event);
+    void resizeEvent(QResizeEvent * event);
+
+    void mouseMoveEvent(QMouseEvent *ev);
+    bool alwaysHideMouse;
+    QTimer mouseHideTimer;
 };
 
 #endif

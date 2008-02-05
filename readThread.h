@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: readThread.h,v 1.6 2008-01-29 11:52:23 jrosser Exp $
+* $Id: readThread.h,v 1.7 2008-02-05 00:12:06 asuraparaju Exp $
 *
 * The MIT License
 *
@@ -38,43 +38,43 @@ class VideoRead;
 class ReadThread : public QThread
 {
 public:
-	ReadThread(VideoRead &vr);
-	void run();
-	void stop();
-        
-private:   	
-	void addFutureFrames();
-	void addPastFrames();	
+    ReadThread(VideoRead &vr);
+    void run();
+    void stop();
 
-	bool m_doReading;
-	VideoRead &vr;	//parent
-	
-	//info about the lists of frames		
-	int numFutureFrames;
-	int numPastFrames;
-		
-	//the extents of the sequence
-	int firstFrame;
-	int lastFrame;
-	
-	//playback speed
-	int speed;
-	int lastSpeed;
-	
-	//information about the video data	
-	VideoData::DataFmt dataFormat;
-	int videoWidth;
-	int videoHeight;
-	
-	//video file
-	int fd;
-	
-	//bandwidth counter
-	int bandwidth_count;
-	
-	//a list of used frames for recycling, so that we don't need to re-allocate storage
-	QList<VideoData *> usedFrames;
-		
+private:
+    void addFutureFrames();
+    void addPastFrames();
+
+    bool m_doReading;
+    VideoRead &vr;   //parent
+
+    //info about the lists of frames
+    int numFutureFrames;
+    int numPastFrames;
+
+    //the extents of the sequence
+    int firstFrame;
+    int lastFrame;
+
+    //playback speed
+    int speed;
+    int lastSpeed;
+
+    //information about the video data
+    VideoData::DataFmt dataFormat;
+    int videoWidth;
+    int videoHeight;
+
+    //video file
+    int fd;
+
+    //bandwidth counter
+    int bandwidth_count;
+
+    //a list of used frames for recycling, so that we don't need to re-allocate storage
+    QList<VideoData *> usedFrames;
+
 };
 
 #endif

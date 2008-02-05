@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.27 2008-01-29 11:52:25 jrosser Exp $
+* $Id: mainwindow.h,v 1.28 2008-02-05 00:12:06 asuraparaju Exp $
 *
 * The MIT License
 *
@@ -44,101 +44,101 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     MainWindow(int argc, char **argv);
-	bool allParsed;		//flag to say that all commandline parameters were parsed OK.
-	    
+    bool allParsed;   //flag to say that all commandline parameters were parsed OK.
+
 protected:
 
 private slots:
-	void toggleFullScreen();
-	void escapeFullScreen();
-	void setHDTVMatrix();
-	void setSDTVMatrix();
-	void setUserMatrix();
-	void quit();
-	void endOfFile();
-	        
-private:
-	void createActions(void);
-	void parseCommandLine(int argc, char **argv);
-	void usage();
+    void toggleFullScreen();
+    void escapeFullScreen();
+    void setHDTVMatrix();
+    void setSDTVMatrix();
+    void setUserMatrix();
+    void quit();
+    void endOfFile();
 
-#ifdef Q_OS_LINUX	
-	QShuttlePro *shuttle;
+private:
+    void createActions(void);
+    void parseCommandLine(int argc, char **argv);
+    void usage();
+
+#ifdef Q_OS_LINUX
+    QShuttlePro *shuttle;
 #endif
 
-	QAction *quitAct;
+    QAction *quitAct;
 
-	//display actions
-	QAction *setUserMatrixAct;	
-	QAction *setHDTVMatrixAct;
-	QAction *setSDTVMatrixAct;	
-	QAction *toggleMatrixScalingAct;
-	QAction *toggleOSDAct;
-	QAction *togglePerfAct;	
-	QAction *toggleAspectLockAct;		
-	QAction *viewFullScreenAct;
-	QAction *escapeFullScreenAct;
-	QAction *toggleLuminanceAct;
-	QAction *toggleChrominanceAct;
-	QAction *toggleDeinterlaceAct;
-	
-	//transport control actions
-	QAction *transportFwd100Act;
-	QAction *transportFwd50Act;
-	QAction *transportFwd20Act;
-	QAction *transportFwd10Act;
-	QAction *transportFwd5Act;
-	QAction *transportFwd2Act;
-	QAction *transportFwd1Act;
-	QAction *transportStopAct;
-	QAction *transportRev1Act;
-	QAction *transportRev2Act;
-	QAction *transportRev5Act;
-	QAction *transportRev10Act;				
-	QAction *transportRev20Act;
-	QAction *transportRev50Act;
-	QAction *transportRev100Act;								
+    //display actions
+    QAction *setUserMatrixAct;
+    QAction *setHDTVMatrixAct;
+    QAction *setSDTVMatrixAct;
+    QAction *toggleMatrixScalingAct;
+    QAction *toggleOSDAct;
+    QAction *togglePerfAct;
+    QAction *toggleAspectLockAct;
+    QAction *viewFullScreenAct;
+    QAction *escapeFullScreenAct;
+    QAction *toggleLuminanceAct;
+    QAction *toggleChrominanceAct;
+    QAction *toggleDeinterlaceAct;
 
-	QAction *transportPlayPauseAct;
-	QAction *transportJogFwdAct;
-	QAction *transportJogRevAct;
-	
-	void setFullScreen(bool);
-	VideoRead *videoRead;
-	GLvideo_mt *glvideo_mt;
+    //transport control actions
+    QAction *transportFwd100Act;
+    QAction *transportFwd50Act;
+    QAction *transportFwd20Act;
+    QAction *transportFwd10Act;
+    QAction *transportFwd5Act;
+    QAction *transportFwd2Act;
+    QAction *transportFwd1Act;
+    QAction *transportStopAct;
+    QAction *transportRev1Act;
+    QAction *transportRev2Act;
+    QAction *transportRev5Act;
+    QAction *transportRev10Act;
+    QAction *transportRev20Act;
+    QAction *transportRev50Act;
+    QAction *transportRev100Act;
 
-	//data from the command line parameters
-	int videoWidth;
-	int videoHeight;
-	int frameRepeats;
-	int framePolarity;
-	QString fileName;
-	QString fontFile;
-	
-	bool forceFileType;
-	QString fileType;
-	QString caption;
-	
-	float luminanceOffset1;
-	float chrominanceOffset1;	
-	float luminanceMul;
-	float chrominanceMul;
-	float luminanceOffset2;
-	float chrominanceOffset2;
-	bool  interlacedSource;
-	bool  deinterlace;
-	bool  matrixScaling;
-	float matrixKr;
-	float matrixKg;
-	float matrixKb;
-	bool startFullScreen;
-	float osdScale;
-	int osdState;
-	float osdBackTransparency;
-	float osdTextTransparency;
-	bool looping;
-	bool quitAtEnd;
-	bool hideMouse;		
+    QAction *transportPlayPauseAct;
+    QAction *transportJogFwdAct;
+    QAction *transportJogRevAct;
+
+    void setFullScreen(bool);
+    VideoRead *videoRead;
+    GLvideo_mt *glvideo_mt;
+
+    //data from the command line parameters
+    int videoWidth;
+    int videoHeight;
+    int frameRepeats;
+    int framePolarity;
+    QString fileName;
+    QString fontFile;
+
+    bool forceFileType;
+    QString fileType;
+    QString caption;
+
+    float luminanceOffset1;
+    float chrominanceOffset1;
+    float luminanceMul;
+    float chrominanceMul;
+    float luminanceOffset2;
+    float chrominanceOffset2;
+    bool  interlacedSource;
+    bool  deinterlace;
+    bool  matrixScaling;
+    float matrixKr;
+    float matrixKg;
+    float matrixKb;
+    bool startFullScreen;
+    float osdScale;
+    int osdState;
+    float osdBackTransparency;
+    float osdTextTransparency;
+    bool looping;
+    bool quitAtEnd;
+    bool hideMouse;
 };
 
 #endif

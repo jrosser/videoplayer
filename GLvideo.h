@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo.h,v 1.3 2007-12-10 10:24:47 jrosser Exp $
+* $Id: GLvideo.h,v 1.4 2008-02-05 00:12:06 asuraparaju Exp $
 *
 * Version: MPL 1.1/GPL 2.0/LGPL 2.1
 *
@@ -56,29 +56,29 @@ class GLvideo : public QGLWidget
     Q_OBJECT
 
 public:
-	GLvideo(QWidget *parent = 0);
+    GLvideo(QWidget *parent = 0);
 
 protected:
-	void initialiseGL();
-	void resizeGL(int width, int height);
-	void paintGL();
-	void compileFragmentShader();
-	
-private slots:
-        
-private:
-	
-	timeval last;
-	int framenum;
-	int srcwidth, srcheight;	//dimensions of input pictures
+    void initialiseGL();
+    void resizeGL(int width, int height);
+    void paintGL();
+    void compileFragmentShader();
 
-	bool shaderCompiled;
-	GLuint shader, program;	//handles for the shader and program
-   	GLint compiled, linked;	//flags for success
-   	
-   	GLubyte *Ytex, *Utex, *Vtex;	//Y,U,V textures
-   	
-   	FILE *fp;
+private slots:
+
+private:
+
+    timeval last;
+    int framenum;
+    int srcwidth, srcheight;         //dimensions of input pictures
+
+    bool shaderCompiled;
+    GLuint shader, program;         //handles for the shader and program
+    GLint compiled, linked;         //flags for success
+
+    GLubyte *Ytex, *Utex, *Vtex;    //Y,U,V textures
+
+    FILE *fp;
 
 };
 

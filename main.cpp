@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.8 2008-01-29 11:52:22 jrosser Exp $
+* $Id: main.cpp,v 1.9 2008-02-05 00:12:06 asuraparaju Exp $
 *
 * The MIT License
 *
@@ -41,25 +41,25 @@
 int main(int argc, char **argv)
 {
 #ifdef Q_OS_LINUX
-	XInitThreads();	
+    XInitThreads();
 #endif
 
 #ifdef Q_OS_MACX
-	aglInitEntryPoints();
+    aglInitEntryPoints();
 #endif
-	
+
     QApplication app(argc, argv);
 
     MainWindow window(argc, argv);
-   
+
     if(window.allParsed) {
-    	//only run application if command line parameters all OK
-    	window.show();   
-    	return app.exec();
+        //only run application if command line parameters all OK
+        window.show();
+        return app.exec();
     }
     else
     {
-    	return -1;
+        return -1;
     }
 }
 

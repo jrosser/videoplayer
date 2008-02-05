@@ -10,7 +10,7 @@ void my_aglSwapInterval(int interval)
    AGLContext cx = aglGetCurrentContext();
 
    aglSetInteger(cx, AGL_SWAP_INTERVAL, (GLint*)&interval);
-    
+
    if (interval != 0)
         aglEnable(cx, AGL_SWAP_INTERVAL);
     else
@@ -82,8 +82,8 @@ void aglDellocEntryPoints (void)
 
 void aglInitEntryPoints(void)
 {
-	if(_aglInitEntryPoints() != noErr)
-		abort();
+    if(_aglInitEntryPoints() != noErr)
+        abort();
 }
 
 
