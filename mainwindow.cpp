@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.44 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: mainwindow.cpp,v 1.45 2008-02-13 16:18:51 jrosser Exp $
 *
 * The MIT License
 *
@@ -205,9 +205,9 @@ void MainWindow::parseCommandLine(int argc, char **argv)
             ("coffset2",      po::value(&chrominanceOffset2), "float  0.0     Multiplied Chrominance offset 2")
             ("mscale,m",      po::value(&matrixScaling),      "bool   0       Matrix scale [0] Y*1.0, C*1.0,\n"
                                                               "               [1] Y*(255/219) C*(255/224)")
-            ("matrixkr,r",    po::value(&matrixKr),           "float  0.2126  Colour Matrix Kr")
-            ("matrixkg,g",    po::value(&matrixKg),           "float  0.7152  Colour Matrix Kg")
-            ("matrixkb,b",    po::value(&matrixKb),           "float  0.0722  Colour Matrix Kb\n"
+            ("matrixkr",      po::value(&matrixKr),           "float  0.2126  Colour Matrix Kr")
+            ("matrixkg",      po::value(&matrixKg),           "float  0.7152  Colour Matrix Kg")
+            ("matrixkb",      po::value(&matrixKb),           "float  0.0722  Colour Matrix Kb\n"
                                                               "               ITU-R BT709/BT1361, SMPTE274M/296M")
             ("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
                                                               "               ITU-R BT601/BT470, SMPTE170M/293M")
