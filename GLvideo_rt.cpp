@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.49 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: GLvideo_rt.cpp,v 1.50 2008-02-14 09:44:54 jrosser Exp $
 *
 * The MIT License
 *
@@ -70,7 +70,7 @@ int perf_pastQueue;
 int perf_IOLoad;
 int perf_IOBandwidth;
 
-#define DEBUG 0
+#define DEBUG 1
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -1122,12 +1122,15 @@ void GLvideo_rt::run()
         }
 
         if(videoData) {
+        	
+        	//perform any format conversions
             perfTimer.restart();
             switch(videoData->renderFormat) {
 
                 case VideoData::V210:
                     //check for v210 data - it's very difficult to write a shader for this
                     //due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
+                	if(DEBUG) printf("Converting V210 frame\n");
                     videoData->convertV210();
                     break;
 
@@ -1137,6 +1140,7 @@ void GLvideo_rt::run()
                     //convert 16 bit data to 8bit
                     //this avoids endian-ness issues between the host and the GPU
                     //and reduces the bandwidth to the GPU
+                	if(DEBUG) printf("Converting 16 bit frame\n");
                     videoData->convertPlanar16();
                     break;
 
@@ -1145,12 +1149,11 @@ void GLvideo_rt::run()
                     break;
             }
             perf_convertFormat = perfTimer.elapsed();
-        }
-
-        //check for video dimensions changing
-        if(videoData != NULL) {
+            
+            //check for video dimensions changing
             if(lastsrcwidth != videoData->Ywidth || lastsrcheight != videoData->Yheight) {
 
+            	if(DEBUG) printf("Changing video dimensions\n");
                 glOrtho(0, videoData->Ywidth ,0 , videoData->Yheight, -1 ,1);
 
                 doResize = true;
@@ -1160,136 +1163,132 @@ void GLvideo_rt::run()
                 lastsrcwidth = videoData->Ywidth;
                 lastsrcheight = videoData->Yheight;
             }
-        }
 
-        //check for the shader changing
-        if(videoData) {
-            int newShader = currentShader;
+            //check for the shader changing
+            {
+                int newShader = currentShader;
 
-            if(videoData->isPlanar)
-                newShader = shaderPlanar;
-            else
-                newShader = shaderUYVY;
+                if(videoData->isPlanar)
+                    newShader = shaderPlanar;
+                else
+                    newShader = shaderUYVY;
 
-            if(newShader != currentShader) {
-                if(DEBUG) printf("Changing shader from %d to %d\n", currentShader, newShader);
-                createGLTextures = true;
-                updateShaderVars = true;
-                currentShader = newShader;
-                glUseProgramObjectARB(programs[currentShader]);
+                if(newShader != currentShader) {
+                    if(DEBUG) printf("Changing shader from %d to %d\n", currentShader, newShader);
+                    createGLTextures = true;
+                    updateShaderVars = true;
+                    currentShader = newShader;
+                    glUseProgramObjectARB(programs[currentShader]);
+                }
             }
-        }
-
-        if(createGLTextures) {
-            if(DEBUG) printf("Creating GL textures\n");
-            //create the textures on the GPU
-            createTextures(videoData, currentShader);
-            createGLTextures = false;
-        }
-
-        if(updateShaderVars && videoData) {
-            perfTimer.restart();
-            if(DEBUG) printf("Updating fragment shader variables\n");
-
-            //data about the input file to the shader
-            int i=glGetUniformLocationARB(programs[currentShader], "Yheight");
-            glUniform1fARB(i, videoData->Yheight);
-
-            i=glGetUniformLocationARB(programs[currentShader], "Ywidth");
-            glUniform1fARB(i, videoData->Ywidth);
-
-            i=glGetUniformLocationARB(programs[currentShader], "CHsubsample");
-            glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
-
-            i=glGetUniformLocationARB(programs[currentShader], "CVsubsample");
-            glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
-
-            //settings from the c++ program to the shader
-            i=glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
-            float offset1[3];
-            offset1[0] = matrixScaling ? luminanceOffset1 : 0.0;    //don't subtract the initial Y offset if the matrix is unscaled
-            offset1[1] = chrominanceOffset1;
-            offset1[2] = chrominanceOffset1;
-            glUniform3fvARB(i, 1, &offset1[0]);
-
-            i=glGetUniformLocationARB(programs[currentShader], "yuvMul");
-            float mul[3];
-            mul[0] = showLuminance   ? luminanceMultiplier   : 0.0;
-            mul[1] = showChrominance ? chrominanceMultiplier : 0.0;
-            mul[2] = showChrominance ? chrominanceMultiplier : 0.0;
-            glUniform3fvARB(i, 1, &mul[0]);
-
-            i=glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
-            float offset2[3];
-            offset2[0] = showLuminance ? luminanceOffset2 : 0.5;    //when luminance is off, set to mid grey
-            offset2[1] = chrominanceOffset2;
-            offset2[2] = chrominanceOffset2;
-            glUniform3fvARB(i, 1, &offset2[0]);
-
-            i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
-            glUniformMatrix3fvARB(i, 1, false, colourMatrix);
-
-            i=glGetUniformLocationARB(programs[currentShader], "interlacedSource");
-            glUniform1iARB(i, interlacedSource);
-
-            i=glGetUniformLocationARB(programs[currentShader], "deinterlace");
-            glUniform1iARB(i, deinterlace);
-            updateShaderVars = false;
-            perf_updateVars = perfTimer.elapsed();
-        }
-
-        if(doResize && videoData != NULL) {
-            //resize the viewport, once we have some video
-            if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
-
-            float sourceAspect = (float)videoData->Ywidth / (float)videoData->Yheight;
-            float displayAspect = (float)displaywidth / (float)displayheight;
-
-            if(sourceAspect == displayAspect || aspectLock == false) {
-                glViewport(0, 0, displaywidth, displayheight);
+            
+            if(createGLTextures) {
+                if(DEBUG) printf("Creating GL textures\n");
+                createTextures(videoData, currentShader);
+                createGLTextures = false;
             }
-            else {
-                if(displayAspect > sourceAspect) {
-                    //window is wider than image should be
-                    int width = (int)(displayheight*sourceAspect);
-                    int offset = (displaywidth - width) / 2;
-                    glViewport(offset, 0, width, displayheight);
+
+            if(updateShaderVars) {
+                perfTimer.restart();
+                if(DEBUG) printf("Updating fragment shader variables\n");
+
+                //data about the input file to the shader
+                int i=glGetUniformLocationARB(programs[currentShader], "Yheight");
+                glUniform1fARB(i, videoData->Yheight);
+
+                i=glGetUniformLocationARB(programs[currentShader], "Ywidth");
+                glUniform1fARB(i, videoData->Ywidth);
+
+                i=glGetUniformLocationARB(programs[currentShader], "CHsubsample");
+                glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
+
+                i=glGetUniformLocationARB(programs[currentShader], "CVsubsample");
+                glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
+
+                //settings from the c++ program to the shader
+                i=glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
+                float offset1[3];
+                offset1[0] = matrixScaling ? luminanceOffset1 : 0.0;    //don't subtract the initial Y offset if the matrix is unscaled
+                offset1[1] = chrominanceOffset1;
+                offset1[2] = chrominanceOffset1;
+                glUniform3fvARB(i, 1, &offset1[0]);
+
+                i=glGetUniformLocationARB(programs[currentShader], "yuvMul");
+                float mul[3];
+                mul[0] = showLuminance   ? luminanceMultiplier   : 0.0;
+                mul[1] = showChrominance ? chrominanceMultiplier : 0.0;
+                mul[2] = showChrominance ? chrominanceMultiplier : 0.0;
+                glUniform3fvARB(i, 1, &mul[0]);
+
+                i=glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
+                float offset2[3];
+                offset2[0] = showLuminance ? luminanceOffset2 : 0.5;    //when luminance is off, set to mid grey
+                offset2[1] = chrominanceOffset2;
+                offset2[2] = chrominanceOffset2;
+                glUniform3fvARB(i, 1, &offset2[0]);
+
+                i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
+                glUniformMatrix3fvARB(i, 1, false, colourMatrix);
+
+                i=glGetUniformLocationARB(programs[currentShader], "interlacedSource");
+                glUniform1iARB(i, interlacedSource);
+
+                i=glGetUniformLocationARB(programs[currentShader], "deinterlace");
+                glUniform1iARB(i, deinterlace);
+                updateShaderVars = false;
+                perf_updateVars = perfTimer.elapsed();
+            }
+            
+            if(doResize) {
+                //resize the viewport, once we have some video
+                if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
+
+                float sourceAspect = (float)videoData->Ywidth / (float)videoData->Yheight;
+                float displayAspect = (float)displaywidth / (float)displayheight;
+
+                if(sourceAspect == displayAspect || aspectLock == false) {
+                    glViewport(0, 0, displaywidth, displayheight);
                 }
                 else {
-                    int height = (int)(displaywidth/sourceAspect);
-                    int offset = (displayheight - height) / 2;
-                    glViewport(0, offset, displaywidth, height);
+                    if(displayAspect > sourceAspect) {
+                        //window is wider than image should be
+                        int width = (int)(displayheight*sourceAspect);
+                        int offset = (displaywidth - width) / 2;
+                        glViewport(offset, 0, width, displayheight);
+                    }
+                    else {
+                        int height = (int)(displaywidth/sourceAspect);
+                        int offset = (displayheight - height) / 2;
+                        glViewport(0, offset, displaywidth, height);
+                    }
                 }
+                doResize = false;
             }
-            doResize = false;
-        }
 
 #ifdef HAVE_FTGL
-        if(changeFont && videoData != NULL) {
-            if(font)
-                delete font;
+            if(changeFont) {
+            	printf("Changing font\n");
+            	if(font)
+            		delete font;
 
-            font = new FTGLPolygonFont((const char *)fontFile);
-            font->FaceSize(72);
-            font->CharMap(ft_encoding_unicode);
+            	font = new FTGLPolygonFont((const char *)fontFile);
+            	font->FaceSize(72);
+            	font->CharMap(ft_encoding_unicode);
 
-            changeFont = false;
-        }
+            	changeFont = false;
+            }
 #endif
+            
+            if(interlacedSource) {
+                int i=glGetUniformLocationARB(programs[currentShader], "field");
+                glUniform1iARB(i, field);
 
-
-
-        if(interlacedSource) {
-            int i=glGetUniformLocationARB(programs[currentShader], "field");
-            glUniform1iARB(i, field);
-
-            i=glGetUniformLocationARB(programs[currentShader], "direction");
-            glUniform1iARB(i, direction);
-        }
-
-        if(videoData) {
+                i=glGetUniformLocationARB(programs[currentShader], "direction");
+                glUniform1iARB(i, direction);
+            }
 
             //upload the texture data for each new frame, or for before we render the first field
+            //of interlaced material
             perfTimer.restart();
             if(interlacedSource == 0 || field == 0) uploadTextures(videoData);
             perf_upload = perfTimer.elapsed();
@@ -1305,8 +1304,9 @@ void GLvideo_rt::run()
             perf_renderOSD = perfTimer.elapsed();
             if(perf==true && font != NULL) renderPerf(videoData, font);
             glUseProgramObjectARB(programs[currentShader]);
-#endif
+#endif                  
         }
+
 
         glFlush();
         perfTimer.restart();
