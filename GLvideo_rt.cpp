@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.50 2008-02-14 09:44:54 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.51 2008-02-25 15:08:05 jrosser Exp $
 *
 * The MIT License
 *
@@ -70,7 +70,7 @@ int perf_pastQueue;
 int perf_IOLoad;
 int perf_IOBandwidth;
 
-#define DEBUG 1
+#define DEBUG 0
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -1112,12 +1112,12 @@ void GLvideo_rt::run()
         //read frame data, one frame at a time, or after we have displayed the second field
         perfTimer.restart();
         if(interlacedSource == 0 || field == 1) {
-            videoData = glw.vr.getNextFrame();
-            direction = glw.vr.getDirection();
-            perf_futureQueue = glw.vr.getFutureQueueLen();
-            perf_pastQueue   = glw.vr.getPastQueueLen();
-            perf_IOLoad      = glw.vr.getIOLoad();
-            perf_IOBandwidth = glw.vr.getIOBandwidth();
+            videoData = glw.vt->getNextFrame();
+            direction = glw.vt->getDirection();
+            //perf_futureQueue = glw.rt->getFutureQueueLen();
+            //perf_pastQueue   = glw.rt->getPastQueueLen();
+            //perf_IOLoad      = glw.rt->getIOLoad();
+            //perf_IOBandwidth = glw.rt->getIOBandwidth();
             perf_readData = perfTimer.elapsed();
         }
 
@@ -1267,7 +1267,7 @@ void GLvideo_rt::run()
 
 #ifdef HAVE_FTGL
             if(changeFont) {
-            	printf("Changing font\n");
+            	if(DEBUG) printf("Changing font\n");
             	if(font)
             		delete font;
 

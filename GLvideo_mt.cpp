@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.26 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: GLvideo_mt.cpp,v 1.27 2008-02-25 15:08:05 jrosser Exp $
 *
 * The MIT License
 *
@@ -28,8 +28,8 @@
 
 #include "GLvideo_mt.h"
 
-GLvideo_mt::GLvideo_mt(VideoRead &v)
-    : vr(v), renderThread(*this)
+GLvideo_mt::GLvideo_mt(VideoTransport *v)
+    : vt(v), renderThread(*this)
 {
     setMouseTracking(true);
     connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));

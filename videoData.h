@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.h,v 1.12 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: videoData.h,v 1.13 2008-02-25 15:08:06 jrosser Exp $
 *
 * The MIT License
 *
@@ -35,16 +35,19 @@ class VideoData
 {
 public:
 
-    enum DataFmt { V8P0, V8P2, V8P4, YV12, V16P0, V16P2, V16P4, UYVY, V216, V210};    //how is the data packed?
+    enum DataFmt { V8P0, V8P2, V8P4, YV12, V16P0, V16P2, V16P4, UYVY, V216, V210, Unknown};    //how is the data packed?
 
-    VideoData(int width, int height, DataFmt f);
+    VideoData();
+    void resize(int w, int h, DataFmt f);
     ~VideoData();
 
     void convertV210();
     void convertPlanar16();
 
     unsigned long frameNum;
-
+    bool isLastFrame;		 //mark the first and last frames in a sequence
+    bool isFirstFrame;
+    
     DataFmt diskFormat;      //enumerated format read from the disk
     DataFmt renderFormat;    //pixel packing used for openGL rendering
 
@@ -73,6 +76,9 @@ public:
     char *Ydata;             //pointer to luminance, or multiplexed YCbCr
     char *Udata;             //pointers to planar chrominance components, if format is planar
     char *Vdata;
+    
+private:
+	void allocate(int w, int h, DataFmt f);
 };
 
 #endif

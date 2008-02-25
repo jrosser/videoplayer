@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.45 2008-02-13 16:18:51 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.46 2008-02-25 15:08:06 jrosser Exp $
 *
 * The MIT License
 *
@@ -27,6 +27,11 @@
 * ***** END LICENSE BLOCK ***** */
 
 #include "mainwindow.h"
+#include "yuvReader.h"
+
+#ifdef HAVE_DIRAC
+#include "diracReader.h"
+#endif
 
 #include <QtGui>
 
@@ -93,15 +98,46 @@ MainWindow::MainWindow(int argc, char **argv)
     setWindowTitle("VideoPlayer");
     setFullScreen(startFullScreen);
 
-    videoRead = NULL;
-    glvideo_mt = NULL;
+    //object that generates frames to be inserted into the frame queue
+    reader = NULL;
+#ifdef HAVE_DIRAC    
+    //make dirac reader if required
+    if(fileType.toLower() == "drc") {
+    	DiracReader *r = new DiracReader();
+    	
+    	r->setFileName(fileName);
+    	reader = r;
+    	r->start();
+    }
+#endif
+    
+    //default to YUV reader
+    if (reader == NULL) {
+    	YUVReader *r = new YUVReader();
+        
+    	//YUV reader parameters
+        r->setVideoWidth(videoWidth);
+        r->setVideoHeight(videoHeight);
+        r->setForceFileType(forceFileType);
+        r->setFileType(fileType);
+        r->setFileName(fileName);
+        
+    	reader = r;
+    }
 
-    //threaded video reader
-    videoRead = new VideoRead();
-
+    
+    //object containing a seperate thread that manages the lists of frames to be displayed
+    frameQueue = new FrameQueue();
+    frameQueue->setReader(reader);
+    
+    //object controlling the video playback 'transport'
+    videoTransport = new VideoTransport(frameQueue);
+    
     //central widget is the threaded openGL video widget
-    //which pulls video from the reader
-    glvideo_mt = new GLvideo_mt(*videoRead);
+    //which pulls video from the videoRead
+    //and gets stats for the OSD from the readThread
+    glvideo_mt = new GLvideo_mt(videoTransport);
+
     setCentralWidget(glvideo_mt);
 
     //set up menus etc
@@ -113,30 +149,30 @@ MainWindow::MainWindow(int argc, char **argv)
     shuttle = new QShuttlePro();
 
     //shuttlepro jog wheel
-    connect(shuttle, SIGNAL(jogForward()), videoRead, SLOT(transportJogFwd()));
-    connect(shuttle, SIGNAL(jogBackward()), videoRead, SLOT(transportJogRev()));
+    connect(shuttle, SIGNAL(jogForward()), videoTransport, SLOT(transportJogFwd()));
+    connect(shuttle, SIGNAL(jogBackward()), videoTransport, SLOT(transportJogRev()));
 
     //shuttlepro shuttle dial
-    connect(shuttle, SIGNAL(shuttleRight7()), videoRead, SLOT(transportFwd100()));
-    connect(shuttle, SIGNAL(shuttleRight6()), videoRead, SLOT(transportFwd50()));
-    connect(shuttle, SIGNAL(shuttleRight5()), videoRead, SLOT(transportFwd20()));
-    connect(shuttle, SIGNAL(shuttleRight4()), videoRead, SLOT(transportFwd10()));
-    connect(shuttle, SIGNAL(shuttleRight3()), videoRead, SLOT(transportFwd5()));
-    connect(shuttle, SIGNAL(shuttleRight2()), videoRead, SLOT(transportFwd2()));
-    connect(shuttle, SIGNAL(shuttleRight1()), videoRead, SLOT(transportFwd1()));
+    connect(shuttle, SIGNAL(shuttleRight7()), videoTransport, SLOT(transportFwd100()));
+    connect(shuttle, SIGNAL(shuttleRight6()), videoTransport, SLOT(transportFwd50()));
+    connect(shuttle, SIGNAL(shuttleRight5()), videoTransport, SLOT(transportFwd20()));
+    connect(shuttle, SIGNAL(shuttleRight4()), videoTransport, SLOT(transportFwd10()));
+    connect(shuttle, SIGNAL(shuttleRight3()), videoTransport, SLOT(transportFwd5()));
+    connect(shuttle, SIGNAL(shuttleRight2()), videoTransport, SLOT(transportFwd2()));
+    connect(shuttle, SIGNAL(shuttleRight1()), videoTransport, SLOT(transportFwd1()));
 
-    connect(shuttle, SIGNAL(shuttleLeft7()), videoRead, SLOT(transportRev100()));
-    connect(shuttle, SIGNAL(shuttleLeft6()), videoRead, SLOT(transportRev50()));
-    connect(shuttle, SIGNAL(shuttleLeft5()), videoRead, SLOT(transportRev20()));
-    connect(shuttle, SIGNAL(shuttleLeft4()), videoRead, SLOT(transportRev10()));
-    connect(shuttle, SIGNAL(shuttleLeft3()), videoRead, SLOT(transportRev5()));
-    connect(shuttle, SIGNAL(shuttleLeft2()), videoRead, SLOT(transportRev2()));
-    connect(shuttle, SIGNAL(shuttleLeft1()), videoRead, SLOT(transportRev1()));
-    connect(shuttle, SIGNAL(shuttleCenter()), videoRead, SLOT(transportStop()));
+    connect(shuttle, SIGNAL(shuttleLeft7()), videoTransport, SLOT(transportRev100()));
+    connect(shuttle, SIGNAL(shuttleLeft6()), videoTransport, SLOT(transportRev50()));
+    connect(shuttle, SIGNAL(shuttleLeft5()), videoTransport, SLOT(transportRev20()));
+    connect(shuttle, SIGNAL(shuttleLeft4()), videoTransport, SLOT(transportRev10()));
+    connect(shuttle, SIGNAL(shuttleLeft3()), videoTransport, SLOT(transportRev5()));
+    connect(shuttle, SIGNAL(shuttleLeft2()), videoTransport, SLOT(transportRev2()));
+    connect(shuttle, SIGNAL(shuttleLeft1()), videoTransport, SLOT(transportRev1()));
+    connect(shuttle, SIGNAL(shuttleCenter()), videoTransport, SLOT(transportStop()));
 
     //shuttlepro buttons
-    connect(shuttle, SIGNAL(key267Pressed()), videoRead, SLOT(transportPlayPause()));
-    connect(shuttle, SIGNAL(key265Pressed()), videoRead, SLOT(transportFwd1()));
+    connect(shuttle, SIGNAL(key267Pressed()), videoTransport, SLOT(transportPlayPause()));
+    connect(shuttle, SIGNAL(key265Pressed()), videoTransport, SLOT(transportFwd1()));
     connect(shuttle, SIGNAL(key259Pressed()), this, SLOT(toggleFullScreen()));
     connect(shuttle, SIGNAL(key256Pressed()), glvideo_mt, SLOT(toggleOSD()));
     connect(shuttle, SIGNAL(key257Pressed()), glvideo_mt, SLOT(toggleAspectLock()));
@@ -148,15 +184,13 @@ MainWindow::MainWindow(int argc, char **argv)
     //key 258, press=lock controls, hold=unlock controls
 #endif
 
-    videoRead->setVideoWidth(videoWidth);
-    videoRead->setVideoHeight(videoHeight);
-    videoRead->setForceFileType(forceFileType);
-    videoRead->setFileType(fileType);
-    videoRead->setFileName(fileName);
-    videoRead->setLooping(looping);
 
-    connect(videoRead, SIGNAL(endOfFile()), this, SLOT(endOfFile()));
+    
+    //video reader parameters
+    videoTransport->setLooping(looping);
+    connect(videoTransport, SIGNAL(endOfFile()), this, SLOT(endOfFile()));
 
+    //rendering thread parameters
     glvideo_mt->setFrameRepeats(frameRepeats);
     glvideo_mt->setFramePolarity(framePolarity);
     glvideo_mt->setFontFile(fontFile);
@@ -177,6 +211,8 @@ MainWindow::MainWindow(int argc, char **argv)
     glvideo_mt->setOsdBackTransparency(osdBackTransparency);
     glvideo_mt->setAlwaysHideMouse(hideMouse);
 
+    
+    frameQueue->start();
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
@@ -279,15 +315,19 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 
             if((fileType.toLower() == "i420") ||
                (fileType.toLower() == "yv12") ||
+               (fileType.toLower() == "420p") ||
+               (fileType.toLower() == "422p") ||
+               (fileType.toLower() == "444p") ||                                      
                (fileType.toLower() == "uyvy") ||
                (fileType.toLower() == "v216") ||
                (fileType.toLower() == "v210") ||
                (fileType.toLower() == "16p4") ||
                (fileType.toLower() == "16p2") ||
-               (fileType.toLower() == "16p0")) {
+               (fileType.toLower() == "16p0") ||               
+               (fileType.toLower() == "drc")) {
 
-                    forceFileType=true;
-               }
+               forceFileType=true;
+            }
             else {
                 printf("Unknown file type %s\n", fileType.toLatin1().data());
                 allParsed = false;
@@ -317,14 +357,18 @@ void MainWindow::parseCommandLine(int argc, char **argv)
                     //file extension must be one we know about
                     if((fi.suffix().toLower() == "i420") ||
                        (fi.suffix().toLower() == "yv12") ||
+                       (fi.suffix().toLower() == "420p") ||
+                       (fi.suffix().toLower() == "422p") ||
+                       (fi.suffix().toLower() == "444p") ||                       
                        (fi.suffix().toLower() == "uyvy") ||
                        (fi.suffix().toLower() == "v216") ||
                        (fi.suffix().toLower() == "v210") ||
                        (fi.suffix().toLower() == "16p4") ||
                        (fi.suffix().toLower() == "16p2") ||
-                       (fi.suffix().toLower() == "16p0")) {
+                       (fi.suffix().toLower() == "16p0") ||                       
+                       (fi.suffix().toLower() == "drc")) {
 
-                       }
+                    }
                     else {
                         printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
                         printf("Please specify file format with the -t flag\n");
@@ -356,8 +400,11 @@ void MainWindow::usage()
     printf("\n");
     printf("\nSupported file formats:");
     printf("\n");
-    printf("\n  .i420         4:2:0 YUV planar");
-    printf("\n  .yv12         4:2:0 YVU planar");
+    printf("\n  .i420         4:2:0 YUV 8 bit planar");
+    printf("\n  .yv12         4:2:0 YVU 8 bit planar");
+    printf("\n  .420p         4:2:0 YUV 8 bit planar");
+    printf("\n  .422p         4:2:2 YUV 8 bit planar");
+    printf("\n  .444p         4:4:4 YUV 8 bit planar");    
     printf("\n  .uyvy         4:2:2 YUV 8 bit packed");
     printf("\n  .v210         4:2:2 YUV 10 bit packed");
     printf("\n  .v216         4:2:2 YUV 16 bit packed");
@@ -461,92 +508,92 @@ void MainWindow::createActions()
     transportFwd100Act = new QAction("Forward 100x", this);
     transportFwd100Act->setShortcut(tr("7"));
     addAction(transportFwd100Act);
-    connect(transportFwd100Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd100()));
+    connect(transportFwd100Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd100()));
 
     transportFwd50Act = new QAction("Forward 50x", this);
     transportFwd50Act->setShortcut(tr("6"));
     addAction(transportFwd50Act);
-    connect(transportFwd50Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd50()));
+    connect(transportFwd50Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd50()));
 
     transportFwd20Act = new QAction("Forward 20x", this);
     transportFwd20Act->setShortcut(tr("5"));
     addAction(transportFwd20Act);
-    connect(transportFwd20Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd20()));
+    connect(transportFwd20Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd20()));
 
     transportFwd10Act = new QAction("Forward 10x", this);
     transportFwd10Act->setShortcut(tr("4"));
     addAction(transportFwd10Act);
-    connect(transportFwd10Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd10()));
+    connect(transportFwd10Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd10()));
 
     transportFwd5Act = new QAction("Forward 5x", this);
     transportFwd5Act->setShortcut(tr("3"));
     addAction(transportFwd5Act);
-    connect(transportFwd5Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd5()));
+    connect(transportFwd5Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd5()));
 
     transportFwd2Act = new QAction("Forward 2x", this);
     transportFwd2Act->setShortcut(tr("2"));
     addAction(transportFwd2Act);
-    connect(transportFwd2Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd2()));
+    connect(transportFwd2Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd2()));
 
     transportFwd1Act = new QAction("Forward 1x", this);
     transportFwd1Act->setShortcut(tr("1"));
     addAction(transportFwd1Act);
-    connect(transportFwd1Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd1()));
+    connect(transportFwd1Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd1()));
 
     transportStopAct = new QAction("Stop", this);
     transportStopAct->setShortcut(tr("s"));
     addAction(transportStopAct);
-    connect(transportStopAct, SIGNAL(triggered()), videoRead, SLOT(transportStop()));
+    connect(transportStopAct, SIGNAL(triggered()), videoTransport, SLOT(transportStop()));
 
     transportRev1Act = new QAction("Reverse 1x", this);
     transportRev1Act->setShortcut(tr("Ctrl+1"));
     addAction(transportRev1Act);
-    connect(transportRev1Act, SIGNAL(triggered()), videoRead, SLOT(transportRev1()));
+    connect(transportRev1Act, SIGNAL(triggered()), videoTransport, SLOT(transportRev1()));
 
     transportRev2Act = new QAction("Reverse 2x", this);
     transportRev2Act->setShortcut(tr("Ctrl+2"));
     addAction(transportRev2Act);
-    connect(transportRev2Act, SIGNAL(triggered()), videoRead, SLOT(transportRev2()));
+    connect(transportRev2Act, SIGNAL(triggered()), videoTransport, SLOT(transportRev2()));
 
     transportRev5Act = new QAction("Reverse 5x", this);
     transportRev5Act->setShortcut(tr("Ctrl+3"));
     addAction(transportRev5Act);
-    connect(transportRev5Act, SIGNAL(triggered()), videoRead, SLOT(transportRev5()));
+    connect(transportRev5Act, SIGNAL(triggered()), videoTransport, SLOT(transportRev5()));
 
     transportRev10Act = new QAction("Reverse 10x", this);
     transportRev10Act->setShortcut(tr("Ctrl+4"));
     addAction(transportRev10Act);
-    connect(transportRev10Act, SIGNAL(triggered()), videoRead, SLOT(transportRev10()));
+    connect(transportRev10Act, SIGNAL(triggered()), videoTransport, SLOT(transportRev10()));
 
     transportRev20Act = new QAction("Reverse 20x", this);
     transportRev20Act->setShortcut(tr("Ctrl+5"));
     addAction(transportRev20Act);
-    connect(transportRev20Act, SIGNAL(triggered()), videoRead, SLOT(transportRev20()));
+    connect(transportRev20Act, SIGNAL(triggered()), videoTransport, SLOT(transportRev20()));
 
     transportRev50Act = new QAction("Reverse 50x", this);
     transportRev50Act->setShortcut(tr("Ctrl+6"));
     addAction(transportFwd100Act);
-    connect(transportFwd100Act, SIGNAL(triggered()), videoRead, SLOT(transportFwd100()));
+    connect(transportFwd100Act, SIGNAL(triggered()), videoTransport, SLOT(transportFwd100()));
 
     transportRev100Act = new QAction("Reverse 100x", this);
     transportRev100Act->setShortcut(tr("Ctrl+7"));
     addAction(transportRev100Act);
-    connect(transportRev100Act, SIGNAL(triggered()), videoRead, SLOT(transportRev100()));
+    connect(transportRev100Act, SIGNAL(triggered()), videoTransport, SLOT(transportRev100()));
 
     transportPlayPauseAct = new QAction("Play/Pause", this);
     transportPlayPauseAct->setShortcut(tr("Space"));
     addAction(transportPlayPauseAct);
-    connect(transportPlayPauseAct, SIGNAL(triggered()), videoRead, SLOT(transportPlayPause()));
+    connect(transportPlayPauseAct, SIGNAL(triggered()), videoTransport, SLOT(transportPlayPause()));
 
     transportJogFwdAct = new QAction("Jog Forward", this);
     transportJogFwdAct->setShortcut(tr("."));
     addAction(transportJogFwdAct);
-    connect(transportJogFwdAct, SIGNAL(triggered()), videoRead, SLOT(transportJogFwd()));
+    connect(transportJogFwdAct, SIGNAL(triggered()), videoTransport, SLOT(transportJogFwd()));
 
     transportJogRevAct = new QAction("Jog Reverse", this);
     transportJogRevAct->setShortcut(tr(","));
     addAction(transportJogRevAct);
-    connect(transportJogRevAct, SIGNAL(triggered()), videoRead, SLOT(transportJogRev()));
+    connect(transportJogRevAct, SIGNAL(triggered()), videoTransport, SLOT(transportJogRev()));
 }
 
 //slot to receive full screen toggle command
@@ -602,13 +649,8 @@ void MainWindow::quit()
     }
 #endif
 
-    if(glvideo_mt) {
-        glvideo_mt->stop();
-    }
-
-    if(videoRead) {
-        videoRead->stop();
-    }
+    glvideo_mt->stop();
+    frameQueue->stop();
 
 #ifdef Q_OS_MACX
     aglDellocEntryPoints();

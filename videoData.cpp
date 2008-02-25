@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.cpp,v 1.19 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: videoData.cpp,v 1.20 2008-02-25 15:08:06 jrosser Exp $
 *
 * The MIT License
 *
@@ -34,12 +34,31 @@
 #define valloc malloc
 #endif
 
-VideoData::VideoData(int w, int h, DataFmt f)
-    : diskFormat(f)
-    , Ywidth(w)
-    , Yheight(h)
+VideoData::VideoData()
 {
-    switch(diskFormat) {
+	//make a bogus 1x1 4:4:4 8 bit image
+	allocate(1, 1, V8P4);
+	data[0] = 16;
+	data[1] = 128;
+	data[2] = 128;	
+}
+
+void VideoData::resize(int w, int h, DataFmt f)
+{
+	if(w != Ywidth || h != Yheight || f != diskFormat) {
+		if(data) free(data);
+		allocate(w, h, f);		
+	}
+
+}
+
+void VideoData::allocate(int w, int h, DataFmt f)
+{
+	Ywidth = w;
+	Yheight = h;
+	diskFormat = f;
+	
+	switch(diskFormat) {
 
         case V8P4:                //8 bit 444 planar
             Cwidth  = Ywidth;

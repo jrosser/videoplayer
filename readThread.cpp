@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: readThread.cpp,v 1.16 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: readThread.cpp,v 1.17 2008-02-25 15:08:05 jrosser Exp $
 *
 * The MIT License
 *
@@ -58,45 +58,157 @@
 #define MAXREADS 10
 #define MINUSED ((LISTLEN * 2) + 5)
 
-ReadThread::ReadThread(VideoRead &v)
-      : QThread(), vr(v)
+ReadThread::ReadThread() : QThread()
 {
     m_doReading = true;
     bandwidth_count = 0;
+    currentFrameNum = 0;
+    displayFrame = NULL;
+    start();
 }
 
 void ReadThread::stop()
 {
     m_doReading = false;
+    wake();
+    wait();
 }
+
+void ReadThread::setForceFileType(bool f)
+{
+	forceFileType = f;
+}
+
+void ReadThread::setFileType(const QString &t)
+{
+	fileType = t;
+}
+
+void ReadThread::setVideoWidth(int w)
+{
+	videoWidth = w;
+}
+
+void ReadThread::setVideoHeight(int h)
+{
+	videoHeight = h;
+}
+
+int ReadThread::getIOLoad()
+{
+    QMutexLocker perfLocker(&perfMutex);
+    return ioLoad;
+}
+
+int ReadThread::getIOBandwidth()
+{
+    QMutexLocker perfLocker(&perfMutex);
+    return ioBandwidth;
+}
+
+void ReadThread::setFileName(const QString &fn)
+{
+	fileName = fn;
+    QFileInfo info(fileName);
+
+	printf("Readthread file name set to %s\n", fileName.toAscii().data());    
+    
+    QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
+
+    printf("Playing file with type %s\n", type.toLatin1().data());
+
+    if(type == "16p0") {
+        videoFormat = VideoData::V16P0;
+        lastFrameNum = info.size() / ((videoWidth * videoHeight * 3 * 2) / 2);
+        lastFrameNum--;
+    }
+
+    if(type == "16p2") {
+    	videoFormat = VideoData::V16P2;
+        lastFrameNum = info.size() / (videoWidth * videoHeight * 2 * 2);
+        lastFrameNum--;
+    }
+
+    if(type == "16p4") {
+    	videoFormat = VideoData::V16P4;
+        lastFrameNum = info.size() / (videoWidth * videoHeight * 3 * 2);
+        lastFrameNum--;
+    }
+	
+    if(type == "420p") {
+	    videoFormat = VideoData::V8P0;
+        lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
+        lastFrameNum--;
+    }
+	    
+	if(type == "422p") {
+	    videoFormat = VideoData::V8P2;
+        lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
+        lastFrameNum--;
+    }
+	    
+	if(type == "444p") {
+	    videoFormat = VideoData::V8P4;
+        lastFrameNum = info.size() / (videoWidth * videoHeight * 3);
+        lastFrameNum--;
+    }
+
+    if(type == "i420") {
+    	videoFormat = VideoData::V8P0;
+        lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
+        lastFrameNum--;
+    }
+
+    if(type == "yv12") {
+    	videoFormat = VideoData::YV12;
+        lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
+        lastFrameNum--;
+    }
+	
+    if(type == "uyvy") {
+	   	videoFormat = VideoData::UYVY;
+	    lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
+	    lastFrameNum--;
+	}
+
+	if(type == "v216") {
+	 	videoFormat = VideoData::V216;
+	    lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
+	    lastFrameNum--;
+	}
+
+	if(type == "v210") {
+	  	videoFormat = VideoData::V210;
+	    lastFrameNum = info.size() / ((videoWidth * videoHeight * 2 * 4) / 3);
+	    lastFrameNum--;
+	}
+}
+
 
 void ReadThread::addPastFrames()
 {
     int stop = MAXREADS;
 
+    QMutexLocker listLocker(&listMutex);
+    int numPastFrames = pastFrames.size();
+    listLocker.unlock();
+    
     //add extra frames to the past frames list
     while(stop-- && numPastFrames < LISTLEN) {
-
-        int lastPastFrame;
-        QMutexLocker listLocker(&vr.listMutex);
-
-        if(vr.transportSpeed != speed) {                                //the playback speed has changed - bail out early
-            if(DEBUG) printf("Transport speed changed - aborting read\n");
-            break;
-        }
-
-        if(vr.pastFrames.size() > 0)
-            lastPastFrame = vr.pastFrames.last()->frameNum;                //get the number of the last future frame
+    	
+        listLocker.relock();
+        int lastPastFrame;        
+        if(pastFrames.size() > 0)
+            lastPastFrame = pastFrames.last()->frameNum;                //get the number of the last future frame
         else
-            lastPastFrame = vr.currentFrameNum;
-
+            lastPastFrame = currentFrameNum;
         listLocker.unlock();
 
         int wantedFrame = lastPastFrame - speed;
-        if(wantedFrame < 0) wantedFrame += (lastFrame + 1);
-        wantedFrame %= lastFrame + 1;
+        if(wantedFrame < 0) wantedFrame += (lastFrameNum + 1);
+        wantedFrame %= lastFrameNum + 1;
 
-        if(DEBUG) printf("Getting past frame %d\n", wantedFrame);
+        if(DEBUG) printf("Getting past frame %d, speed=%d\n", wantedFrame, speed);
 
         VideoData *newFrame = NULL;
 
@@ -106,9 +218,12 @@ void ReadThread::addPastFrames()
         }
         else {
             if(DEBUG) printf("Allocating frame for new past frame\n");
-            newFrame = new VideoData(videoWidth, videoHeight, dataFormat);
+            newFrame = new VideoData(videoWidth, videoHeight, videoFormat);
         }
+        
         newFrame->frameNum = wantedFrame;
+        newFrame->isFirstFrame = (wantedFrame == firstFrameNum);
+        newFrame->isLastFrame  = (wantedFrame == lastFrameNum);        
         newFrame->renderFormat = newFrame->diskFormat;
 
         off64_t offset = (off_t)newFrame->dataSize * (off_t)wantedFrame;
@@ -120,8 +235,8 @@ void ReadThread::addPastFrames()
         if(!rret) perror("READ");
 
         listLocker.relock();
-        vr.pastFrames.append(newFrame);
-        numPastFrames = vr.pastFrames.size();
+        pastFrames.append(newFrame);
+        numPastFrames = pastFrames.size();
         listLocker.unlock();
     }
 }
@@ -130,40 +245,38 @@ void ReadThread::addFutureFrames()
 {
     int stop = MAXREADS;
 
+    QMutexLocker listLocker(&listMutex);
+    int numFutureFrames = futureFrames.size();
+    listLocker.unlock();    
+    
     while(stop-- && numFutureFrames < LISTLEN) {
 
-        int lastFutureFrame;
-        QMutexLocker listLocker(&vr.listMutex);
-
-        if(vr.transportSpeed != speed) {                                //the playback speed has changed - bail out early
-            if(DEBUG) printf("Transport speed changed - aborting read\n");
-            break;
-        }
-
-        if(vr.futureFrames.size() > 0)
-            lastFutureFrame = vr.futureFrames.last()->frameNum;        //get the number of the last future frame
+        listLocker.relock();
+        int lastFutureFrame;        
+        if(futureFrames.size() > 0)
+            lastFutureFrame = futureFrames.last()->frameNum;        //get the number of the last future frame
         else
-            lastFutureFrame = vr.currentFrameNum - 1;
-
+            lastFutureFrame = currentFrameNum - 1;
         listLocker.unlock();
 
         int wantedFrame = lastFutureFrame + speed;            //work out the number of the next future frame
-        wantedFrame %= lastFrame + 1;                        //wrap from the end of the file to the start
+        wantedFrame %= lastFrameNum + 1;                        //wrap from the end of the file to the start
 
-        if(DEBUG) printf("Getting future frame %d\n", wantedFrame);
+        if(DEBUG) printf("Getting future frame %d, speed=%d\n", wantedFrame, speed);
 
         VideoData *newFrame = NULL;
 
         if(usedFrames.size()) {
-            if(DEBUG) printf("Recycling used frame for new future frame\n");
             newFrame = usedFrames.takeLast();
         }
         else {
             if(DEBUG) printf("Allocating frame for new past frame\n");
-            newFrame = new VideoData(videoWidth, videoHeight, dataFormat);
+            newFrame = new VideoData(videoWidth, videoHeight, videoFormat);
         }
 
         newFrame->frameNum = wantedFrame;
+        newFrame->isFirstFrame = (wantedFrame == firstFrameNum);
+        newFrame->isLastFrame  = (wantedFrame == lastFrameNum);
         newFrame->renderFormat = newFrame->diskFormat;
 
         off64_t offset = (off_t)newFrame->dataSize * (off_t)wantedFrame;    //seek to the wanted frame
@@ -175,10 +288,80 @@ void ReadThread::addFutureFrames()
         if(!rret) perror("READ");
 
         listLocker.relock();
-        vr.futureFrames.append(newFrame);
-        numFutureFrames = vr.futureFrames.size();
+        futureFrames.append(newFrame);
+        numFutureFrames = futureFrames.size();
         listLocker.unlock();
     }
+}
+
+int ReadThread::getFutureQueueLen()
+{
+	QMutexLocker listLocker(&listMutex);
+	return futureFrames.size();
+}
+
+int ReadThread::getPastQueueLen()
+{
+	QMutexLocker listLocker(&listMutex);
+	return pastFrames.size();	
+}
+
+//called from the transport controller to get frame data for display
+VideoData* ReadThread::getNextFrame(int transportSpeed, int transportDirection)
+{
+	QMutexLocker playStatusLocker(&playStatusMutex);
+	speed = transportSpeed;
+	direction = transportDirection;
+	playStatusLocker.unlock();
+	
+    
+    //stopped or paused with no frame displayed, or forwards
+    if((direction == 0 && displayFrame == NULL) || direction == 1) {
+
+        if(futureFrames.size() == 0)
+            printf("Dropped frame - no future frame available\n");
+        else
+        {
+            QMutexLocker listLocker(&listMutex);
+
+            //playing forward
+            if(displayFrame) pastFrames.prepend(displayFrame);
+
+            displayFrame = futureFrames.takeFirst();
+            
+            if(displayFrame) currentFrameNum = displayFrame->frameNum;
+        	if(DEBUG) printf("Getting next future frame %ld\n", currentFrameNum);            
+        }
+    
+    }
+
+    //backwards
+    if(direction == -1) {
+
+        if(pastFrames.size() == 0)
+            printf("Dropped frame - no past frame available\n");
+        else 
+        {
+        	QMutexLocker listLocker(&listMutex);
+
+            //playing backward
+            if(displayFrame) futureFrames.prepend(displayFrame);
+
+            displayFrame = pastFrames.takeFirst();
+            
+            if(displayFrame) currentFrameNum = displayFrame->frameNum;
+        	if(DEBUG) printf("Getting next past frame %ld\n", currentFrameNum);            
+        }        
+    }
+
+    return displayFrame;
+}
+
+void ReadThread::wake()
+{
+    frameMutex.lock();
+    frameConsumed.wakeOne();
+    frameMutex.unlock();	
 }
 
 void ReadThread::run()
@@ -193,67 +376,61 @@ void ReadThread::run()
     int activeTime=0;
     int idleTime=0;
 
-    //get the last transport status to avoid deleting the frame lists first time round
-    QMutexLocker transportLocker(&vr.transportMutex);
-    lastSpeed = vr.transportSpeed;
-    transportLocker.unlock();
-
+    //set to play forward to avoid deleting the frame lists first time round
+    QMutexLocker playStatusLocker(&playStatusMutex);
+    int currentSpeed = speed;
+    int lastSpeed = speed;
+    int currentDirection = direction;
+    playStatusLocker.unlock();
+    
     while(m_doReading) {
 
         activeTimer.restart();
 
-        //get the transport status
-        transportLocker.relock();
-        VideoRead::TransportControls ts = vr.transportStatus;
-        speed = vr.transportSpeed;
-        transportLocker.unlock();
-
-        QMutexLocker fileInfoLocker(&vr.fileInfoMutex);
-
+        //open the source file if it not already open
         if(fd <= 0) {
-            if(DEBUG) printf("Opening file %s\n", vr.fileName.toLatin1().data());
-            fd = open(vr.fileName.toLatin1().data(), O_RDONLY);
+            if(DEBUG) printf("Opening file %s\n", fileName.toLatin1().data());
+            fd = open(fileName.toLatin1().data(), O_RDONLY);
 
             if(fd < 0 && DEBUG == 1) {
-                printf("[%s]\n", vr.fileName.toLatin1().data());
+                printf("[%s]\n", fileName.toLatin1().data());
                 perror("OPEN");
             }
         }
 
-        videoHeight = vr.videoHeight;
-        videoWidth  = vr.videoWidth;
-        dataFormat  = vr.dataFormat;
-
-        fileInfoLocker.unlock();
-
         if(fd > 0) {
 
+        	
             //------------------------------------------------------------------------------------------------
             //make sure that the used frame list is at least MINUSED long, so there are some spare frames sloshing
             //around to read into
             for(; preallocate>0; preallocate--) {
-                if(DEBUG) printf("Preallocating used frame, width=%d, height=%d, format=%d\n", videoWidth, videoHeight, dataFormat);
-                VideoData *newFrame = new VideoData(videoWidth, videoHeight, dataFormat);
+                if(DEBUG) printf("Preallocating used frame, width=%d, height=%d, format=%d\n", videoWidth, videoHeight, videoFormat);
+                VideoData *newFrame = new VideoData(videoWidth, videoHeight, videoFormat);
                 usedFrames.prepend(newFrame);
             }
 
             //------------------------------------------------------------------------------------------------
             //trash the contents of the frame lists when we change speed
             //this could be made MUCH cleverer - to keep past and future frames that we need when changing speed
-            if(speed != lastSpeed) {
+            playStatusLocker.relock();
+            currentSpeed = speed;
+            playStatusLocker.unlock();            
+            
+            if(currentSpeed != lastSpeed) {
 
-                if(DEBUG) printf("Trashing frame lists - ts=%d speed=%d, last=%d\n", ts, speed, lastSpeed);
+                if(DEBUG) printf("Trashing frame lists - speed=%d, last=%d\n", currentSpeed, lastSpeed);
 
-                QMutexLocker listLocker(&vr.listMutex);
+                QMutexLocker listLocker(&listMutex);
 
-                while(vr.futureFrames.size()) {
-                    VideoData *frame = vr.futureFrames.takeLast();
+                while(futureFrames.size()) {
+                    VideoData *frame = futureFrames.takeLast();
                     usedFrames.prepend(frame);
                     //delete frame;
                 }
 
-                while(vr.pastFrames.size()) {
-                    VideoData *frame = vr.pastFrames.takeLast();
+                while(pastFrames.size()) {
+                    VideoData *frame = pastFrames.takeLast();
                     usedFrames.prepend(frame);
                     //delete frame;
                 }
@@ -262,46 +439,28 @@ void ReadThread::run()
 
             }
 
-            lastSpeed = speed;
-
-            //------------------------------------------------------------------------------------------------
-            //get information about the length of the lists
-            {
-                QMutexLocker listLocker(&vr.listMutex);
-
-                //info about the lists of frames
-                numFutureFrames = vr.futureFrames.size();
-                numPastFrames = vr.pastFrames.size();
-
-                //the extents of the sequence
-                firstFrame = vr.firstFrameNum;
-                lastFrame = vr.lastFrameNum;
-
-                //the format and dimensions of the sequence  - which mutex should protect theses properly???
-                dataFormat = vr.dataFormat;
-                videoWidth = vr.videoWidth;
-                videoHeight = vr.videoHeight;
-
-                listLocker.unlock();
-            }
-
+            lastSpeed = currentSpeed;
+            
             //------------------------------------------------------------------------------------------------
             //make sure the lists are long enough
+            playStatusLocker.relock();
+            currentDirection = direction;
+            playStatusLocker.unlock();            
 
             //add extra frames to the future frames list when playing forward
-            if(ts == VideoRead::Fwd100 || ts == VideoRead::Fwd50 || ts == VideoRead::Fwd20 || ts == VideoRead::Fwd10 ||
-               ts == VideoRead::Fwd5   || ts == VideoRead::Fwd2  || ts == VideoRead::Fwd1) {
+            if(currentDirection == 1) {
+            	if(DEBUG) printf("Adding future frames\n");
                 addFutureFrames();
             }
 
             //add extra frames to the past frame list when playing backward
-            if(ts == VideoRead::Rev100 || ts == VideoRead::Rev50 || ts == VideoRead::Rev20 || ts == VideoRead::Rev10 ||
-               ts == VideoRead::Rev5   || ts == VideoRead::Rev2  || ts == VideoRead::Rev1) {
+            if(currentDirection == -1) {
+            	if(DEBUG) printf("Adding past frames\n");            	
                 addPastFrames();
             }
 
             //when pasued or stopped fill both lists for nice jog-wheel response
-            if(ts == VideoRead::Pause || ts == VideoRead::Stop) {
+            if(currentDirection == 0) {
                 addFutureFrames();
                 addPastFrames();
             }
@@ -309,60 +468,66 @@ void ReadThread::run()
             //------------------------------------------------------------------------------------------------
             //make sure the lists are not too long
             //remove excess frames from the future list, which accumulate when playing backwards
-            while(numFutureFrames > LISTLEN) {
-
-                QMutexLocker listLocker(&vr.listMutex);
-                VideoData *oldFrame = vr.futureFrames.takeLast();
-                numFutureFrames = vr.futureFrames.size();
-
-                //delete oldFrame;
-                usedFrames.prepend(oldFrame);    //recycle
-
+            {
+                QMutexLocker listLocker(&listMutex);
+                int numFutureFrames = futureFrames.size();
+                int numPastFrames = pastFrames.size();
                 listLocker.unlock();
+
+                //remove excess future frames
+                while(numFutureFrames > LISTLEN) {                	
+                	listLocker.relock();
+                	VideoData *oldFrame = futureFrames.takeLast();
+                	if(DEBUG) printf("Retiring future frame %ld\n", oldFrame->frameNum);                	
+                	usedFrames.prepend(oldFrame);
+                	numFutureFrames = futureFrames.size();                	
+                	listLocker.unlock();
+                }
+                
+                //remove excess past frames
+                while(numPastFrames > LISTLEN) {                	
+                    listLocker.relock();
+                    VideoData *oldFrame = pastFrames.takeLast();
+                	if(DEBUG) printf("Retiring past frame %ld\n", oldFrame->frameNum);                    
+                    usedFrames.prepend(oldFrame);
+                    numPastFrames = pastFrames.size();                    
+                    listLocker.unlock();
+                }            	
             }
 
-            //remove excess frames from the past list, which accumulate when playing forward
-            while(numPastFrames > LISTLEN) {
-
-                QMutexLocker listLocker(&vr.listMutex);
-                VideoData *oldFrame = vr.pastFrames.takeLast();
-                numPastFrames = vr.pastFrames.size();
-
-                //delete oldFrame;
-                usedFrames.prepend(oldFrame);    //recycle
-
-                listLocker.unlock();
-            }
         }
 
+        //grab performance timers
         activeTime += activeTimer.elapsed();
         idleTimer.restart();
 
-#ifdef Q_OS_UNIX
-/* Broken under win32? */
-        vr.frameMutex.lock();
-        vr.frameConsumed.wait(&(vr.frameMutex));
-        vr.frameMutex.unlock();
-#endif
+        //wait for display thread to display a new frame
+        frameMutex.lock();
+        frameConsumed.wait(&frameMutex);
+        frameMutex.unlock();
 
         idleTime += idleTimer.elapsed();
 
+        //process performance timer info
         averaging--;
         if(averaging==0) {
-            vr.perfMutex.lock();
+        	QMutexLocker perfMutexLocker(&perfMutex);
 
-            if(idleTime != 0)
-                vr.ioLoad = (100 * activeTime) / (idleTime + activeTime);
-            else
-                vr.ioLoad = 100;
-
-            vr.ioBandwidth = bandwidth_count / ((idleTime + activeTime) * 1000);
+            int totalTime = idleTime + activeTime;
+            
+            if(totalTime != 0) {
+            	ioLoad = (100 * activeTime) / (totalTime);
+                ioBandwidth = bandwidth_count / (totalTime * 1000);
+            }
+            else {            	
+                ioLoad = 100;
+                ioBandwidth = 0;
+            }
 
             idleTime = 0;
             activeTime = 0;
             bandwidth_count = 0;
 
-            vr.perfMutex.unlock();
             averaging=10;
         }
 

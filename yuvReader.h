@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: readThread.h,v 1.8 2008-02-25 15:08:05 jrosser Exp $
+* $Id: yuvReader.h,v 1.1 2008-02-25 15:08:06 jrosser Exp $
 *
 * The MIT License
 *
@@ -26,59 +26,26 @@
 *
 * ***** END LICENSE BLOCK ***** */
 
-#ifndef READTHREAD_RT_H_
-#define READTHREAD_RT_H_
+#ifndef YUVREADER_H_
+#define YUVREADER_H_
 
-#include <QtGui>
-
+#include "readerInterface.h"
 #include "videoData.h"
 
-class VideoRead;
-
-class ReadThread : public QThread
+class YUVReader : public ReaderInterface
 {
-public:
-    ReadThread();
+public:	//from ReaderInterface
+	YUVReader();
+    virtual void getFrame(int frameNumber, VideoData *dst);    
     
-    void run();
-    void stop();
-    void wake();
-    
+public:	//specific to yuvReader
     void setForceFileType(bool f);
     void setFileType(const QString &t);
     void setVideoWidth(int w);
     void setVideoHeight(int h);
     void setFileName(const QString &fn);
     
-    VideoData *getNextFrame(int speed, int direction);
-    int getFutureQueueLen(void);
-    int getPastQueueLen(void);
-    int getIOLoad(void);
-    int getIOBandwidth(void);
-    
 private:
-    void addFutureFrames();
-    void addPastFrames();
-
-    bool m_doReading;
-
-    //lists of pointers to frames
-    QList<VideoData *> pastFrames;
-    QList<VideoData *> futureFrames;
-    QMutex listMutex;                     //protect the lists of frames
-    
-    //the extents of the sequence
-    int firstFrameNum;
-    int lastFrameNum;
-
-    //what is currently on the screen
-    VideoData *displayFrame;
-    unsigned long currentFrameNum;		 //the frame number displayed last
-    
-    //playback status
-    QMutex playStatusMutex;    
-    int direction;
-    int speed;
 
     //information about the video data
     VideoData::DataFmt videoFormat;
@@ -90,21 +57,13 @@ private:
 
     //video file
     int fd;
-
+    int lastFrameNum;
+    int firstFrameNum;
+    
     //bandwidth counter
     int bandwidth_count;
     int ioLoad;
-    int ioBandwidth;
-    QMutex perfMutex;
-    
-    //a list of used frames for recycling, so that we don't need to re-allocate storage
-    QList<VideoData *> usedFrames;
-
-    //wait condition that is released each time the a frame is consumed for display
-    QWaitCondition frameConsumed;         //condition variable to pause/wake reading thread, synchronising display rate and data reading thread
-    QMutex frameMutex;
-    
-    
+    int ioBandwidth;    
 };
 
 #endif

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.28 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: mainwindow.h,v 1.29 2008-02-25 15:08:06 jrosser Exp $
 *
 * The MIT License
 *
@@ -33,7 +33,10 @@
 #include <QtGui>
 
 #include "GLvideo_mt.h"
-#include "videoRead.h"
+#include "videoTransport.h"
+#include "frameQueue.h"
+#include "readerInterface.h"
+#include "yuvReader.h"
 
 #ifdef Q_OS_LINUX
 #include "QShuttlePro.h"
@@ -104,7 +107,10 @@ private:
     QAction *transportJogRevAct;
 
     void setFullScreen(bool);
-    VideoRead *videoRead;
+    ReaderInterface *reader;
+    //YUVReader *reader;    
+    FrameQueue *frameQueue;
+    VideoTransport *videoTransport;
     GLvideo_mt *glvideo_mt;
 
     //data from the command line parameters

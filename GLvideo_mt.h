@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.25 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: GLvideo_mt.h,v 1.26 2008-02-25 15:08:06 jrosser Exp $
 *
 * The MIT License
 *
@@ -37,7 +37,8 @@
 #include <QGLWidget>
 
 #include "GLvideo_rt.h"
-#include "videoRead.h"
+#include "videoTransport.h"
+
 
 class MainWindow;
 
@@ -46,11 +47,11 @@ class GLvideo_mt : public QGLWidget
     Q_OBJECT
 
 public:
-    GLvideo_mt(VideoRead &vr);
+    GLvideo_mt(VideoTransport *vt);
     void setFrameRepeats(int repeats);
     void setFramePolarity(int p);
-    void setFontFile(QString &fontFile);
-    VideoRead &vr;
+    void setFontFile(QString &fontFile);    
+    VideoTransport *vt;
     void stop();
 
     GLvideo_rt renderThread;
