@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.h,v 1.31 2008-02-05 00:12:06 asuraparaju Exp $
+* $Id: GLvideo_rt.h,v 1.32 2008-03-10 11:47:41 jrosser Exp $
 *
 * The MIT License
 *
@@ -53,7 +53,6 @@ public:
     GLvideo_rt(GLvideo_mt &glWidget);
     void resizeViewport(int w, int h);
     void setFrameRepeats(int repeats);
-    void setFramePolarity(int polarity);
     void setFontFile(const char *fontFile);
     void setAspectLock(bool lock);
     void setInterlacedSource(bool i);
@@ -168,7 +167,6 @@ private:
     int m_displayheight;        //height of parent widget
 
     int m_frameRepeats;            //number of times each frame is repeated
-    int m_framePolarity;        //which frame in m_frameRepeats to update on
 
     GLuint programs[shaderMax];    //handles for the shaders and programs
     GLuint shaders[shaderMax];

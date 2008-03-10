@@ -1,6 +1,6 @@
  /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: frameQueue.cpp,v 1.2 2008-03-10 10:20:44 jrosser Exp $
+* $Id: frameQueue.cpp,v 1.3 2008-03-10 11:47:41 jrosser Exp $
 *
 * The MIT License
 *
@@ -133,7 +133,8 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
             //playing forward
             if(displayFrame) pastFrames.prepend(displayFrame);
 
-            displayFrame = futureFrames.takeFirst();            
+            displayFrame = futureFrames.takeFirst();
+            listLocker.unlock();
         }   
     }
 
@@ -150,7 +151,8 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
             //playing backward
             if(displayFrame) futureFrames.prepend(displayFrame);
 
-            displayFrame = pastFrames.takeFirst();            
+            displayFrame = pastFrames.takeFirst();
+            listLocker.unlock();
         }        
     }
 
@@ -165,14 +167,13 @@ void FrameQueue::wake()
 }
 
 VideoData *FrameQueue::allocateFrame(void)
-{
-  QMutexLocker listlocker(&listMutex);
-  
+{  
   if(usedFrames.empty()) {
     return new VideoData;
   }
   else
   {
+	QMutexLocker listlocker(&listMutex);	  
     return usedFrames.takeLast();
   }    
 }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.47 2008-03-10 10:20:45 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.48 2008-03-10 11:47:41 jrosser Exp $
 *
 * The MIT License
 *
@@ -52,7 +52,6 @@ MainWindow::MainWindow(int argc, char **argv)
     videoWidth = 1920;
     videoHeight = 1080;
     frameRepeats = 0;
-    framePolarity = 0;
     luminanceOffset1 = -0.0625;
     chrominanceOffset1 = -0.5;
     luminanceMul = 1.0;
@@ -110,7 +109,7 @@ MainWindow::MainWindow(int argc, char **argv)
     	
     	r->setFileName(fileName);
     	reader = r;
-    	r->start();
+    	r->start(QThread::LowestPriority);
     }
 #endif
     
@@ -137,7 +136,7 @@ MainWindow::MainWindow(int argc, char **argv)
     //central widget is the threaded openGL video widget
     //which pulls video from the videoRead
     //and gets stats for the OSD from the readThread
-    glvideo_mt = new GLvideo_mt(videoTransport);
+    glvideo_mt = new GLvideo_mt(videoTransport, frameQueue);
 
     setCentralWidget(glvideo_mt);
 
@@ -193,7 +192,6 @@ MainWindow::MainWindow(int argc, char **argv)
 
     //rendering thread parameters
     glvideo_mt->setFrameRepeats(frameRepeats);
-    glvideo_mt->setFramePolarity(framePolarity);
     glvideo_mt->setFontFile(fontFile);
     glvideo_mt->setLuminanceOffset1(luminanceOffset1);
     glvideo_mt->setChrominanceOffset1(chrominanceOffset1);
@@ -231,7 +229,6 @@ void MainWindow::parseCommandLine(int argc, char **argv)
             ("repeats,r",     po::value(&frameRepeats),       "int    0       Frame is repeated r extra times")
             ("loop,l",        po::value(&looping),            "bool   1       Video file is played repeatedly")
             ("quit,q",                                        "               Exit at end of video file")
-            ("polarity,p",    po::value(&framePolarity),      "int    0       Set frame to display video on (0, r-1)")
             ("interlace,i",   po::value(&interlacedSource),   "bool   false   Interlaced source [1], progressive[0]")
             ("deinterlace,d", po::value(&deinterlace),        "bool   false   Deinterlace on [1], off [0]")
             ("yoffset",       po::value(&luminanceOffset1),   "float -0.0625  Luminance data values offset")

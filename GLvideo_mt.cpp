@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.27 2008-02-25 15:08:05 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.28 2008-03-10 11:47:41 jrosser Exp $
 *
 * The MIT License
 *
@@ -28,8 +28,8 @@
 
 #include "GLvideo_mt.h"
 
-GLvideo_mt::GLvideo_mt(VideoTransport *v)
-    : vt(v), renderThread(*this)
+GLvideo_mt::GLvideo_mt(VideoTransport *v, FrameQueue *f)
+    : vt(v), fq(f), renderThread(*this)
 {
     setMouseTracking(true);
     connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
@@ -37,7 +37,7 @@ GLvideo_mt::GLvideo_mt(VideoTransport *v)
 
     /* NB, a) this helps to be last
      *     b) don't put HideMouse anywhere near here */
-    renderThread.start();
+    renderThread.start(QThread::TimeCriticalPriority);
 }
 
 void GLvideo_mt::stop()
@@ -172,11 +172,6 @@ void GLvideo_mt::resizeEvent(QResizeEvent * event)
 void GLvideo_mt::setFrameRepeats(int repeats)
 {
     renderThread.setFrameRepeats(repeats);
-}
-
-void GLvideo_mt::setFramePolarity(int p)
-{
-    renderThread.setFramePolarity(p);
 }
 
 void GLvideo_mt::setFontFile(QString &fontFile)

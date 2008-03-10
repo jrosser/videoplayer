@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.52 2008-03-10 10:20:44 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.53 2008-03-10 11:47:41 jrosser Exp $
 *
 * The MIT License
 *
@@ -70,7 +70,7 @@ int perf_pastQueue;
 int perf_IOLoad;
 int perf_IOBandwidth;
 
-#define DEBUG 1
+#define DEBUG 0
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -428,13 +428,6 @@ void GLvideo_rt::setCaption(const char *c)
 {
     mutex.lock();
     strncpy(caption, c, 255);
-    mutex.unlock();
-}
-
-void GLvideo_rt::setFramePolarity(int p)
-{
-    mutex.lock();
-    m_framePolarity = p;
     mutex.unlock();
 }
 
@@ -960,11 +953,11 @@ void GLvideo_rt::run()
     int displaywidth = m_displaywidth;
     int displayheight = m_displayheight;
     int frameRepeats = m_frameRepeats;
-    int framePolarity = m_framePolarity;
     bool interlacedSource = m_interlacedSource;
     bool deinterlace = m_deinterlace;
     bool matrixScaling = m_matrixScaling;
     bool changeMatrix = m_changeMatrix;
+    int repeat = 0;
     int field = 0;
     int direction = 0;
     int currentShader = 0;
@@ -1021,7 +1014,6 @@ void GLvideo_rt::run()
         displaywidth = m_displaywidth;
         displayheight = m_displayheight;
         frameRepeats = m_frameRepeats;
-        framePolarity = m_framePolarity;
         osd = m_osd;
         osdScale = m_osdScale;
         perf = m_perf;
@@ -1113,13 +1105,13 @@ void GLvideo_rt::run()
 
         //read frame data, one frame at a time, or after we have displayed the second field
         perfTimer.restart();
-        if(interlacedSource == 0 || field == 1) {
+        if((interlacedSource == 0 || field == 1) && repeat == 0) {
             videoData = glw.vt->getNextFrame();
             direction = glw.vt->getDirection();
-            //perf_futureQueue = glw.rt->getFutureQueueLen();
-            //perf_pastQueue   = glw.rt->getPastQueueLen();
-            //perf_IOLoad      = glw.rt->getIOLoad();
-            //perf_IOBandwidth = glw.rt->getIOBandwidth();
+            perf_futureQueue = glw.fq->getFutureQueueLen();
+            perf_pastQueue   = glw.fq->getPastQueueLen();
+            //perf_IOLoad      = glw.fq->getIOLoad();
+            //perf_IOBandwidth = glw.fq->getIOBandwidth();
             perf_readData = perfTimer.elapsed();
         }
 
@@ -1243,7 +1235,7 @@ void GLvideo_rt::run()
             
             if(doResize /* && displaywidth>0 && displayheight>0*/) {
                 //resize the viewport, once we have some video
-                if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
+                //if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
 
                 float sourceAspect = (float)videoData->Ywidth / (float)videoData->Yheight;
                 float displayAspect = (float)displaywidth / (float)displayheight;
@@ -1292,7 +1284,7 @@ void GLvideo_rt::run()
             //upload the texture data for each new frame, or for before we render the first field
             //of interlaced material
             perfTimer.restart();
-            if(interlacedSource == 0 || field == 0) uploadTextures(videoData);
+            if((interlacedSource == 0 || field == 0) && repeat == 0) uploadTextures(videoData);
             perf_upload = perfTimer.elapsed();
 
             perfTimer.restart();
@@ -1315,32 +1307,36 @@ void GLvideo_rt::run()
         glw.swapBuffers();
         perf_swapBuffers = perfTimer.elapsed();
 
-        if(interlacedSource) {
+        //move to the next field when the first has been repeated the required number of times
+        if(interlacedSource && (repeat == frameRepeats)) {
             //move to the next field
             field++;
             if(field > 1) field = 0;
         }
 
-        //measure overall frame period
-        perf_interval = frameIntervalTime.elapsed();
-        frameIntervalTime.restart();
-
-        //calculate FPS
-        if (fpsAvgPeriod == 0) {
-            int fintvl = fpsIntervalTime.elapsed();
-            if (fintvl) fps = 10*1e3/fintvl;
-            fpsIntervalTime.start();
+        //repeat the frame the required number of times
+        if(repeat < frameRepeats) {
+        	repeat++;
+        	if(repeat == frameRepeats) {
+        		repeat = 0;        
+        	}
         }
-        fpsAvgPeriod = (fpsAvgPeriod + 1) %10;
-
-#ifdef Q_WS_X11
-        if (frameRepeats > 1) {
-            perfTimer.restart();
-            glXWaitVideoSyncSGI(frameRepeats, framePolarity, &retraceCount);
-            perf_repeatWait = perfTimer.elapsed();
+        
+        if(repeat == 0) {
+        	//measure overall frame period
+        	perf_interval = frameIntervalTime.elapsed();
+        	//if(DEBUG) printf("interval=%d\n", perf_interval);
+        	frameIntervalTime.restart();
+        	
+            //calculate FPS
+            if (fpsAvgPeriod == 0) {
+                int fintvl = fpsIntervalTime.elapsed();
+                if (fintvl) fps = 10*1e3/fintvl;
+                fpsIntervalTime.start();
+            }
+            fpsAvgPeriod = (fpsAvgPeriod + 1) %10;        	
         }
-#endif
-
+                
     }
 }
 

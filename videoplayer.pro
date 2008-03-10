@@ -12,7 +12,7 @@ DEFINES += HAVE_DIRAC
 
 contains(DEFINES, HAVE_DIRAC) {
 	#andrea's wrapper library around the schro and dirac libraries
-	PARSER_PATH = /project/compression/jrosser/workspace/dirac1.0/branches/dg_demo
+	PARSER_PATH = /project/compression/jrosser/workspace/dirac1.0-amd64
 	INCLUDEPATH += $$PARSER_PATH/include/dirac1.0
 	INCLUDEPATH += $$PARSER_PATH/src/
 	LIBPATH += $$PARSER_PATH/lib

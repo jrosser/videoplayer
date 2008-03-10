@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: diracReader.cpp,v 1.2 2008-03-10 10:20:42 jrosser Exp $
+* $Id: diracReader.cpp,v 1.3 2008-03-10 11:47:41 jrosser Exp $
 *
 * The MIT License
 *
@@ -90,15 +90,9 @@ bool SomeWriter::output ( const_pointer begin, size_type count
 	//printf("Pixels %x %x %x : %x %x %x\n", video->data[500], video->data[501], video->data[502], video->data[1280*50+500], video->data[1280*50+501],video->data[1280*50+502]);
 
 	if(DEBUG) printf("(SomeWriter) adding frame %p, %dx%d, listSize=%d\n", video, video->Ywidth, video->Yheight, size);
-	dr->frameList.append(video);
-	
-	//wake consumer if list was previously empty
-	if(dr->frameList.size() == 1) {
-	    if(DEBUG)printf("(SomeWriter) list has become not empty - waking DiracReader...\n");
-	  dr->bufferNotEmpty.wakeAll();
-  }
-  
-  dr->frameMutex.unlock();
+	dr->frameList.prepend(video);
+	dr->bufferNotEmpty.wakeAll();
+	dr->frameMutex.unlock();
   
   if(DEBUG) printf("(SomeWriter) Done\n");
   
@@ -159,22 +153,18 @@ void DiracReader::pullFrame(int frameNumber /*ignored*/, VideoData*& dst)
 	if (frameList.empty()) {
 	  if(DEBUG) printf("(DiracReader) frame list is empty - waiting...\n");
 		bufferNotEmpty.wait(&frameMutex);
-  }
-    
-  dst = frameList.takeLast();
-	
-	int size = frameList.size();
-  if(DEBUG) printf("(DiracReader) taken frame %p from list, listSize=%d\n", dst, size);
-	
-	if(frameList.size() == MAX-1) {
-	  if(DEBUG) printf("(DiracReader) list has become not full - waking SomeWriter..\n");
-	  bufferNotFull.wakeAll();
 	}
+    
+	dst = frameList.takeLast();
+	dst->frameNum = frameNumber;
+  
+	int size = frameList.size();
+	if(DEBUG) printf("(DiracReader) taken frame %p from list, listSize=%d\n", dst, size);
 	
+	bufferNotFull.wakeAll();
 	frameMutex.unlock();
 	
-  if(DEBUG) printf("(DiracReader) Done\n");
-	
+	if(DEBUG) printf("(DiracReader) Done\n");	
 }
 
 DiracReader::DiracReader( FrameQueue& frameQ ) : ReaderInterface ( frameQ )
