@@ -1,6 +1,6 @@
  /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: frameQueue.cpp,v 1.1 2008-02-25 15:08:05 jrosser Exp $
+* $Id: frameQueue.cpp,v 1.2 2008-03-10 10:20:44 jrosser Exp $
 *
 * The MIT License
 *
@@ -31,6 +31,7 @@
 
 #include "frameQueue.h"
 #include "videoTransport.h"
+#include "readerInterface.h"
 
 #define DEBUG 0
 #define LISTLEN 50
@@ -88,26 +89,14 @@ void FrameQueue::addFrames(bool future)
     
     //add extra frames to the past frames list
     while(stop-- && numFrames < LISTLEN) {
-    	
-        listLocker.relock();
 
         int wantedFrame = wantedFrameNum(future);
 
-        VideoData *newFrame = NULL;
-
-        if(usedFrames.size()) {
-            if(DEBUG) printf("Recycling used frame frame\n");
-            newFrame = usedFrames.takeLast();
-        }
-        else {
-            if(DEBUG) printf("Allocating frame\n");
-            newFrame = new VideoData();
-        }
-                        
-        reader->getFrame(wantedFrame, newFrame);
+        VideoData *v;
+        reader->pullFrame(wantedFrame, v);
         	
         listLocker.relock();
-        list->append(newFrame);
+        list->append(v);
         numFrames = list->size();
         listLocker.unlock();        	        
     }		
@@ -134,8 +123,9 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
     //stopped or paused with no frame displayed, or forwards
     if((direction == 0 && displayFrame == NULL) || direction == 1) {
 
-        if(futureFrames.size() == 0)
-            printf("Dropped frame - no future frame available\n");
+        if(futureFrames.size() == 0) {
+            //printf("Dropped frame - no future frame available\n");
+	}
         else
         {
             QMutexLocker listLocker(&listMutex);
@@ -150,8 +140,9 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
     //backwards
     if(direction == -1) {
 
-        if(pastFrames.size() == 0)
-            printf("Dropped frame - no past frame available\n");
+        if(pastFrames.size() == 0) {
+            //printf("Dropped frame - no past frame available\n");
+	}
         else 
         {
         	QMutexLocker listLocker(&listMutex);
@@ -171,6 +162,25 @@ void FrameQueue::wake()
     frameMutex.lock();
     frameConsumed.wakeOne();
     frameMutex.unlock();	
+}
+
+VideoData *FrameQueue::allocateFrame(void)
+{
+  QMutexLocker listlocker(&listMutex);
+  
+  if(usedFrames.empty()) {
+    return new VideoData;
+  }
+  else
+  {
+    return usedFrames.takeLast();
+  }    
+}
+
+void FrameQueue::releaseFrame(VideoData *v)
+{
+  QMutexLocker listlocker(&listMutex);
+  usedFrames.append(v);
 }
 
 void FrameQueue::run()

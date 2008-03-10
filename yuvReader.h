@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: yuvReader.h,v 1.1 2008-02-25 15:08:06 jrosser Exp $
+* $Id: yuvReader.h,v 1.2 2008-03-10 10:20:45 jrosser Exp $
 *
 * The MIT License
 *
@@ -35,8 +35,8 @@
 class YUVReader : public ReaderInterface
 {
 public:	//from ReaderInterface
-	YUVReader();
-    virtual void getFrame(int frameNumber, VideoData *dst);    
+	YUVReader( FrameQueue& frameQ);
+    virtual void pullFrame(int wantedFrame, VideoData*& dst);    
     
 public:	//specific to yuvReader
     void setForceFileType(bool f);
@@ -46,6 +46,7 @@ public:	//specific to yuvReader
     void setFileName(const QString &fn);
     
 private:
+
 
     //information about the video data
     VideoData::DataFmt videoFormat;

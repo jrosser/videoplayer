@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.51 2008-02-25 15:08:05 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.52 2008-03-10 10:20:44 jrosser Exp $
 *
 * The MIT License
 *
@@ -70,7 +70,7 @@ int perf_pastQueue;
 int perf_IOLoad;
 int perf_IOBandwidth;
 
-#define DEBUG 0
+#define DEBUG 1
 
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
@@ -207,6 +207,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
     m_deinterlace = false;
     m_matrixScaling = false;
     m_changeMatrix = true;          //always compute colour matrix at least once
+    m_displaywidth = 0;
+    m_displayheight = 0; 
 
     m_luminanceOffset1 = -0.0625;   //video luminance has black at 16/255
     m_chrominanceOffset1 = -0.5;    //video chrominace is centered at 128/255
@@ -326,9 +328,9 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
         glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB,1);
 
-        glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
-        glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
 
         /* Select texture unit 2 as the active unit and bind the V texture. */
         glActiveTexture(GL_TEXTURE2);
@@ -336,9 +338,9 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB,2);
         glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
 
-        glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
-        glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
+        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
+        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
     }
 
     /* Select texture unit 0 as the active unit and bind the Y texture. */
@@ -347,9 +349,9 @@ void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
     glUniform1iARB(i,3);  /* Bind Ytex to texture unit 3 */
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB,3);
 
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
-    glTexParameteri(GL_TEXTURE_RECTANGLE_NV, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_NV, 0, videoData->glInternalFormat, videoData->glYTextureWidth, videoData->Yheight, 0, videoData->glFormat, videoData->glType, NULL);
+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
+    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
+    glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, videoData->glInternalFormat, videoData->glYTextureWidth, videoData->Yheight, 0, videoData->glFormat, videoData->glType, NULL);
 
     //create buffer objects that are used to transfer the texture data to the card
     //this is much faster than using glTexSubImage2D() later on to replace the texture data
@@ -1153,7 +1155,7 @@ void GLvideo_rt::run()
             //check for video dimensions changing
             if(lastsrcwidth != videoData->Ywidth || lastsrcheight != videoData->Yheight) {
 
-            	if(DEBUG) printf("Changing video dimensions\n");
+            	if(DEBUG) printf("Changing video dimensions to %dx%d\n", videoData->Ywidth, videoData->Yheight);
                 glOrtho(0, videoData->Ywidth ,0 , videoData->Yheight, -1 ,1);
 
                 doResize = true;
@@ -1239,7 +1241,7 @@ void GLvideo_rt::run()
                 perf_updateVars = perfTimer.elapsed();
             }
             
-            if(doResize) {
+            if(doResize /* && displaywidth>0 && displayheight>0*/) {
                 //resize the viewport, once we have some video
                 if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
 

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: readerInterface.h,v 1.1 2008-02-25 15:08:05 jrosser Exp $
+* $Id: readerInterface.h,v 1.2 2008-03-10 10:20:42 jrosser Exp $
 *
 * The MIT License
 *
@@ -30,15 +30,24 @@
 #define READERINTERFACE_H_
 
 #include "videoData.h"
+#include "frameQueue.h"
 
 class ReaderInterface
 {
 public:
-    
-    virtual void getFrame(int frameNumber, VideoData *dst) = 0;
+    ReaderInterface ( FrameQueue& frameQ ) : frameQueue ( frameQ ) {}
     virtual ~ReaderInterface() {}
+
+    virtual void pullFrame(int wantedFrame, VideoData*& dst) =0;
     
     bool randomAccess;
+
+protected:
+  FrameQueue& frameQueue;
+    
+private:
+  ReaderInterface ( ReaderInterface const& );
+  ReaderInterface& operator= ( ReaderInterface const&);
 };
 
 #endif

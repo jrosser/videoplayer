@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: diracReader.h,v 1.1 2008-02-25 15:08:06 jrosser Exp $
+* $Id: diracReader.h,v 1.2 2008-03-10 10:20:44 jrosser Exp $
 *
 * The MIT License
 *
@@ -31,7 +31,7 @@
 
 #include <QtGui>
 
-#include <samples/IWriter.hpp>
+#include <decoder/IWriter.hpp>
 #include "readerInterface.h"
 #include "videoData.h"
 
@@ -40,9 +40,9 @@ class SomeWriter;
 class DiracReader : public ReaderInterface, public QThread
 {
 public:	//from ReaderInterface
-	DiracReader();
-    virtual void getFrame(int frameNumber, VideoData *dst);    
-    
+	  DiracReader ( FrameQueue& frameQ );
+    virtual void pullFrame(int wantedFrame, VideoData*& dst);
+  
 public:	//specific to yuvReader
     void setFileName(const QString &fn);
     void run();
@@ -53,10 +53,9 @@ private:
     bool go;
     
     //frame
+    QList<VideoData *> frameList;
     QMutex frameMutex;
     unsigned char *frameData;
-    int frameWidth;
-    int frameHeight;
     
     
     //condition variable

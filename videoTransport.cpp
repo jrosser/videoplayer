@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoTransport.cpp,v 1.1 2008-02-25 15:08:05 jrosser Exp $
+* $Id: videoTransport.cpp,v 1.2 2008-03-10 10:20:43 jrosser Exp $
 *
 * The MIT License
 *
@@ -36,6 +36,7 @@ VideoTransport::VideoTransport(FrameQueue *fq)
     lastTransportStatus = Fwd1;
     looping=true;
     transportFwd1();
+    //transportStop();
 }
 
 void VideoTransport::setLooping(bool l)

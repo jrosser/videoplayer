@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.46 2008-02-25 15:08:06 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.47 2008-03-10 10:20:45 jrosser Exp $
 *
 * The MIT License
 *
@@ -98,12 +98,15 @@ MainWindow::MainWindow(int argc, char **argv)
     setWindowTitle("VideoPlayer");
     setFullScreen(startFullScreen);
 
+    //object containing a seperate thread that manages the lists of frames to be displayed
+    frameQueue = new FrameQueue();
+
     //object that generates frames to be inserted into the frame queue
     reader = NULL;
 #ifdef HAVE_DIRAC    
     //make dirac reader if required
     if(fileType.toLower() == "drc") {
-    	DiracReader *r = new DiracReader();
+    	DiracReader *r = new DiracReader( *frameQueue );
     	
     	r->setFileName(fileName);
     	reader = r;
@@ -113,7 +116,7 @@ MainWindow::MainWindow(int argc, char **argv)
     
     //default to YUV reader
     if (reader == NULL) {
-    	YUVReader *r = new YUVReader();
+    	YUVReader *r = new YUVReader( *frameQueue );
         
     	//YUV reader parameters
         r->setVideoWidth(videoWidth);
@@ -126,8 +129,6 @@ MainWindow::MainWindow(int argc, char **argv)
     }
 
     
-    //object containing a seperate thread that manages the lists of frames to be displayed
-    frameQueue = new FrameQueue();
     frameQueue->setReader(reader);
     
     //object controlling the video playback 'transport'

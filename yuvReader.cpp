@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: yuvReader.cpp,v 1.1 2008-02-25 15:08:06 jrosser Exp $
+* $Id: yuvReader.cpp,v 1.2 2008-03-10 10:20:45 jrosser Exp $
 *
 * The MIT License
 *
@@ -54,7 +54,7 @@
 
 #define DEBUG 0
 
-YUVReader::YUVReader()
+YUVReader::YUVReader(FrameQueue& frameQ) : ReaderInterface ( frameQ )
 {
 	randomAccess = true;
 }
@@ -165,9 +165,10 @@ void YUVReader::setFileName(const QString &fn)
 }
 
 //called from the frame queue controller to get frame data for display
-void YUVReader::getFrame(int frameNumber, VideoData *dst)
+void YUVReader::pullFrame(int frameNumber, VideoData*& dst)
 {
-	dst->resize(videoWidth, videoHeight, videoFormat);
+  VideoData* frame = frameQueue.allocateFrame();  
+	frame->resize(videoWidth, videoHeight, videoFormat);
 	
 	if(DEBUG) printf("Getting frame number %d\n", frameNumber);
 	
@@ -182,9 +183,10 @@ void YUVReader::getFrame(int frameNumber, VideoData *dst)
 		frameNumber %= lastFrameNum;
 	
 	//set frame number and first/last flags
-    dst->frameNum = frameNumber;
-    dst->isFirstFrame = (frameNumber == firstFrameNum);
-    dst->isLastFrame  = (frameNumber == lastFrameNum);
+  frame->frameNum = frameNumber;
+  frame->isFirstFrame = (frameNumber == firstFrameNum);
+  frame->isLastFrame  = (frameNumber == lastFrameNum);
+  dst = frame;
     
     //seek
     off64_t offset = (off_t)dst->dataSize * (off_t)frameNumber;    //seek to the wanted frame    

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.cpp,v 1.20 2008-02-25 15:08:06 jrosser Exp $
+* $Id: videoData.cpp,v 1.21 2008-03-10 10:20:45 jrosser Exp $
 *
 * The MIT License
 *
@@ -37,7 +37,7 @@
 VideoData::VideoData()
 {
 	//make a bogus 1x1 4:4:4 8 bit image
-	allocate(1, 1, V8P4);
+	allocate(20, 20, V8P4);
 	data[0] = 16;
 	data[1] = 128;
 	data[2] = 128;	
@@ -143,7 +143,7 @@ void VideoData::allocate(int w, int h, DataFmt f)
     dataSize = YdataSize + UdataSize + VdataSize;
 
     //get some nicely page aligned memory
-    data = (char *)valloc(dataSize);
+    data = (unsigned char *)valloc(dataSize);
     Ydata = data;
     isPlanar = false;
     glMinMaxFilter = GL_LINEAR;    //linear interpolation

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: frameQueue.h,v 1.1 2008-02-25 15:08:05 jrosser Exp $
+* $Id: frameQueue.h,v 1.2 2008-03-10 10:20:43 jrosser Exp $
 *
 * The MIT License
 *
@@ -31,10 +31,10 @@
 
 #include <QtGui>
 
-#include "readerInterface.h"
 #include "videoData.h"
 
 class VideoRead;
+class ReaderInterface;
 
 class FrameQueue : public QThread
 {
@@ -44,6 +44,9 @@ public:
     void run();
     void stop();
     void wake();
+    
+    VideoData *allocateFrame(void);
+    void releaseFrame(VideoData *);
     
     void setForceFileType(bool f);
     void setFileType(const QString &t);

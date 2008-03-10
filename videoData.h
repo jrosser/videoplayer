@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.h,v 1.13 2008-02-25 15:08:06 jrosser Exp $
+* $Id: videoData.h,v 1.14 2008-03-10 10:20:44 jrosser Exp $
 *
 * The MIT License
 *
@@ -72,10 +72,10 @@ public:
     int UdataSize;
     int VdataSize;
 
-    char *data;              //pointer to allocated block
-    char *Ydata;             //pointer to luminance, or multiplexed YCbCr
-    char *Udata;             //pointers to planar chrominance components, if format is planar
-    char *Vdata;
+    unsigned char *data;              //pointer to allocated block
+    unsigned char *Ydata;             //pointer to luminance, or multiplexed YCbCr
+    unsigned char *Udata;             //pointers to planar chrominance components, if format is planar
+    unsigned char *Vdata;
     
 private:
 	void allocate(int w, int h, DataFmt f);
