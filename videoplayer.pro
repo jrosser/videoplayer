@@ -2,17 +2,21 @@ TEMPLATE = app
 LIBS += -lboost_program_options
 
 QT += opengl
-CONFIG += thread console release
+CONFIG += thread console debug
 
-# Input
-HEADERS = mainwindow.h GLvideo_mt.h GLvideo_rt.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h
-SOURCES = main.cpp mainwindow.cpp GLvideo_mt.cpp GLvideo_rt.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp  
+# source files
+HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h
+SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp  
 
-DEFINES += HAVE_DIRAC
+# openGL video video renderer source file
+HEADERS += GLvideo_mt.h GLvideo_rt.h GLfuncs.h GLloadexts.h GLvideo_tradtex.h GLvideo_renderer.h GLvideo_pbotex.h
+SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLloadexts.cpp GLvideo_tradtex.cpp GLvideo_pbotex.cpp
+
+#DEFINES += HAVE_DIRAC
 
 contains(DEFINES, HAVE_DIRAC) {
 	#andrea's wrapper library around the schro and dirac libraries
-	PARSER_PATH = /project/compression/jrosser/workspace/dirac1.0-amd64
+	PARSER_PATH = /project/compression/jrosser/workspace/dirac1.0/branches/dg_demo
 	INCLUDEPATH += $$PARSER_PATH/include/dirac1.0
 	INCLUDEPATH += $$PARSER_PATH/src/
 	LIBPATH += $$PARSER_PATH/lib
@@ -22,8 +26,8 @@ contains(DEFINES, HAVE_DIRAC) {
 	SOURCES += diracReader.cpp
 
 	#schroedinger library
-	#SCHRO_INSTALL_PATH = /usr/local
-	SCHRO_INSTALL_PATH = /project/compression/jrosser/workspace/schro-amd64	
+	SCHRO_INSTALL_PATH = /usr/local
+	#SCHRO_INSTALL_PATH = /Users/andrea/build/schroedinger-Darwin-i386	
 	INCLUDEPATH += $$SCHRO_INSTALL_PATH/include/schroedinger-1.0
 	LIBPATH += $$SCHRO_INSTALL_PATH/lib
 	LIBS += -lschroedinger-1.0
@@ -44,7 +48,8 @@ macx {
   HEADERS += agl_getproc.h
 
   #boost
-  INCLUDEPATH += /usr/local/include/boost-1_34_1/
+  #INCLUDEPATH += /usr/local/include/boost-1_34_1/
+  INCLUDEPATH += /opt/local/include/boost-1_34_1/
 
   #ftgl
   INCLUDEPATH += /opt/local/include

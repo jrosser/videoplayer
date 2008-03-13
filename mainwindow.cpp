@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.48 2008-03-10 11:47:41 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.49 2008-03-13 11:38:49 jrosser Exp $
 *
 * The MIT License
 *
@@ -27,20 +27,25 @@
 * ***** END LICENSE BLOCK ***** */
 
 #include "mainwindow.h"
-#include "yuvReader.h"
 
+#include "GLvideo_mt.h"
+
+#include "readerInterface.h"
+#include "yuvReader.h"
 #ifdef HAVE_DIRAC
 #include "diracReader.h"
 #endif
 
-#include <QtGui>
+#include "frameQueue.h"
+#include "videoTransport.h"
+#ifdef Q_OS_LINUX
+#include "QShuttlePro.h"
+#endif
 
 #include <iostream>
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 using namespace std;
-
-#include "agl_getproc.h"
 
 MainWindow::MainWindow(int argc, char **argv)
 {
@@ -133,10 +138,11 @@ MainWindow::MainWindow(int argc, char **argv)
     //object controlling the video playback 'transport'
     videoTransport = new VideoTransport(frameQueue);
     
+    frameQueue->start();
     //central widget is the threaded openGL video widget
     //which pulls video from the videoRead
     //and gets stats for the OSD from the readThread
-    glvideo_mt = new GLvideo_mt(videoTransport, frameQueue);
+    glvideo_mt = new GLvideo_mt(this, videoTransport, frameQueue);
 
     setCentralWidget(glvideo_mt);
 
@@ -211,7 +217,6 @@ MainWindow::MainWindow(int argc, char **argv)
     glvideo_mt->setAlwaysHideMouse(hideMouse);
 
     
-    frameQueue->start();
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
@@ -649,10 +654,6 @@ void MainWindow::quit()
 
     glvideo_mt->stop();
     frameQueue->stop();
-
-#ifdef Q_OS_MACX
-    aglDellocEntryPoints();
-#endif
 
     qApp->quit();
 }

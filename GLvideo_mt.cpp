@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.28 2008-03-10 11:47:41 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.29 2008-03-13 11:38:49 jrosser Exp $
 *
 * The MIT License
 *
@@ -27,9 +27,12 @@
 * ***** END LICENSE BLOCK ***** */
 
 #include "GLvideo_mt.h"
+#include "GLvideo_rt.h"
+#include "videoTransport.h"
+#include "frameQueue.h"
 
-GLvideo_mt::GLvideo_mt(VideoTransport *v, FrameQueue *f)
-    : vt(v), fq(f), renderThread(*this)
+GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, FrameQueue *f)
+    : QGLWidget(parent), vt(v), fq(f), renderThread(new GLvideo_rt(*this))
 {
     setMouseTracking(true);
     connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
@@ -37,13 +40,13 @@ GLvideo_mt::GLvideo_mt(VideoTransport *v, FrameQueue *f)
 
     /* NB, a) this helps to be last
      *     b) don't put HideMouse anywhere near here */
-    renderThread.start(QThread::TimeCriticalPriority);
+    renderThread->start(QThread::TimeCriticalPriority);
 }
 
 void GLvideo_mt::stop()
 {
-    renderThread.stop();
-    renderThread.wait();
+    renderThread->stop();
+    renderThread->wait();
 }
 
 /* Reveal the mouse whenever it is moved,
@@ -72,77 +75,77 @@ void GLvideo_mt::setAlwaysHideMouse(bool h)
 
 void GLvideo_mt::setOsdScale(float s)
 {
-    renderThread.setOsdScale(s);
+    renderThread->setOsdScale(s);
 }
 
 void GLvideo_mt::setOsdState(int s)
 {
-    renderThread.setOsdState(s);
+    renderThread->setOsdState(s);
 }
 
 void GLvideo_mt::setOsdTextTransparency(float t)
 {
-    renderThread.setOsdTextTransparency(t);
+    renderThread->setOsdTextTransparency(t);
 }
 
 void GLvideo_mt::setOsdBackTransparency(float t)
 {
-    renderThread.setOsdBackTransparency(t);
+    renderThread->setOsdBackTransparency(t);
 }
 
 void GLvideo_mt::togglePerf()
 {
-    renderThread.togglePerf();
+    renderThread->togglePerf();
 }
 
 void GLvideo_mt::toggleOSD()
 {
-    renderThread.toggleOSD();
+    renderThread->toggleOSD();
 }
 
 void GLvideo_mt::toggleAspectLock()
 {
-    renderThread.toggleAspectLock();
+    renderThread->toggleAspectLock();
 }
 
 void GLvideo_mt::toggleLuminance()
 {
-    renderThread.toggleLuminance();
+    renderThread->toggleLuminance();
 }
 
 void GLvideo_mt::toggleChrominance()
 {
-    renderThread.toggleChrominance();
+    renderThread->toggleChrominance();
 }
 
 void GLvideo_mt::setInterlacedSource(bool i)
 {
-    renderThread.setInterlacedSource(i);
+    renderThread->setInterlacedSource(i);
 }
 
 void GLvideo_mt::toggleDeinterlace()
 {
-    renderThread.toggleDeinterlace();
+    renderThread->toggleDeinterlace();
 }
 
 void GLvideo_mt::setDeinterlace(bool d)
 {
-    renderThread.setDeinterlace(d);
+    renderThread->setDeinterlace(d);
 }
 
 void GLvideo_mt::setMatrixScaling(bool s)
 {
-    renderThread.setMatrixScaling(s);
+    renderThread->setMatrixScaling(s);
 }
 
 void GLvideo_mt::setMatrix(float Kr, float Kg, float Kb)
 {
-    renderThread.setMatrix(Kr, Kg, Kb);
+    renderThread->setMatrix(Kr, Kg, Kb);
 }
 
 void GLvideo_mt::toggleMatrixScaling()
 {
-    renderThread.toggleMatrixScaling();
+    renderThread->toggleMatrixScaling();
 }
 
 void GLvideo_mt::initializeGL()
@@ -166,50 +169,50 @@ void GLvideo_mt::resizeEvent(QResizeEvent * event)
     //added at the suggestion of Trolltech - if the rendering thread
     //is slow to start the first window resize event will issue a makeCurrent() before
     //the rendering thread does, stealing the openGL context from it
-    renderThread.resizeViewport(event->size().width(), event->size().height());
+    renderThread->resizeViewport(event->size().width(), event->size().height());
 }
 
 void GLvideo_mt::setFrameRepeats(int repeats)
 {
-    renderThread.setFrameRepeats(repeats);
+    renderThread->setFrameRepeats(repeats);
 }
 
 void GLvideo_mt::setFontFile(QString &fontFile)
 {
-    renderThread.setFontFile(fontFile.toLatin1().data());
+    renderThread->setFontFile(fontFile.toLatin1().data());
 }
 
 void GLvideo_mt::setLuminanceMultiplier(float m)
 {
-    renderThread.setLuminanceMultiplier(m);
+    renderThread->setLuminanceMultiplier(m);
 }
 
 void GLvideo_mt::setChrominanceMultiplier(float m)
 {
-    renderThread.setChrominanceMultiplier(m);
+    renderThread->setChrominanceMultiplier(m);
 }
 
 void GLvideo_mt::setLuminanceOffset1(float o)
 {
-    renderThread.setLuminanceOffset1(o);
+    renderThread->setLuminanceOffset1(o);
 }
 
 void GLvideo_mt::setChrominanceOffset1(float o)
 {
-    renderThread.setChrominanceOffset1(o);
+    renderThread->setChrominanceOffset1(o);
 }
 
 void GLvideo_mt::setLuminanceOffset2(float o)
 {
-    renderThread.setLuminanceOffset2(o);
+    renderThread->setLuminanceOffset2(o);
 }
 
 void GLvideo_mt::setChrominanceOffset2(float o)
 {
-    renderThread.setChrominanceOffset2(o);
+    renderThread->setChrominanceOffset2(o);
 }
 
 void GLvideo_mt::setCaption(QString &caption)
 {
-    renderThread.setCaption(caption.toLatin1().data());
+    renderThread->setCaption(caption.toLatin1().data());
 }

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.cpp,v 1.21 2008-03-10 10:20:45 jrosser Exp $
+* $Id: videoData.cpp,v 1.22 2008-03-13 11:38:50 jrosser Exp $
 *
 * The MIT License
 *
@@ -37,7 +37,7 @@
 VideoData::VideoData()
 {
 	//make a bogus 1x1 4:4:4 8 bit image
-	allocate(20, 20, V8P4);
+	allocate(1, 1, V8P4);
 	data[0] = 16;
 	data[1] = 128;
 	data[2] = 128;	

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.h,v 1.29 2008-02-25 15:08:06 jrosser Exp $
+* $Id: mainwindow.h,v 1.30 2008-03-13 11:38:50 jrosser Exp $
 *
 * The MIT License
 *
@@ -32,15 +32,14 @@
 #include <QtAssistant/QAssistantClient>
 #include <QtGui>
 
-#include "GLvideo_mt.h"
-#include "videoTransport.h"
-#include "frameQueue.h"
-#include "readerInterface.h"
-#include "yuvReader.h"
-
 #ifdef Q_OS_LINUX
-#include "QShuttlePro.h"
+class QShuttlePro;
 #endif
+
+class ReaderInterface;
+class FrameQueue;
+class VideoTransport;
+class GLvideo_mt;
 
 class MainWindow : public QMainWindow
 {

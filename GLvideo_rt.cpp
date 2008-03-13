@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.53 2008-03-10 11:47:41 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.54 2008-03-13 11:38:49 jrosser Exp $
 *
 * The MIT License
 *
@@ -26,30 +26,122 @@
 *
 * ***** END LICENSE BLOCK ***** */
 
-#include "GLvideo_rt.h"
+#define GLVIDEO_RT_H_
+
+#include <stdio.h>
+
+#include "GLfuncs.h"
+#include "GLloadexts.h"
+
+#include <QtGui>
 #include "GLvideo_mt.h"
+#include "GLvideo_tradtex.h"
+#include "GLvideo_pbotex.h"
 
 #ifdef HAVE_FTGL
 #include "FTGL/FTGLPolygonFont.h"
 #endif
 
-#ifdef Q_OS_MACX
-#include "agl_getproc.h"
+#include "videoData.h"
+#include "videoTransport.h"
+#include "frameQueue.h"
+
+#include "shaders.h"
+
+class GLvideo_rt : public QThread
+{
+public:
+
+    enum ShaderPrograms { shaderUYVY, shaderPlanar, shaderMax };
+
+    GLvideo_rt(GLvideo_mt &glWidget);
+    void resizeViewport(int w, int h);
+    void setFrameRepeats(int repeats);
+    void setFontFile(const char *fontFile);
+    void setAspectLock(bool lock);
+    void setInterlacedSource(bool i);
+    void run();
+    void stop();
+    void toggleAspectLock();
+    void toggleOSD();
+    void togglePerf();
+    void toggleLuminance();
+    void toggleChrominance();
+    void toggleDeinterlace();
+    void toggleMatrixScaling();
+    void setLuminanceOffset1(float o);
+    void setChrominanceOffset1(float o);
+    void setLuminanceMultiplier(float m);
+    void setChrominanceMultiplier(float m);
+    void setLuminanceOffset2(float o);
+    void setChrominanceOffset2(float o);
+    void setDeinterlace(bool d);
+    void setMatrixScaling(bool s);
+    void setMatrix(float Kr, float Kg, float Kb);
+    void setCaption(const char *caption);
+    void setOsdScale(float s);
+    void setOsdState(int s);
+    void setOsdTextTransparency(float t);
+    void setOsdBackTransparency(float t);
+
+private:
+
+    void buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale);
+    void compileFragmentShaders();
+    void compileFragmentShader(int n, const char *src);
+#ifdef HAVE_FTGL
+    void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd, float osdScale);
+    void renderPerf(VideoData *videoData, FTFont *font);
 #endif
 
-#ifdef Q_OS_UNIX
-#include <unistd.h>
-#include <sys/time.h>
-#else
-#include <time.h>
-#endif
+    float m_osdScale;            //caption / OSD font size
+    float m_osdBackTransparency;
+    float m_osdTextTransparency;
 
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <assert.h>
+    bool m_doRendering;            //set to false to quit thread
+    bool m_doResize;            //resize the openGL viewport
+    bool m_aspectLock;            //lock the aspect ratio of the source video
+    bool m_changeFont;            //set a new font for the OSD
+    int m_osd;                    //type of OSD shown
+    bool m_perf;                //show performance data
+    bool m_showLuminance;        //use Y data or 0.5
+    bool m_showChrominance;        //use C data or 0.5
+    bool m_interlacedSource;    //is the source video interlaced?
+    bool m_deinterlace;            //do we try to deinterlace an interlaced source?
+    bool m_matrixScaling;        //is the colour matrix scaled to produce 0-255 computer levels or 16-235 video levels
+    bool m_changeMatrix;
+
+    float m_luminanceOffset1;        //Y & C offsets applied to data passed to the shader directly from the file
+    float m_chrominanceOffset1;
+    float m_luminanceMultiplier;    //Y & C scaling factors applied to offset Y/C data
+    float m_chrominanceMultiplier;
+    float m_luminanceOffset2;        //Y & C offsets applied to scaled data
+    float m_chrominanceOffset2;
+    float m_matrixKr;                //colour matrix specification
+    float m_matrixKg;
+    float m_matrixKb;
+
+    static const int MAX_OSD = 5;
+
+    int m_displaywidth;            //width of parent widget
+    int m_displayheight;        //height of parent widget
+
+    int m_frameRepeats;            //number of times each frame is repeated
+
+    GLuint programs[shaderMax];    //handles for the shaders and programs
+    GLuint shaders[shaderMax];
+    GLint compiled[shaderMax];
+    GLint linked[shaderMax];    //flags for success
+    GLvideo_mt &glw;            //parent widget
+
+    char fontFile[255];            //truetype font used for on screen display
+    char caption[255];
+
+    QMutex mutex;
+
+    GLVideoRenderer::GLVideoRenderer *renderer;
+};
+
 
 //FIXME - nasty global variables
 //rendering performance monitoring
@@ -70,127 +162,7 @@ int perf_pastQueue;
 int perf_IOLoad;
 int perf_IOBandwidth;
 
-#define DEBUG 0
-
-//------------------------------------------------------------------------------------------
-//shader program for planar video formats
-//should work with all planar chroma subsamplings
-//glInternalFormat=GL_LUMINANCE glFormat=GL_LUMINANCE glType=GL_UNSIGNED_BYTE
-static char *shaderPlanarSrc=
-  "#extension GL_ARB_texture_rectangle : require\n"
-  "uniform sampler2DRect Ytex;\n"
-  "uniform sampler2DRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n"
-  "uniform float CHsubsample, CVsubsample;\n"
-
-  "uniform bool interlacedSource;\n"
-  "uniform bool deinterlace;\n"
-  "uniform int  field;\n"
-  "uniform int  direction;\n"
-  "uniform vec3 yuvOffset1;\n"
-  "uniform vec3 yuvMul;\n"
-  "uniform vec3 yuvOffset2;\n"
-  "uniform mat3 colorMatrix;\n"
-
-  "void main(void) {\n"
-  " float nx,ny,a;\n"
-  " int thisField;\n"
-  " vec3 yuv;\n"
-  " vec3 rgb;\n"
-
-  " nx=gl_TexCoord[0].x;\n"
-  " ny=Yheight-gl_TexCoord[0].y;\n"
-
-  " thisField = field;\n"        //swap field order when playing interlaced pictures backwards
-  " if(direction < 0) thisField = 1 - field;\n"        //swap field order when playing interlaced pictures backwards
-
-  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + float(thisField), 2.0) > 0.5)) {\n"
-  "     //interpolated line in a field\n"
-  "     yuv[0] = texture2DRect(Ytex,vec2(nx, (ny+1.0))).r + texture2DRect(Ytex,vec2(nx, (ny-1.0))).r;\n"
-  "     yuv[1] = texture2DRect(Utex,vec2(nx/CHsubsample, (ny+1.0)/CVsubsample)).r + texture2DRect(Utex,vec2(nx/CHsubsample, (ny-1.0)/CVsubsample)).r;\n"
-  "     yuv[2] = texture2DRect(Vtex,vec2(nx/CHsubsample, (ny+1.0)/CVsubsample)).r + texture2DRect(Vtex,vec2(nx/CHsubsample, (ny-1.0)/CVsubsample)).r;\n"
-  "     yuv = yuv / 2.0;"
-  " }\n"
-  " else {\n"
-  "     //non interpolated line in a field, or non interlaced\n"
-  "     yuv[0]=texture2DRect(Ytex,vec2(nx,ny)).r;\n"
-  "     yuv[1]=texture2DRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
-  "     yuv[2]=texture2DRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
-  " }\n"
-
-  " yuv = yuv + yuvOffset1;\n"
-  " yuv = yuv * yuvMul;\n"
-  " yuv = yuv + yuvOffset2;\n"
-  " rgb = yuv * colorMatrix;\n"
-
-  "    a=1.0;\n"
-
-  " gl_FragColor=vec4(rgb ,a);\n"
-  "}\n";
-
-//------------------------------------------------------------------------------------------
-//shader program for UYVY muxed 8 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_BYTE
-//shader program for v216 muxed 16 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_SHORT
-//there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
-static char *shaderUYVYSrc=
-  "#extension GL_ARB_texture_rectangle : require\n"
-  "uniform sampler2DRect Ytex;\n"
-  "uniform sampler2DRect Utex,Vtex;\n"
-  "uniform float Yheight, Ywidth;\n"
-  "uniform float CHsubsample, CVsubsample;\n"
-
-  "uniform bool interlacedSource;\n"
-  "uniform bool deinterlace;\n"
-  "uniform int  field;\n"
-  "uniform int  direction;\n"
-  "uniform vec3 yuvOffset1;\n"
-  "uniform vec3 yuvMul;\n"
-  "uniform vec3 yuvOffset2;\n"
-  "uniform mat3 colorMatrix;\n"
-
-  "void main(void) {\n"
-  " float nx,ny,a;\n"
-  " vec3 yuv;\n"
-  " vec4 rgba;\n"
-  " vec4 above;\n"
-  " vec4 below;\n"
-  " vec3 rgb;\n"
-  " int  thisField;\n"
-
-  " nx=gl_TexCoord[0].x;\n"
-  " ny=Yheight-gl_TexCoord[0].y;\n"
-
-  " thisField = field;\n"
-  " if(direction < 0) thisField = 1 - field;\n"        //swap field order when playing interlaced pictures backwards
-
-  " if((interlacedSource == true) && (deinterlace == true) && (mod(floor(ny) + float(field), 2.0) > 0.5)) {\n"
-  "     //interpolated line in a field\n"
-  "     above = texture2DRect(Ytex, vec2(floor(nx/2.0), ny+1.0));\n"
-  "     below = texture2DRect(Ytex, vec2(floor(nx/2.0), ny-1.0));\n"
-
-  "     yuv[0]  = (fract(nx/2.0) < 0.5) ? above.g : above.a;\n"
-  "     yuv[0] += (fract(nx/2.0) < 0.5) ? below.g : below.a;\n"
-  "     yuv[1] = above.r + below.r;\n"
-  "     yuv[2] = above.b + below.b;\n"
-  "     yuv = yuv / 2.0;"
-  " }\n"
-  " else {\n"
-  "     //non interpolated line in a field, or non interlaced\n"
-  "     rgba = texture2DRect(Ytex, vec2(floor(nx/2.0), ny));\n"     //sample every other RGBA quad to get luminance
-  "     yuv[0] = (fract(nx/2.0) < 0.5) ? rgba.g : rgba.a;\n"   //pick the correct luminance from G or A for this pixel
-  "     yuv[1] = rgba.r;\n"
-  "     yuv[2] = rgba.b;\n"
-  " }\n"
-
-  " yuv = yuv + yuvOffset1;\n"
-  " yuv = yuv * yuvMul;\n"
-  " yuv = yuv + yuvOffset2;\n"
-  " rgb = yuv * colorMatrix;\n"
-
-  " a=1.0;\n"
-
-  " gl_FragColor=vec4(rgb, a);\n"
-  "}\n";
+#define DEBUG 1
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
       : QThread(), glw(gl)
@@ -229,6 +201,9 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
 
     memset(caption, 0, sizeof(caption));
     strcpy(caption, "Hello World");
+
+    //renderer = new GLVideoRenderer::TradTex();
+    renderer = new GLVideoRenderer::PboTex();
 }
 
 void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale)
@@ -282,17 +257,17 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 {
     GLint length = 0;            //log length
 
-    shaders[n]=glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+    shaders[n] = GLfuncs::glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
     if(DEBUG) printf("Shader program is %s\n", src);
 
-    glShaderSourceARB(shaders[n], 1, (const GLcharARB**)&src, NULL);
-    glCompileShaderARB(shaders[n]);
+    GLfuncs::glShaderSourceARB(shaders[n], 1, (const GLcharARB**)&src, NULL);
+    GLfuncs::glCompileShaderARB(shaders[n]);
 
-    glGetObjectParameterivARB(shaders[n], GL_OBJECT_COMPILE_STATUS_ARB, &compiled[n]);
-    glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+    GLfuncs::glGetObjectParameterivARB(shaders[n], GL_OBJECT_COMPILE_STATUS_ARB, &compiled[n]);
+    GLfuncs::glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
     char *s=(char *)malloc(length);
-    glGetInfoLogARB(shaders[n], length, &length ,s);
+    GLfuncs::glGetInfoLogARB(shaders[n], length, &length ,s);
     if(DEBUG)printf("Compile Status %d, Log: (%d) %s\n", compiled[n], length, length ? s : NULL);
     if(compiled[n] <= 0) {
         printf("Compile Failed: %s\n", gluErrorString(glGetError()));
@@ -301,70 +276,19 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
     free(s);
 
        /* Set up program objects. */
-    programs[n]=glCreateProgramObjectARB();
-    glAttachObjectARB(programs[n], shaders[n]);
-    glLinkProgramARB(programs[n]);
+    programs[n]=GLfuncs::glCreateProgramObjectARB();
+    GLfuncs::glAttachObjectARB(programs[n], shaders[n]);
+    GLfuncs::glLinkProgramARB(programs[n]);
 
     /* And print the link log. */
     if(compiled[n]) {
-        glGetObjectParameterivARB(programs[n], GL_OBJECT_LINK_STATUS_ARB, &linked[n]);
-        glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+        GLfuncs::glGetObjectParameterivARB(programs[n], GL_OBJECT_LINK_STATUS_ARB, &linked[n]);
+        GLfuncs::glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
         s=(char *)malloc(length);
-        glGetInfoLogARB(shaders[n], length, &length, s);
+        GLfuncs::glGetInfoLogARB(shaders[n], length, &length, s);
         if(DEBUG) printf("Link Status %d, Log: (%d) %s\n", linked[n], length, s);
         free(s);
     }
-}
-
-void GLvideo_rt::createTextures(VideoData *videoData, int currentShader)
-{
-    int i=0;
-
-    if(videoData->isPlanar) {
-
-        /* Select texture unit 1 as the active unit and bind the U texture. */
-        glActiveTexture(GL_TEXTURE1);
-        i=glGetUniformLocationARB(programs[currentShader], "Utex");
-        glUniform1iARB(i,1);  /* Bind Utex to texture unit 1 */
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,1);
-
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
-
-        /* Select texture unit 2 as the active unit and bind the V texture. */
-        glActiveTexture(GL_TEXTURE2);
-        i=glGetUniformLocationARB(programs[currentShader], "Vtex");
-        glBindTexture(GL_TEXTURE_RECTANGLE_ARB,2);
-        glUniform1iARB(i,2);  /* Bind Vtext to texture unit 2 */
-
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
-        glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-        glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, videoData->glInternalFormat, videoData->Cwidth , videoData->Cheight, 0, videoData->glFormat, videoData->glType, NULL);
-    }
-
-    /* Select texture unit 0 as the active unit and bind the Y texture. */
-    glActiveTexture(GL_TEXTURE3);
-    i=glGetUniformLocationARB(programs[currentShader], "Ytex");
-    glUniform1iARB(i,3);  /* Bind Ytex to texture unit 3 */
-    glBindTexture(GL_TEXTURE_RECTANGLE_ARB,3);
-
-    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, videoData->glMinMaxFilter);
-    glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, videoData->glMinMaxFilter);
-    glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, videoData->glInternalFormat, videoData->glYTextureWidth, videoData->Yheight, 0, videoData->glFormat, videoData->glType, NULL);
-
-    //create buffer objects that are used to transfer the texture data to the card
-    //this is much faster than using glTexSubImage2D() later on to replace the texture data
-    if(videoData->isPlanar) {
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
-        glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->UdataSize, NULL, GL_STREAM_DRAW);
-
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
-        glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->VdataSize, NULL, GL_STREAM_DRAW);
-    }
-
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
-    glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, videoData->YdataSize, NULL, GL_STREAM_DRAW);
 }
 
 void GLvideo_rt::stop()
@@ -808,121 +732,10 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 }
 #endif
 
-void GLvideo_rt::uploadTextures(VideoData *videoData)
-{
-    void *ioMem;
-
-    if(videoData->isPlanar) {
-
-        glBindTexture(GL_TEXTURE_RECTANGLE_NV, 1);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[0]);
-        ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-        assert(ioMem);
-        memcpy(ioMem, videoData->Udata, videoData->UdataSize);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-        glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->Cwidth, videoData->Cheight, videoData->glFormat, videoData->glType, NULL);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-        glBindTexture(GL_TEXTURE_RECTANGLE_NV, 2);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[1]);
-        ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-        assert(ioMem);
-        memcpy(ioMem, videoData->Vdata, videoData->VdataSize);
-        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-        glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->Cwidth, videoData->Cheight, videoData->glFormat, videoData->glType, NULL);
-        glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-    }
-
-    //luminance (or muxed YCbCr) data
-    glBindTexture(GL_TEXTURE_RECTANGLE_NV, 3);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, io_buf[2]);
-    ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
-    assert(ioMem);
-    memcpy(ioMem, videoData->Ydata, videoData->YdataSize);
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
-    glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, videoData->glYTextureWidth, videoData->Yheight, videoData->glFormat, videoData->glType, NULL);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-
-}
-
-void GLvideo_rt::renderVideo(VideoData *videoData)
-{
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glBegin(GL_QUADS);
-        glTexCoord2i(0,0);
-        glVertex2i(0,0);
-        glTexCoord2i(videoData->Ywidth,0);
-        glVertex2i(videoData->Ywidth,0);
-        glTexCoord2i(videoData->Ywidth, videoData->Yheight);
-        glVertex2i(videoData->Ywidth, videoData->Yheight);
-        glTexCoord2i(0, videoData->Yheight);
-        glVertex2i(0, videoData->Yheight);
-    glEnd();
-}
-
 //get pointers to openGL functions and extensions
 //FIXME - this does nothing if any of these calls fail
 //FIXME - this is totally different on OSX - thanks Apple. Details are on the apple developer site
 //FIXME -
-void GLvideo_rt::getGLfunctions()
-{
-#ifdef Q_OS_LINUX
-#define XglGetProcAddress(str) glXGetProcAddress((GLubyte *)str)
-#endif
-
-#ifdef Q_OS_WIN32
-#define XglGetProcAddress(str) wglGetProcAddress((LPCSTR)str)
-#endif
-
-#ifdef Q_OS_MAC
-#define XglGetProcAddress(str) aglGetProcAddress((char *)str)
-#endif
-
-#ifdef Q_OS_WIN32
-    //enable openGL vsync on windows
-    wglSwapInterval = (PFNWGLSWAPINTERVALFARPROC) XglGetProcAddress("wglSwapIntervalEXT");
-    if (wglSwapInterval)
-        wglSwapInterval(1);
-
-    if(DEBUG) printf("wglSwapInterval=%p\n",  wglSwapInterval);
-#endif
-
-#ifdef Q_WS_X11
-    //functions for controlling vsync on X11
-    glXGetVideoSyncSGI = (PFNGLXGETVIDEOSYNCSGIPROC) XglGetProcAddress("glXGetVideoSyncSGI");
-    glXWaitVideoSyncSGI = (PFNGLXWAITVIDEOSYNCSGIPROC) XglGetProcAddress("glXWaitVideoSyncSGI");
-
-    if(DEBUG) {
-        printf("glXGetVideoSyncSGI=%p\n",  glXGetVideoSyncSGI);
-        printf("glXWaitVideoSyncSGI=%p\n",  glXWaitVideoSyncSGI);
-    }
-#endif
-
-    glLinkProgramARB = (PFNGLLINKPROGRAMARBPROC) XglGetProcAddress("glLinkProgramARB");
-    glAttachObjectARB = (PFNGLATTACHOBJECTARBPROC) XglGetProcAddress("glAttachObjectARB");
-    glCreateProgramObjectARB = (PFNGLCREATEPROGRAMOBJECTARBPROC) XglGetProcAddress("glCreateProgramObjectARB");
-    glGetInfoLogARB = (PFNGLGETINFOLOGARBPROC) XglGetProcAddress("glGetInfoLogARB");
-    glGetObjectParameterivARB = (PFNGLGETOBJECTPARAMETERIVARBPROC) XglGetProcAddress("glGetObjectParameterivARB");
-    glCompileShaderARB = (PFNGLCOMPILESHADERARBPROC) XglGetProcAddress("glCompileShaderARB");
-    glShaderSourceARB = (PFNGLSHADERSOURCEARBPROC) XglGetProcAddress("glShaderSourceARB");
-    glCreateShaderObjectARB = (PFNGLCREATESHADEROBJECTARBPROC) XglGetProcAddress("glCreateShaderObjectARB");
-    glBufferData = (PFNGLBUFFERDATAPROC) XglGetProcAddress("glBufferData");
-    glBindBuffer = (PFNGLBINDBUFFERPROC) XglGetProcAddress("glBindBuffer");
-    glUniform1iARB = (PFNGLUNIFORM1IARBPROC) XglGetProcAddress("glUniform1iARB");
-    glGetUniformLocationARB = (PFNGLGETUNIFORMLOCATIONARBPROC) XglGetProcAddress("glGetUniformLocationARB");
-
-    glUnmapBuffer = (PFNGLUNMAPBUFFERPROC) XglGetProcAddress("glUnmapBuffer");
-    glMapBuffer = (PFNGLMAPBUFFERPROC) XglGetProcAddress("glMapBuffer");
-    glUniform3fvARB = (PFNGLUNIFORM3FVARBPROC) XglGetProcAddress("glUniform3fvARB");
-    glUniformMatrix3fvARB = (PFNGLUNIFORMMATRIX3FVARBPROC) XglGetProcAddress("glUniformMatrix3fvARB");
-    glUniform1fARB = (PFNGLUNIFORM1FARBPROC) XglGetProcAddress("glUniform1fARB");
-    glUseProgramObjectARB = (PFNGLUSEPROGRAMOBJECTARBPROC) XglGetProcAddress("glUseProgramObjectARB");
-    glGenBuffers = (PFNGLGENBUFFERSPROC) XglGetProcAddress("glGenBuffers");
-
-    glActiveTexture = (PFNGLACTIVETEXTUREPROC) XglGetProcAddress("glActiveTexture");
-}
-
 
 void GLvideo_rt::run()
 {
@@ -982,28 +795,17 @@ void GLvideo_rt::run()
 #endif
 
     //initialise OpenGL
-    getGLfunctions();
     glw.makeCurrent();
+    GLfuncs::loadGLExtSyms();
 
-#ifdef Q_OS_MACX
-    my_aglSwapInterval(1);
-#endif
-
-    glGenBuffers(3, io_buf);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glViewport(0,0, displayheight, displaywidth);
     glClearColor(0, 0, 0, 0);
-    glEnable(GL_TEXTURE_RECTANGLE_ARB);
-    glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
     glClear(GL_COLOR_BUFFER_BIT);
-#ifdef Q_WS_X11
-    unsigned int retraceCount = glXGetVideoSyncSGI(&retraceCount);
-#endif
 
     compileFragmentShaders();
-    glUseProgramObjectARB(programs[currentShader]);
 
     while (doRendering) {
         perfTimer.start();
@@ -1105,8 +907,8 @@ void GLvideo_rt::run()
 
         //read frame data, one frame at a time, or after we have displayed the second field
         perfTimer.restart();
-        if((interlacedSource == 0 || field == 1) && repeat == 0) {
-            videoData = glw.vt->getNextFrame();
+        if((interlacedSource == 0 || field == 0) && repeat == 0) {
+	    videoData = glw.vt->getNextFrame();
             direction = glw.vt->getDirection();
             perf_futureQueue = glw.fq->getFutureQueueLen();
             perf_pastQueue   = glw.fq->getPastQueueLen();
@@ -1114,6 +916,8 @@ void GLvideo_rt::run()
             //perf_IOBandwidth = glw.fq->getIOBandwidth();
             perf_readData = perfTimer.elapsed();
         }
+
+	if(DEBUG) printf("videoData=%p\n", videoData);
 
         if(videoData) {
         	
@@ -1145,8 +949,7 @@ void GLvideo_rt::run()
             perf_convertFormat = perfTimer.elapsed();
             
             //check for video dimensions changing
-            if(lastsrcwidth != videoData->Ywidth || lastsrcheight != videoData->Yheight) {
-
+	    if(lastsrcwidth != videoData->Ywidth || lastsrcheight != videoData->Yheight) {
             	if(DEBUG) printf("Changing video dimensions to %dx%d\n", videoData->Ywidth, videoData->Yheight);
                 glOrtho(0, videoData->Ywidth ,0 , videoData->Yheight, -1 ,1);
 
@@ -1172,13 +975,12 @@ void GLvideo_rt::run()
                     createGLTextures = true;
                     updateShaderVars = true;
                     currentShader = newShader;
-                    glUseProgramObjectARB(programs[currentShader]);
                 }
             }
             
             if(createGLTextures) {
                 if(DEBUG) printf("Creating GL textures\n");
-                createTextures(videoData, currentShader);
+                renderer->createTextures(videoData);
                 createGLTextures = false;
             }
 
@@ -1186,51 +988,53 @@ void GLvideo_rt::run()
                 perfTimer.restart();
                 if(DEBUG) printf("Updating fragment shader variables\n");
 
+    		GLfuncs::glUseProgramObjectARB(programs[currentShader]);
                 //data about the input file to the shader
-                int i=glGetUniformLocationARB(programs[currentShader], "Yheight");
-                glUniform1fARB(i, videoData->Yheight);
+                int i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "Yheight");
+                GLfuncs::glUniform1fARB(i, videoData->Yheight);
 
-                i=glGetUniformLocationARB(programs[currentShader], "Ywidth");
-                glUniform1fARB(i, videoData->Ywidth);
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "Ywidth");
+                GLfuncs::glUniform1fARB(i, videoData->Ywidth);
 
-                i=glGetUniformLocationARB(programs[currentShader], "CHsubsample");
-                glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "CHsubsample");
+                GLfuncs::glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
 
-                i=glGetUniformLocationARB(programs[currentShader], "CVsubsample");
-                glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "CVsubsample");
+                GLfuncs::glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
 
                 //settings from the c++ program to the shader
-                i=glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
                 float offset1[3];
                 offset1[0] = matrixScaling ? luminanceOffset1 : 0.0;    //don't subtract the initial Y offset if the matrix is unscaled
                 offset1[1] = chrominanceOffset1;
                 offset1[2] = chrominanceOffset1;
-                glUniform3fvARB(i, 1, &offset1[0]);
+                GLfuncs::glUniform3fvARB(i, 1, &offset1[0]);
 
-                i=glGetUniformLocationARB(programs[currentShader], "yuvMul");
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvMul");
                 float mul[3];
                 mul[0] = showLuminance   ? luminanceMultiplier   : 0.0;
                 mul[1] = showChrominance ? chrominanceMultiplier : 0.0;
                 mul[2] = showChrominance ? chrominanceMultiplier : 0.0;
-                glUniform3fvARB(i, 1, &mul[0]);
+                GLfuncs::glUniform3fvARB(i, 1, &mul[0]);
 
-                i=glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
                 float offset2[3];
                 offset2[0] = showLuminance ? luminanceOffset2 : 0.5;    //when luminance is off, set to mid grey
                 offset2[1] = chrominanceOffset2;
                 offset2[2] = chrominanceOffset2;
-                glUniform3fvARB(i, 1, &offset2[0]);
+                GLfuncs::glUniform3fvARB(i, 1, &offset2[0]);
 
-                i=glGetUniformLocationARB(programs[currentShader], "colorMatrix");
-                glUniformMatrix3fvARB(i, 1, false, colourMatrix);
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "colorMatrix");
+                GLfuncs::glUniformMatrix3fvARB(i, 1, false, colourMatrix);
 
-                i=glGetUniformLocationARB(programs[currentShader], "interlacedSource");
-                glUniform1iARB(i, interlacedSource);
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "interlacedSource");
+                GLfuncs::glUniform1iARB(i, interlacedSource);
 
-                i=glGetUniformLocationARB(programs[currentShader], "deinterlace");
-                glUniform1iARB(i, deinterlace);
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "deinterlace");
+                GLfuncs::glUniform1iARB(i, deinterlace);
                 updateShaderVars = false;
                 perf_updateVars = perfTimer.elapsed();
+    		GLfuncs::glUseProgramObjectARB(0);
             }
             
             if(doResize /* && displaywidth>0 && displayheight>0*/) {
@@ -1274,30 +1078,30 @@ void GLvideo_rt::run()
 #endif
             
             if(interlacedSource) {
-                int i=glGetUniformLocationARB(programs[currentShader], "field");
-                glUniform1iARB(i, field);
+   		GLfuncs::glUseProgramObjectARB(programs[currentShader]);
+                int i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "field");
+                GLfuncs::glUniform1iARB(i, field);
 
-                i=glGetUniformLocationARB(programs[currentShader], "direction");
-                glUniform1iARB(i, direction);
+                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "direction");
+                GLfuncs::glUniform1iARB(i, direction);
+    		GLfuncs::glUseProgramObjectARB(0);
             }
 
             //upload the texture data for each new frame, or for before we render the first field
             //of interlaced material
             perfTimer.restart();
-            if((interlacedSource == 0 || field == 0) && repeat == 0) uploadTextures(videoData);
+            if((interlacedSource == 0 || field == 0) && repeat == 0) renderer->uploadTextures(videoData);
             perf_upload = perfTimer.elapsed();
 
             perfTimer.restart();
-            renderVideo(videoData);
+            renderer->renderVideo(videoData, programs[currentShader]);
             perf_renderVideo = perfTimer.elapsed();
 
 #ifdef HAVE_FTGL
             perfTimer.restart();
-            glUseProgramObjectARB(0);
-            if(osd && font != NULL) renderOSD(videoData, font, fps, osd, osdScale);
+            //if(osd && font != NULL) renderOSD(videoData, font, fps, osd, osdScale);
             perf_renderOSD = perfTimer.elapsed();
             if(perf==true && font != NULL) renderPerf(videoData, font);
-            glUseProgramObjectARB(programs[currentShader]);
 #endif                  
         }
 
@@ -1336,6 +1140,14 @@ void GLvideo_rt::run()
             }
             fpsAvgPeriod = (fpsAvgPeriod + 1) %10;        	
         }
+
+GLenum error;
+const GLubyte* errStr;
+if ((error = glGetError()) != GL_NO_ERROR)
+{
+//errStr = gluErrorString(error);
+fprintf(stderr, "OpenGL Error: %d\n", error);
+}
                 
     }
 }
