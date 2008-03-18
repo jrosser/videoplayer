@@ -1,29 +1,9 @@
-#define __GLVIDEO_TRADTEX
-
 #include "GLfuncs.h"
-#include "GLvideo_renderer.h"
+#include "GLvideo_tradtex.h"
 
 #include "videoData.h"
 
-/* NB, any changes to the oublic interface
- * /must/ be reflected in GLvideo_tradtex.h */
 namespace GLVideoRenderer {
-class TradTex : public GLVideoRenderer {
-public:
-	virtual void createTextures(VideoData *video_data);
-	virtual void uploadTextures(VideoData *video_data);
-	virtual void renderVideo(VideoData *video_data, GLuint shader);
-	virtual ~TradTex();
-
-private:
-	/* handles for the y/u/v/ textures */
-	struct {
-		GLuint y;
-		GLuint u;
-		GLuint v;
-	} textures;
-};
-
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 TradTex::~TradTex()
 {
@@ -31,8 +11,6 @@ TradTex::~TradTex()
 
 void TradTex::createTextures(VideoData *video_data)
 {
-    int i=0;
-
 #if 0
     if (textures != 0)
 	    glDeleteTexture ...

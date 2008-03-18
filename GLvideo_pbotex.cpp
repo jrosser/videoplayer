@@ -1,32 +1,11 @@
-#define __GLVIDEO_PBOTEX
-
 #include <cassert>
 
 #include "GLfuncs.h"
-#include "GLvideo_renderer.h"
+#include "GLvideo_pbotex.h"
 
 #include "videoData.h"
 
-/* NB, any changes to the oublic interface
- * /must/ be reflected in GLvideo_tradtex.h */
 namespace GLVideoRenderer {
-class PboTex : public GLVideoRenderer {
-public:
-	virtual void createTextures(VideoData *video_data);
-	virtual void uploadTextures(VideoData *video_data);
-	virtual void renderVideo(VideoData *video_data, GLuint shader);
-	virtual ~PboTex();
-
-private:
-	/* handles for the y/u/v/ textures */
-	struct {
-		GLuint y;
-		GLuint u;
-		GLuint v;
-	} textures;
-	GLuint buf;
-};
-
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 PboTex::~PboTex()
 {
@@ -34,8 +13,6 @@ PboTex::~PboTex()
 
 void PboTex::createTextures(VideoData *video_data)
 {
-    int i=0;
-
     glGenTextures(3, (GLuint *)&textures);
     GLfuncs::glGenBuffers(1, &buf);
 

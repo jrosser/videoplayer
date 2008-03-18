@@ -3,6 +3,8 @@
 
 #include "GLvideo_renderer.h"
 
+/* NB, any changes to the public interface
+ * /must/ be reflected in GLvideo_tradtex.h */
 namespace GLVideoRenderer {
 class PboTex : public GLVideoRenderer {
 public:
@@ -10,6 +12,15 @@ public:
 	virtual void uploadTextures(VideoData *video_data);
 	virtual void renderVideo(VideoData *video_data, GLuint shader);
 	virtual ~PboTex();
+
+private:
+	/* handles for the y/u/v/ textures */
+	struct {
+		GLuint y;
+		GLuint u;
+		GLuint v;
+	} textures;
+	GLuint buf;
 };
 }
 
