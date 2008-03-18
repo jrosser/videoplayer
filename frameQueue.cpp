@@ -1,6 +1,6 @@
  /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: frameQueue.cpp,v 1.3 2008-03-10 11:47:41 jrosser Exp $
+* $Id: frameQueue.cpp,v 1.3 2008/03/10 11:47:41 jrosser Exp $
 *
 * The MIT License
 *
@@ -28,7 +28,6 @@
 
 #include <QtGui>
 
-
 #include "frameQueue.h"
 #include "videoTransport.h"
 #include "readerInterface.h"
@@ -41,6 +40,8 @@ FrameQueue::FrameQueue() : QThread()
 {
     m_doReading = true;
     displayFrame = NULL;
+    speed=0;
+    direction=0;
 }
 
 void FrameQueue::stop()
