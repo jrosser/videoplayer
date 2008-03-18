@@ -76,12 +76,12 @@ void TradTex::renderVideo(VideoData *video_data, GLuint shader_prog)
     i = GLfuncs::glGetUniformLocationARB(shader_prog, "Ytex");
     GLfuncs::glUniform1iARB(i, 0);  /* Bind Ytex to texture unit 0 */
 
+    glDisable(GL_TEXTURE_RECTANGLE_ARB);
 #if 0
 	GLfuncs::glUseProgramObjectARB(0);
     i = GL_REPLACE; glTexEnviv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &i); 
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 #endif
-    glDisable(GL_TEXTURE_RECTANGLE_ARB);
     glBegin(GL_QUADS);
         glTexCoord2i(0,0);
 	glColor3f(1., 0., 0.);
