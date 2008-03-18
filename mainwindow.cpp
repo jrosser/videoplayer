@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.49 2008-03-13 11:38:49 jrosser Exp $
+* $Id: mainwindow.cpp,v 1.49 2008/03/13 11:38:49 jrosser Exp $
 *
 * The MIT License
 *
@@ -143,9 +143,9 @@ MainWindow::MainWindow(int argc, char **argv)
     //which pulls video from the videoRead
     //and gets stats for the OSD from the readThread
     glvideo_mt = new GLvideo_mt(this, videoTransport, frameQueue);
-
     setCentralWidget(glvideo_mt);
-
+    glvideo_mt->start();
+    
     //set up menus etc
     createActions();
 
@@ -326,8 +326,11 @@ void MainWindow::parseCommandLine(int argc, char **argv)
                (fileType.toLower() == "v210") ||
                (fileType.toLower() == "16p4") ||
                (fileType.toLower() == "16p2") ||
-               (fileType.toLower() == "16p0") ||               
-               (fileType.toLower() == "drc")) {
+               (fileType.toLower() == "16p0")               
+#ifdef HAVE_DIRAC    
+               || (fileType.toLower() == "drc")
+#endif
+		    ) {
 
                forceFileType=true;
             }
@@ -368,9 +371,11 @@ void MainWindow::parseCommandLine(int argc, char **argv)
                        (fi.suffix().toLower() == "v210") ||
                        (fi.suffix().toLower() == "16p4") ||
                        (fi.suffix().toLower() == "16p2") ||
-                       (fi.suffix().toLower() == "16p0") ||                       
-                       (fi.suffix().toLower() == "drc")) {
-
+                       (fi.suffix().toLower() == "16p0")                       
+#ifdef HAVE_DIRAC    
+                       || (fi.suffix().toLower() == "drc")
+#endif
+		      ) {
                     }
                     else {
                         printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());

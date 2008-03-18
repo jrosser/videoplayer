@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.29 2008-03-13 11:38:49 jrosser Exp $
+* $Id: GLvideo_mt.cpp,v 1.29 2008/03/13 11:38:49 jrosser Exp $
 *
 * The MIT License
 *
@@ -37,16 +37,17 @@ GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, FrameQueue *f)
     setMouseTracking(true);
     connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
     mouseHideTimer.setSingleShot(true);
-
-    /* NB, a) this helps to be last
-     *     b) don't put HideMouse anywhere near here */
-    renderThread->start(QThread::TimeCriticalPriority);
 }
 
 void GLvideo_mt::stop()
 {
     renderThread->stop();
     renderThread->wait();
+}
+
+void GLvideo_mt::start()
+{
+	renderThread->start(/*QThread::TimeCriticalPriority*/);
 }
 
 /* Reveal the mouse whenever it is moved,

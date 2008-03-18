@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.h,v 1.28 2008-03-13 11:38:49 jrosser Exp $
+* $Id: GLvideo_mt.h,v 1.28 2008/03/13 11:38:49 jrosser Exp $
 *
 * The MIT License
 *
@@ -50,6 +50,7 @@ public:
     VideoTransport *vt;
     FrameQueue *fq;
     
+    void start();
     void stop();
 
     GLvideo_rt* renderThread;
