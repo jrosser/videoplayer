@@ -8,9 +8,17 @@ CONFIG += thread console debug
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h
 SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp  
 
-# openGL video video renderer source file
-HEADERS += GLvideo_mt.h GLvideo_rt.h GLfuncs.h GLloadexts.h GLvideo_tradtex.h GLvideo_renderer.h GLvideo_pbotex.h
-SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLloadexts.cpp GLvideo_tradtex.cpp GLvideo_pbotex.cpp
+# openGL video widget source files
+HEADERS += GLvideo_mt.h GLvideo_rt.h GLfuncs.h GLloadexts.h GLvideo_renderer.h GLvideo_repeater.h shaders.h
+SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLloadexts.cpp
+
+# video texture transfer engines
+HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
+SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp
+
+# video frame repeating engines
+HEADERS += GLvideo_glxrep.h
+SOURCES += GLvideo_glxrep.cpp
 
 #DEFINES += HAVE_DIRAC
 
