@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_rt.cpp,v 1.54 2008-03-13 11:38:49 jrosser Exp $
+* $Id: GLvideo_rt.cpp,v 1.54 2008/03/13 11:38:49 jrosser Exp $
 *
 * The MIT License
 *
@@ -26,17 +26,18 @@
 *
 * ***** END LICENSE BLOCK ***** */
 
-#define GLVIDEO_RT_H_
-
 #include <stdio.h>
 
 #include "GLfuncs.h"
 #include "GLloadexts.h"
 
 #include <QtGui>
+#include "GLvideo_rt.h"
 #include "GLvideo_mt.h"
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
+
+#include "GLvideo_x11rep.h"
 
 #ifdef HAVE_FTGL
 #include "FTGL/FTGLPolygonFont.h"
@@ -47,101 +48,6 @@
 #include "frameQueue.h"
 
 #include "shaders.h"
-
-class GLvideo_rt : public QThread
-{
-public:
-
-    enum ShaderPrograms { shaderUYVY, shaderPlanar, shaderMax };
-
-    GLvideo_rt(GLvideo_mt &glWidget);
-    void resizeViewport(int w, int h);
-    void setFrameRepeats(int repeats);
-    void setFontFile(const char *fontFile);
-    void setAspectLock(bool lock);
-    void setInterlacedSource(bool i);
-    void run();
-    void stop();
-    void toggleAspectLock();
-    void toggleOSD();
-    void togglePerf();
-    void toggleLuminance();
-    void toggleChrominance();
-    void toggleDeinterlace();
-    void toggleMatrixScaling();
-    void setLuminanceOffset1(float o);
-    void setChrominanceOffset1(float o);
-    void setLuminanceMultiplier(float m);
-    void setChrominanceMultiplier(float m);
-    void setLuminanceOffset2(float o);
-    void setChrominanceOffset2(float o);
-    void setDeinterlace(bool d);
-    void setMatrixScaling(bool s);
-    void setMatrix(float Kr, float Kg, float Kb);
-    void setCaption(const char *caption);
-    void setOsdScale(float s);
-    void setOsdState(int s);
-    void setOsdTextTransparency(float t);
-    void setOsdBackTransparency(float t);
-
-private:
-
-    void buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale);
-    void compileFragmentShaders();
-    void compileFragmentShader(int n, const char *src);
-#ifdef HAVE_FTGL
-    void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd, float osdScale);
-    void renderPerf(VideoData *videoData, FTFont *font);
-#endif
-
-    float m_osdScale;            //caption / OSD font size
-    float m_osdBackTransparency;
-    float m_osdTextTransparency;
-
-    bool m_doRendering;            //set to false to quit thread
-    bool m_doResize;            //resize the openGL viewport
-    bool m_aspectLock;            //lock the aspect ratio of the source video
-    bool m_changeFont;            //set a new font for the OSD
-    int m_osd;                    //type of OSD shown
-    bool m_perf;                //show performance data
-    bool m_showLuminance;        //use Y data or 0.5
-    bool m_showChrominance;        //use C data or 0.5
-    bool m_interlacedSource;    //is the source video interlaced?
-    bool m_deinterlace;            //do we try to deinterlace an interlaced source?
-    bool m_matrixScaling;        //is the colour matrix scaled to produce 0-255 computer levels or 16-235 video levels
-    bool m_changeMatrix;
-
-    float m_luminanceOffset1;        //Y & C offsets applied to data passed to the shader directly from the file
-    float m_chrominanceOffset1;
-    float m_luminanceMultiplier;    //Y & C scaling factors applied to offset Y/C data
-    float m_chrominanceMultiplier;
-    float m_luminanceOffset2;        //Y & C offsets applied to scaled data
-    float m_chrominanceOffset2;
-    float m_matrixKr;                //colour matrix specification
-    float m_matrixKg;
-    float m_matrixKb;
-
-    static const int MAX_OSD = 5;
-
-    int m_displaywidth;            //width of parent widget
-    int m_displayheight;        //height of parent widget
-
-    int m_frameRepeats;            //number of times each frame is repeated
-
-    GLuint programs[shaderMax];    //handles for the shaders and programs
-    GLuint shaders[shaderMax];
-    GLint compiled[shaderMax];
-    GLint linked[shaderMax];    //flags for success
-    GLvideo_mt &glw;            //parent widget
-
-    char fontFile[255];            //truetype font used for on screen display
-    char caption[255];
-
-    QMutex mutex;
-
-    GLVideoRenderer::GLVideoRenderer *renderer;
-};
-
 
 //FIXME - nasty global variables
 //rendering performance monitoring
@@ -162,7 +68,7 @@ int perf_pastQueue;
 int perf_IOLoad;
 int perf_IOBandwidth;
 
-#define DEBUG 1
+#define DEBUG 0
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
       : QThread(), glw(gl)
@@ -202,8 +108,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
     memset(caption, 0, sizeof(caption));
     strcpy(caption, "Hello World");
 
-    //renderer = new GLVideoRenderer::TradTex();
-    renderer = new GLVideoRenderer::PboTex();
+    renderer = new GLVideoRenderer::TradTex();
+    //renderer = new GLVideoRenderer::PboTex();
 }
 
 void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale)
@@ -1076,6 +982,44 @@ void GLvideo_rt::run()
             	changeFont = false;
             }
 #endif
+            
+            //	//upload the texture for the frame to the GPU. This contains both fields for interlaced
+            //  renderer->uploadTextures(videoData);
+            //
+            //	//both fields, if interlaced
+            //	for(int i=0; i<=interlacedSource; i++) {
+            //
+            //		//load the field and direction variables into the YUV->RGB shader
+            //		int i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "field");
+            //		GLfuncs::glUniform1iARB(i, field);
+            //
+            //		i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "direction");
+            //		GLfuncs::glUniform1iARB(i, direction);
+            //
+            //		//the frame repeater renders to an intermediate framebuffer object
+            //		repeater->setupRGBdestination();
+            //
+            //		//render the YUV texture to the framebuffer object
+            //		renderer->renderVideo(videoData, programs[currentShader]);
+            //
+            //		//repeatedly render from the framebuffer object to the screen
+            //		repeater->setupScreenDestination();
+            //
+            //		for(int r=0; r<frameRepeats;) {
+            //
+            //			//render the video from the framebuffer object to the screen
+            //			repeater.renderVideo(videoData);
+            //
+            //			glFlush();
+            //			glw.swapBuffers();
+            //
+            //			//the frame repeater returns the number of times it managed to repeat the frame
+            //			//this may be more than once, depending on the platform
+            //			r += repeater->repeat(frameRepeats);            
+            //		}
+            //	}
+            //
+            //
             
             if(interlacedSource) {
    		GLfuncs::glUseProgramObjectARB(programs[currentShader]);
