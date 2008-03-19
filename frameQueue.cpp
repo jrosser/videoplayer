@@ -40,6 +40,7 @@ FrameQueue::FrameQueue() : QThread()
 {
     m_doReading = true;
     displayFrame = NULL;
+    displayFrameNum = 0;
     speed=0;
     direction=0;
 }
@@ -51,9 +52,11 @@ void FrameQueue::stop()
     wait();
 }
 
-int FrameQueue::wantedFrameNum(bool future) {
-	
-	int lastFrame=0;
+int FrameQueue::wantedFrameNum(bool future) 
+{
+	//if there are no frames in the list, then the last displayed frame number is the
+	//starting point for working out what the next needed frame is
+	int lastFrame=displayFrameNum;
 	int wantedFrame;
 	
 	//if the reader cannot do random access then it will always return the next frame
@@ -75,8 +78,8 @@ int FrameQueue::wantedFrameNum(bool future) {
 	int offset = speed;
 	if(direction == -1) offset = offset * -1; 
 	wantedFrame = lastFrame + offset;
-	
-	return wantedFrame;	
+
+	return wantedFrame;
 }
 
 void FrameQueue::addFrames(bool future)
@@ -120,7 +123,7 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 {
 	speed = transportSpeed;
 	direction = transportDirection;
-	    
+
     //stopped or paused with no frame displayed, or forwards
     if((direction == 0 && displayFrame == NULL) || direction == 1) {
 
@@ -135,6 +138,7 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
             if(displayFrame) pastFrames.prepend(displayFrame);
 
             displayFrame = futureFrames.takeFirst();
+	    displayFrameNum = displayFrame->frameNum;
             listLocker.unlock();
         }   
     }
@@ -153,6 +157,7 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
             if(displayFrame) futureFrames.prepend(displayFrame);
 
             displayFrame = pastFrames.takeFirst();
+	    displayFrameNum = displayFrame->frameNum;
             listLocker.unlock();
         }        
     }

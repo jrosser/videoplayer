@@ -78,7 +78,8 @@ private:
     
     //what is currently on the screen
     VideoData *displayFrame;
-    
+    int displayFrameNum;
+
     //playback status    
     int direction;
     int speed;
