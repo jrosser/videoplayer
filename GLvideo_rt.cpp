@@ -108,8 +108,8 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
     memset(caption, 0, sizeof(caption));
     strcpy(caption, "Hello World");
 
-    renderer = new GLVideoRenderer::TradTex();
-    //renderer = new GLVideoRenderer::PboTex();
+    //renderer = new GLVideoRenderer::TradTex();
+    renderer = new GLVideoRenderer::PboTex();
 }
 
 void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale)
@@ -499,7 +499,7 @@ void drawText(char *str, FTFont *font)
     glDisable(GL_POLYGON_SMOOTH);
 }
 
-void draw2Text(char *str1, char *str2, int h_spacing, FTFont *font)
+void draw2Text(const char *str1, const char *str2, int h_spacing, FTFont *font)
 {
     glEnable(GL_POLYGON_SMOOTH);
     glPushMatrix();
@@ -518,12 +518,18 @@ void draw2Text(char *str1, char *str2, int h_spacing, FTFont *font)
     glDisable(GL_POLYGON_SMOOTH);
 }
 
+void drawPerfTimer(const char *str, int num, const char *units, int h_spacing, FTFont *font)
+{
+	char str2[255];
+	sprintf(str2, "%d%s", num, units);
+	draw2Text(str, str2, h_spacing, font);
+}
+
 void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 {
     float tx = 0.05 * videoData->Ywidth;
     float ty = 0.95 * videoData->Yheight;
     char str[255];
-    char str2[255];
     float cx1, cy1, cz1, cx2, cy2, cz2;
 
     font->BBox("0", cx1, cy1, cz1, cx2, cy2, cz2);
@@ -561,49 +567,31 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
     glColor4f(1.0, 1.0, 1.0, 0.5);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "ReadData");
-    sprintf(str2, "%dms", perf_readData);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("ReadData", perf_readData ,"ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "ConvertFormat");
-    sprintf(str2, "%dms", perf_convertFormat);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("ConvertFormat", perf_convertFormat, "ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "UpdateVars");
-    sprintf(str2, "%dms", perf_updateVars);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("UpdateVars", perf_updateVars, "ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "RepeatWait");
-    sprintf(str2, "%dms", perf_repeatWait);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("RepeatWait", perf_repeatWait, "ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "Upload");
-    sprintf(str2, "%dms", perf_upload);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("Upload", perf_upload, "ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "RenderVideo");
-    sprintf(str2, "%dms", perf_renderVideo);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("RenderVideo", perf_renderVideo, "ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "RenderOSD");
-    sprintf(str2, "%dms", perf_renderOSD);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("RenderOSD", perf_renderOSD, "ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "SwapBuffers");
-    sprintf(str2, "%dms", perf_swapBuffers);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("SwapBuffers", perf_swapBuffers, "ms", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "Interval");
-    sprintf(str2, "%dms", perf_interval);
-    draw2Text(str, str2, (int)width*15, font);
+    drawPerfTimer("Interval", perf_interval, "ms", width*15, font);
 
     glColor4f(0.0, 1.0, 0.0, 0.5);
 
@@ -615,33 +603,20 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
     glColor4f(1.0, 1.0, 1.0, 0.5);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "Future Queue");
-    sprintf(str2, "%d", perf_futureQueue);
-    draw2Text(str, str2, (int)width*17, font);
+    drawPerfTimer("Future Queue", perf_futureQueue, "", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "Past Queue");
-    sprintf(str2, "%d", perf_pastQueue);
-    draw2Text(str, str2, (int)width*17, font);
+    drawPerfTimer("Past Queue", perf_pastQueue, "", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "I/O Thread Load");
-    sprintf(str2, "%d%%", perf_IOLoad);
-    draw2Text(str, str2, (int)width*17, font);
+    drawPerfTimer("I/O Thread Load", perf_IOLoad, "%", width*15, font);
 
     glTranslated(0, -spacing, 0);
-    sprintf(str, "Read Rate");
-    sprintf(str2, "%dMB/s", perf_IOBandwidth);
-    draw2Text(str, str2, (int)width*17, font);
+    drawPerfTimer("ReadRate", perf_IOBandwidth, "MB/s", (int)width*17, font);
 
     glPopMatrix();
 }
 #endif
-
-//get pointers to openGL functions and extensions
-//FIXME - this does nothing if any of these calls fail
-//FIXME - this is totally different on OSX - thanks Apple. Details are on the apple developer site
-//FIXME -
 
 void GLvideo_rt::run()
 {
@@ -1043,7 +1018,7 @@ void GLvideo_rt::run()
 
 #ifdef HAVE_FTGL
             perfTimer.restart();
-            //if(osd && font != NULL) renderOSD(videoData, font, fps, osd, osdScale);
+            if(osd && font != NULL) renderOSD(videoData, font, fps, osd, osdScale);
             perf_renderOSD = perfTimer.elapsed();
             if(perf==true && font != NULL) renderPerf(videoData, font);
 #endif                  
@@ -1089,8 +1064,8 @@ GLenum error;
 const GLubyte* errStr;
 if ((error = glGetError()) != GL_NO_ERROR)
 {
-//errStr = gluErrorString(error);
-fprintf(stderr, "OpenGL Error: %d\n", error);
+errStr = gluErrorString(error);
+fprintf(stderr, "OpenGL Error: %s\n", errStr);
 }
                 
     }
