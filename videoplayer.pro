@@ -5,11 +5,11 @@ QT += opengl
 CONFIG += thread console debug
 
 # source files
-HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h
-SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp  
+HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h config.h
+SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp util.cpp
 
 # openGL video widget source files
-HEADERS += GLvideo_mt.h GLvideo_rt.h GLfuncs.h GLloadexts.h GLvideo_renderer.h GLvideo_repeater.h shaders.h
+HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLfuncs.h GLloadexts.h GLvideo_renderer.h GLvideo_repeater.h shaders.h
 SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLloadexts.cpp
 
 # video texture transfer engines

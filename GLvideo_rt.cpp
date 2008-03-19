@@ -34,6 +34,7 @@
 #include <QtGui>
 #include "GLvideo_rt.h"
 #include "GLvideo_mt.h"
+#include "GLvideo_rt.h"
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
 
@@ -46,6 +47,10 @@
 #include "videoData.h"
 #include "videoTransport.h"
 #include "frameQueue.h"
+
+#include "util.h"
+
+#include "GLvideo_params.h"
 
 #include "shaders.h"
 
@@ -70,86 +75,18 @@ int perf_IOBandwidth;
 
 #define DEBUG 0
 
-GLvideo_rt::GLvideo_rt(GLvideo_mt &gl)
-      : QThread(), glw(gl)
+GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, GLvideo_params& params)
+      : QThread(), glw(gl), params(params)
 {
-    m_frameRepeats = 0;
-    m_doRendering = true;
-    m_aspectLock = true;
-    m_osd = true;
-    m_perf = false;
-    m_changeFont = false;
-    m_showLuminance = true;
-    m_showChrominance = true;
-    m_interlacedSource = false;
-    m_deinterlace = false;
-    m_matrixScaling = false;
-    m_changeMatrix = true;          //always compute colour matrix at least once
-    m_displaywidth = 0;
-    m_displayheight = 0; 
-
-    m_luminanceOffset1 = -0.0625;   //video luminance has black at 16/255
-    m_chrominanceOffset1 = -0.5;    //video chrominace is centered at 128/255
-
-    m_luminanceMultiplier = 1.0;    //unscaled
-    m_chrominanceMultiplier = 1.0;
-
-    m_luminanceOffset2 = 0.0;       //no offset
-    m_chrominanceOffset2 = 0.0;
-
-    m_matrixKr = 0.2126;            //colour matrix for HDTV
-    m_matrixKg = 0.7152;
-    m_matrixKb = 0.0722;
-
-    m_osdScale = 1.0;
-    m_osdBackTransparency = 0.7;
-    m_osdTextTransparency = 0.5;
-
-    memset(caption, 0, sizeof(caption));
-    strcpy(caption, "Hello World");
-
     //renderer = new GLVideoRenderer::TradTex();
     renderer = new GLVideoRenderer::PboTex();
 }
 
-void GLvideo_rt::buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale)
+void GLvideo_rt::resizeViewport(int width, int height)
 {
-    //R row
-    matrix[0] = 1.0;             //Y    column
-    matrix[1] = 0.0;             //Cb
-    matrix[2] = 2.0 * (1-Kr);    //Cr
-
-    //G row
-    matrix[3] = 1.0;
-    matrix[4] = -1.0 * ( (2.0*(1.0-Kb)*Kb)/Kg );
-    matrix[5] = -1.0 * ( (2.0*(1.0-Kr)*Kr)/Kg );
-
-    //B row
-    matrix[6] = 1.0;
-    matrix[7] = 2.0 * (1.0-Kb);
-    matrix[8] = 0.0;
-
-    float Ys = Yscale ? (255.0/219.0) : 1.0;
-    float Cs = Cscale ? (255.0/224.0) : 1.0;
-
-    //apply any necessary scaling
-    matrix[0] *= Ys;
-    matrix[1] *= Cs;
-    matrix[2] *= Cs;
-    matrix[3] *= Ys;
-    matrix[4] *= Cs;
-    matrix[5] *= Cs;
-    matrix[6] *= Ys;
-    matrix[7] *= Cs;
-    matrix[8] *= Cs;
-
-    if(DEBUG) {
-        printf("Building YUV->RGB matrix with Kr=%f Kg=%f, Kb=%f\n", Kr, Kg, Kb);
-        printf("%f %f %f\n", matrix[0], matrix[1], matrix[2]);
-        printf("%f %f %f\n", matrix[3], matrix[4], matrix[5]);
-        printf("%f %f %f\n", matrix[6], matrix[7], matrix[8]);
-        printf("\n");
-    }
+    displaywidth = width;
+    displayheight = height;
+    doResize = true;
 }
 
 
@@ -197,225 +134,6 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
     }
 }
 
-void GLvideo_rt::stop()
-{
-    mutex.lock();
-    m_doRendering = false;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setAspectLock(bool l)
-{
-    mutex.lock();
-
-    if(m_aspectLock != l) {
-        m_aspectLock = l;
-        m_doResize = true;
-    }
-
-    mutex.unlock();
-}
-
-void GLvideo_rt::setFrameRepeats(int repeats)
-{
-    mutex.lock();
-    m_frameRepeats = repeats;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setFontFile(const char *f)
-{
-    mutex.lock();
-    strncpy(fontFile, f, 255);
-    m_changeFont = true;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setOsdScale(float s)
-{
-    mutex.lock();
-    m_osdScale = s;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setOsdTextTransparency(float t)
-{
-    mutex.lock();
-    m_osdTextTransparency = t;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setOsdBackTransparency(float t)
-{
-    mutex.lock();
-    m_osdBackTransparency = t;
-    mutex.unlock();
-}
-
-
-
-void GLvideo_rt::setCaption(const char *c)
-{
-    mutex.lock();
-    strncpy(caption, c, 255);
-    mutex.unlock();
-}
-
-void GLvideo_rt::toggleAspectLock(void)
-{
-    mutex.lock();
-    m_aspectLock = !m_aspectLock;
-    m_doResize = true;
-    mutex.unlock();
-}
-
-void GLvideo_rt::toggleOSD(void)
-{
-    mutex.lock();
-    m_osd = (m_osd + 1) % MAX_OSD;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setOsdState(int s)
-{
-    mutex.lock();
-    m_osd = s % MAX_OSD;
-    mutex.unlock();
-}
-
-void GLvideo_rt::togglePerf(void)
-{
-    mutex.lock();
-    m_perf = !m_perf;
-    mutex.unlock();
-}
-
-
-void GLvideo_rt::setInterlacedSource(bool i)
-{
-    mutex.lock();
-
-    m_interlacedSource = i;
-    if(m_interlacedSource == false) m_deinterlace=false;
-
-    mutex.unlock();
-}
-
-void GLvideo_rt::setDeinterlace(bool d)
-{
-    mutex.lock();
-
-    if(m_interlacedSource)
-        m_deinterlace = d;
-    else
-        m_deinterlace = false;
-
-    mutex.unlock();
-}
-
-void GLvideo_rt::toggleDeinterlace(void)
-{
-    mutex.lock();
-
-    if(m_interlacedSource)
-        m_deinterlace = !m_deinterlace;
-    else
-        m_deinterlace = false;
-
-    mutex.unlock();
-}
-
-void GLvideo_rt::toggleLuminance(void)
-{
-    mutex.lock();
-    m_showLuminance = !m_showLuminance;
-    mutex.unlock();
-}
-
-void GLvideo_rt::toggleChrominance(void)
-{
-    mutex.lock();
-    m_showChrominance = !m_showChrominance;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setMatrixScaling(bool s)
-{
-    mutex.lock();
-    m_matrixScaling = s;
-    m_changeMatrix = true;
-    mutex.unlock();
-}
-
-void GLvideo_rt::toggleMatrixScaling()
-{
-    mutex.lock();
-    m_matrixScaling = !m_matrixScaling;
-    m_changeMatrix = true;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setMatrix(float Kr, float Kg, float Kb)
-{
-    mutex.lock();
-    m_matrixKr = Kr;
-    m_matrixKg = Kg;
-    m_matrixKb = Kb;
-    m_changeMatrix = true;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setLuminanceMultiplier(float m)
-{
-    mutex.lock();
-    m_luminanceMultiplier = m;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setChrominanceMultiplier(float m)
-{
-    mutex.lock();
-    m_chrominanceMultiplier = m;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setLuminanceOffset1(float o)
-{
-    mutex.lock();
-    m_luminanceOffset1 = o;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setChrominanceOffset1(float o)
-{
-    mutex.lock();
-    m_chrominanceOffset1 = o;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setLuminanceOffset2(float o)
-{
-    mutex.lock();
-    m_luminanceOffset2 = o;
-    mutex.unlock();
-}
-
-void GLvideo_rt::setChrominanceOffset2(float o)
-{
-    mutex.lock();
-    m_chrominanceOffset2 = o;
-    mutex.unlock();
-}
-
-void GLvideo_rt::resizeViewport(int width, int height)
-{
-    mutex.lock();
-    m_displaywidth = width;
-    m_displayheight = height;
-    m_doResize = true;
-    mutex.unlock();
-}
-
 #ifdef HAVE_FTGL
 void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int osd, float osdScale)
 {
@@ -425,24 +143,24 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
     //text string
     char str[255];
     switch (osd) {
-    case 1:
+    case OSD_FRAMENUM:
         sprintf(str, "%06ld", videoData->frameNum);
          font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2);
         break;
 
-    case 2:
+    case OSD_FPS:
         sprintf(str, "%06ld, fps:%3.2f", videoData->frameNum, fps);
          font->BBox("000000, fps:000.00", cx1, cy1, cz1, cx2, cy2, cz2);
         break;
 
-    case 3:
-        sprintf(str, "%06ld, %s:%s", videoData->frameNum, m_interlacedSource ? "Int" : "Prog", m_deinterlace ? "On" : "Off");
+    case OSD_INT:
+        sprintf(str, "%06ld, %s:%s", videoData->frameNum, params.interlaced_source ? "Int" : "Prog", params.deinterlace ? "On" : "Off");
          font->BBox("000000, Prog:Off", cx1, cy1, cz1, cx2, cy2, cz2);
         break;
 
-    case 4:
-        sprintf(str, "%s", caption);
-         font->BBox(caption, cx1, cy1, cz1, cx2, cy2, cz2);
+    case OSD_CAPTION:
+        sprintf(str, "%s", params.caption.toLatin1().constData());
+         font->BBox(str, cx1, cy1, cz1, cx2, cy2, cz2);
         break;
 
 
@@ -473,7 +191,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
     glScalef(osdScale, osdScale, 0);    //scale the on screen display
 
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glColor4f(0.0, 0.0, 0.0, m_osdBackTransparency);
+    glColor4f(0.0, 0.0, 0.0, params.osd_back_alpha);
 
     glBegin(GL_QUADS);
     glVertex2f(bx1, by1);
@@ -483,7 +201,7 @@ void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps, int os
     glEnd();
 
     //text
-    glColor4f(1.0, 1.0, 1.0, m_osdTextTransparency);
+    glColor4f(1.0, 1.0, 1.0, params.osd_text_alpha);
     glEnable(GL_POLYGON_SMOOTH);
     font->Render(str);
     glDisable(GL_POLYGON_SMOOTH);
@@ -637,39 +355,12 @@ void GLvideo_rt::run()
     bool updateShaderVars = false;
 
     //declare shadow variables for the thread worker and initialise them
-    mutex.lock();
-    bool aspectLock = m_aspectLock;
-    bool doRendering = m_doRendering;
-    bool doResize = m_doResize;
-    bool showLuminance = m_showLuminance;
-    bool showChrominance = m_showChrominance;
-    bool changeFont = m_changeFont;
-    int displaywidth = m_displaywidth;
-    int displayheight = m_displayheight;
-    int frameRepeats = m_frameRepeats;
-    bool interlacedSource = m_interlacedSource;
-    bool deinterlace = m_deinterlace;
-    bool matrixScaling = m_matrixScaling;
-    bool changeMatrix = m_changeMatrix;
+    bool doRendering = true;
     int repeat = 0;
     int field = 0;
     int direction = 0;
     int currentShader = 0;
-    int osd = m_osd;
-    bool perf = m_perf;
-    float luminanceOffset1 = m_luminanceOffset1;
-    float chrominanceOffset1 = m_chrominanceOffset1;
-    float luminanceMultiplier = m_luminanceMultiplier;
-    float chrominanceMultiplier = m_chrominanceMultiplier;
-    float luminanceOffset2 = m_luminanceOffset2;
-    float chrominanceOffset2 = m_chrominanceOffset2;
     float colourMatrix[9];
-    float matrixKr = m_matrixKr;
-    float matrixKg = m_matrixKg;
-    float matrixKb = m_matrixKb;
-    float osdScale = m_osdScale;
-
-    mutex.unlock();
 
 #ifdef HAVE_FTGL
     FTFont *font = NULL;
@@ -690,105 +381,10 @@ void GLvideo_rt::run()
 
     while (doRendering) {
         perfTimer.start();
-        //update shadow variables
-        mutex.lock();
-
-        //values
-        displaywidth = m_displaywidth;
-        displayheight = m_displayheight;
-        frameRepeats = m_frameRepeats;
-        osd = m_osd;
-        osdScale = m_osdScale;
-        perf = m_perf;
-
-        doResize = m_doResize;
-        m_doResize = false;
-
-        //boolean flags
-        doRendering = m_doRendering;
-
-        if(m_changeMatrix == true) {
-            matrixScaling = m_matrixScaling;
-            matrixKr = m_matrixKr;
-            matrixKg = m_matrixKg;
-            matrixKb = m_matrixKb;
-            changeMatrix = true;
-            updateShaderVars = true;
-            m_changeMatrix = false;
-        }
-
-        if(m_changeFont) {
-            changeFont = true;
-            m_changeFont = false;
-        }
-
-        //check for changed aspect ratio lock
-        if(aspectLock != m_aspectLock) {
-            aspectLock = m_aspectLock;
-            doResize = true;
-        }
-
-        if(showLuminance != m_showLuminance) {
-            showLuminance = m_showLuminance;
-            updateShaderVars = true;
-        }
-
-        if(showChrominance != m_showChrominance) {
-            showChrominance = m_showChrominance;
-            updateShaderVars = true;
-        }
-
-        if(luminanceMultiplier != m_luminanceMultiplier) {
-            luminanceMultiplier = m_luminanceMultiplier;
-            updateShaderVars = true;
-        }
-
-        if(chrominanceMultiplier != m_chrominanceMultiplier) {
-            chrominanceMultiplier = m_chrominanceMultiplier;
-            updateShaderVars = true;
-        }
-
-        if(luminanceOffset1 != m_luminanceOffset1) {
-            luminanceOffset1 = m_luminanceOffset1;
-            updateShaderVars = true;
-        }
-
-        if(chrominanceOffset1 != m_chrominanceOffset1) {
-            chrominanceOffset1 = m_chrominanceOffset1;
-            updateShaderVars = true;
-        }
-
-        if(luminanceOffset2 != m_luminanceOffset2) {
-            luminanceOffset2 = m_luminanceOffset2;
-            updateShaderVars = true;
-        }
-
-        if(chrominanceOffset2 != m_chrominanceOffset2) {
-            chrominanceOffset2 = m_chrominanceOffset2;
-            updateShaderVars = true;
-        }
-
-        if(interlacedSource != m_interlacedSource) {
-            interlacedSource = m_interlacedSource;
-            updateShaderVars = true;
-        }
-
-        if(deinterlace != m_deinterlace) {
-            deinterlace = m_deinterlace;
-            updateShaderVars = true;
-        }
-
-        mutex.unlock();
-        perf_getParams = perfTimer.elapsed();
-
-        if(changeMatrix) {
-            buildColourMatrix(colourMatrix, matrixKr, matrixKg, matrixKb, matrixScaling, matrixScaling);
-            changeMatrix = false;
-        }
 
         //read frame data, one frame at a time, or after we have displayed the second field
         perfTimer.restart();
-        if((interlacedSource == 0 || field == 0) && repeat == 0) {
+        if((params.interlaced_source == 0 || field == 0) && repeat == 0) {
 	    videoData = glw.vt->getNextFrame();
             direction = glw.vt->getDirection();
             perf_futureQueue = glw.fq->getFutureQueueLen();
@@ -868,6 +464,7 @@ void GLvideo_rt::run()
             if(updateShaderVars) {
                 perfTimer.restart();
                 if(DEBUG) printf("Updating fragment shader variables\n");
+            buildColourMatrix(colourMatrix, params.matrix_Kr, params.matrix_Kg, params.matrix_Kb, params.matrix_scaling, params.matrix_scaling);
 
     		GLfuncs::glUseProgramObjectARB(programs[currentShader]);
                 //data about the input file to the shader
@@ -886,34 +483,33 @@ void GLvideo_rt::run()
                 //settings from the c++ program to the shader
                 i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
                 float offset1[3];
-                offset1[0] = matrixScaling ? luminanceOffset1 : 0.0;    //don't subtract the initial Y offset if the matrix is unscaled
-                offset1[1] = chrominanceOffset1;
-                offset1[2] = chrominanceOffset1;
+                offset1[0] = params.luminance_offset1;
+                offset1[1] = params.chrominance_offset1;
+                offset1[2] = params.chrominance_offset1;
                 GLfuncs::glUniform3fvARB(i, 1, &offset1[0]);
 
                 i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvMul");
                 float mul[3];
-                mul[0] = showLuminance   ? luminanceMultiplier   : 0.0;
-                mul[1] = showChrominance ? chrominanceMultiplier : 0.0;
-                mul[2] = showChrominance ? chrominanceMultiplier : 0.0;
+                mul[0] = params.luminance_mul;
+                mul[1] = params.chrominance_mul;
+                mul[2] = params.chrominance_mul;
                 GLfuncs::glUniform3fvARB(i, 1, &mul[0]);
 
                 i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
                 float offset2[3];
-                offset2[0] = showLuminance ? luminanceOffset2 : 0.5;    //when luminance is off, set to mid grey
-                offset2[1] = chrominanceOffset2;
-                offset2[2] = chrominanceOffset2;
+                offset2[0] = params.luminance_offset2;
+                offset2[1] = params.chrominance_offset2;
+                offset2[2] = params.chrominance_offset2;
                 GLfuncs::glUniform3fvARB(i, 1, &offset2[0]);
 
                 i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "colorMatrix");
                 GLfuncs::glUniformMatrix3fvARB(i, 1, false, colourMatrix);
 
                 i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "interlacedSource");
-                GLfuncs::glUniform1iARB(i, interlacedSource);
+                GLfuncs::glUniform1iARB(i, params.interlaced_source);
 
                 i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "deinterlace");
-                GLfuncs::glUniform1iARB(i, deinterlace);
-                updateShaderVars = false;
+                GLfuncs::glUniform1iARB(i, params.deinterlace);
                 perf_updateVars = perfTimer.elapsed();
     		GLfuncs::glUseProgramObjectARB(0);
             }
@@ -925,7 +521,7 @@ void GLvideo_rt::run()
                 float sourceAspect = (float)videoData->Ywidth / (float)videoData->Yheight;
                 float displayAspect = (float)displaywidth / (float)displayheight;
 
-                if(sourceAspect == displayAspect || aspectLock == false) {
+                if(sourceAspect == displayAspect || !params.aspect_ratio_lock) {
                     glViewport(0, 0, displaywidth, displayheight);
                 }
                 else {
@@ -945,16 +541,14 @@ void GLvideo_rt::run()
             }
 
 #ifdef HAVE_FTGL
-            if(changeFont) {
+            if(!params.osd_valid) {
             	if(DEBUG) printf("Changing font\n");
             	if(font)
             		delete font;
 
-            	font = new FTGLPolygonFont((const char *)fontFile);
+            	font = new FTGLPolygonFont(params.font_file.toLatin1().constData());
             	font->FaceSize(72);
             	font->CharMap(ft_encoding_unicode);
-
-            	changeFont = false;
             }
 #endif
             
@@ -996,7 +590,7 @@ void GLvideo_rt::run()
             //
             //
             
-            if(interlacedSource) {
+            if(params.interlaced_source) {
    		GLfuncs::glUseProgramObjectARB(programs[currentShader]);
                 int i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "field");
                 GLfuncs::glUniform1iARB(i, field);
@@ -1006,10 +600,15 @@ void GLvideo_rt::run()
     		GLfuncs::glUseProgramObjectARB(0);
             }
 
+			/* reset all state vars */
+			params.matrix_valid = true;
+			params.osd_valid = true;
+			doResize = false;
+
             //upload the texture data for each new frame, or for before we render the first field
             //of interlaced material
             perfTimer.restart();
-            if((interlacedSource == 0 || field == 0) && repeat == 0) renderer->uploadTextures(videoData);
+            if((params.interlaced_source == 0 || field == 0) && repeat == 0) renderer->uploadTextures(videoData);
             perf_upload = perfTimer.elapsed();
 
             perfTimer.restart();
@@ -1018,9 +617,9 @@ void GLvideo_rt::run()
 
 #ifdef HAVE_FTGL
             perfTimer.restart();
-            if(osd && font != NULL) renderOSD(videoData, font, fps, osd, osdScale);
+            if((params.osd_bot) && font != NULL) renderOSD(videoData, font, fps, params.osd_bot, params.osd_scale);
             perf_renderOSD = perfTimer.elapsed();
-            if(perf==true && font != NULL) renderPerf(videoData, font);
+            if(params.osd_perf && font != NULL) renderPerf(videoData, font);
 #endif                  
         }
 
@@ -1031,16 +630,16 @@ void GLvideo_rt::run()
         perf_swapBuffers = perfTimer.elapsed();
 
         //move to the next field when the first has been repeated the required number of times
-        if(interlacedSource && (repeat == frameRepeats)) {
+        if(params.interlaced_source && (repeat == params.frame_repeats)) {
             //move to the next field
             field++;
             if(field > 1) field = 0;
         }
 
         //repeat the frame the required number of times
-        if(repeat < frameRepeats) {
+        if(repeat < params.frame_repeats) {
         	repeat++;
-        	if(repeat == frameRepeats) {
+        	if(repeat == params.frame_repeats) {
         		repeat = 0;        
         	}
         }

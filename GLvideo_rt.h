@@ -29,6 +29,7 @@
 #ifndef GLVIDEO_RT_H_
 #define GLVIDEO_RT_H_
 
+#include "GLfuncs.h"
 #include <QtGui>
 
 #include "GLvideo_renderer.h"
@@ -36,46 +37,18 @@
 class GLvideo_mt;
 class FTFont;
 class VideoData;
+namespace GLVideoRenderer { class GLVideoRenderer; }
+class GLvideo_params;
 
 class GLvideo_rt : public QThread
 {
 public:
 
-    enum ShaderPrograms { shaderUYVY, shaderPlanar, shaderMax };
-
-    GLvideo_rt(GLvideo_mt &glWidget);
-    void resizeViewport(int w, int h);
-    void setFrameRepeats(int repeats);
-    void setFontFile(const char *fontFile);
-    void setAspectLock(bool lock);
-    void setInterlacedSource(bool i);
-    void run();
-    void stop();
-    void toggleAspectLock();
-    void toggleOSD();
-    void togglePerf();
-    void toggleLuminance();
-    void toggleChrominance();
-    void toggleDeinterlace();
-    void toggleMatrixScaling();
-    void setLuminanceOffset1(float o);
-    void setChrominanceOffset1(float o);
-    void setLuminanceMultiplier(float m);
-    void setChrominanceMultiplier(float m);
-    void setLuminanceOffset2(float o);
-    void setChrominanceOffset2(float o);
-    void setDeinterlace(bool d);
-    void setMatrixScaling(bool s);
-    void setMatrix(float Kr, float Kg, float Kb);
-    void setCaption(const char *caption);
-    void setOsdScale(float s);
-    void setOsdState(int s);
-    void setOsdTextTransparency(float t);
-    void setOsdBackTransparency(float t);
+    GLvideo_rt(GLvideo_mt &glWidget, GLvideo_params& params);
+	void resizeViewport(int w, int h);
+	void run();
 
 private:
-
-    void buildColourMatrix(float *matrix, const float Kr, const float Kg, const float Kb, bool Yscale, bool Cscale);
     void compileFragmentShaders();
     void compileFragmentShader(int n, const char *src);
 #ifdef HAVE_FTGL
@@ -83,39 +56,7 @@ private:
     void renderPerf(VideoData *videoData, FTFont *font);
 #endif
 
-    float m_osdScale;            //caption / OSD font size
-    float m_osdBackTransparency;
-    float m_osdTextTransparency;
-
-    bool m_doRendering;            //set to false to quit thread
-    bool m_doResize;            //resize the openGL viewport
-    bool m_aspectLock;            //lock the aspect ratio of the source video
-    bool m_changeFont;            //set a new font for the OSD
-    int m_osd;                    //type of OSD shown
-    bool m_perf;                //show performance data
-    bool m_showLuminance;        //use Y data or 0.5
-    bool m_showChrominance;        //use C data or 0.5
-    bool m_interlacedSource;    //is the source video interlaced?
-    bool m_deinterlace;            //do we try to deinterlace an interlaced source?
-    bool m_matrixScaling;        //is the colour matrix scaled to produce 0-255 computer levels or 16-235 video levels
-    bool m_changeMatrix;
-
-    float m_luminanceOffset1;        //Y & C offsets applied to data passed to the shader directly from the file
-    float m_chrominanceOffset1;
-    float m_luminanceMultiplier;    //Y & C scaling factors applied to offset Y/C data
-    float m_chrominanceMultiplier;
-    float m_luminanceOffset2;        //Y & C offsets applied to scaled data
-    float m_chrominanceOffset2;
-    float m_matrixKr;                //colour matrix specification
-    float m_matrixKg;
-    float m_matrixKb;
-
-    static const int MAX_OSD = 5;
-
-    int m_displaywidth;            //width of parent widget
-    int m_displayheight;        //height of parent widget
-
-    int m_frameRepeats;            //number of times each frame is repeated
+	enum ShaderPrograms { shaderUYVY, shaderPlanar, shaderMax };
 
     GLuint programs[shaderMax];    //handles for the shaders and programs
     GLuint shaders[shaderMax];
@@ -123,12 +64,14 @@ private:
     GLint linked[shaderMax];    //flags for success
     GLvideo_mt &glw;            //parent widget
 
-    char fontFile[255];            //truetype font used for on screen display
-    char caption[255];
-
     QMutex mutex;
 
     GLVideoRenderer::GLVideoRenderer *renderer;
+	GLvideo_params& params;
+
+    bool doResize;
+    int displaywidth;
+    int displayheight;
 };
 
 

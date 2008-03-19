@@ -37,13 +37,14 @@ class GLvideo_rt;
 class MainWindow;
 class VideoTransport;
 class FrameQueue;
+class GLvideo_params;
 
 class GLvideo_mt : public QGLWidget
 {
     Q_OBJECT
 
 public:
-    GLvideo_mt(QWidget *p, VideoTransport *vt, FrameQueue *fq);
+    GLvideo_mt(QWidget *p, VideoTransport *vt, FrameQueue *fq, GLvideo_params& vr_params);
     void setFrameRepeats(int repeats);
     void setFontFile(QString &fontFile);    
     
@@ -54,6 +55,7 @@ public:
     void stop();
 
     GLvideo_rt* renderThread;
+	GLvideo_params& vr_params;
 
 protected:
 
@@ -64,22 +66,9 @@ public slots:
     void toggleLuminance();
     void toggleChrominance();
     void toggleDeinterlace();
+#if 0
     void toggleMatrixScaling();
-    void setInterlacedSource(bool i);
-    void setDeinterlace(bool d);
-    void setLuminanceOffset1(float o);
-    void setChrominanceOffset1(float o);
-    void setLuminanceMultiplier(float m);
-    void setChrominanceMultiplier(float m);
-    void setLuminanceOffset2(float o);
-    void setChrominanceOffset2(float o);
-    void setMatrixScaling(bool s);
-    void setMatrix(float Kr, float Kg, float Kb);
-    void setCaption(QString&);
-    void setOsdScale(float s);
-    void setOsdState(int s);
-    void setOsdTextTransparency(float t);
-    void setOsdBackTransparency(float t);
+#endif
     void setAlwaysHideMouse(bool h);
 
 private slots:

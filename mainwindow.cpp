@@ -42,51 +42,30 @@
 #include "QShuttlePro.h"
 #endif
 
+#include "GLvideo_params.h"
+
 #include <iostream>
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 using namespace std;
 
-MainWindow::MainWindow(int argc, char **argv)
+MainWindow::MainWindow(int argc, char **argv, GLvideo_params& vr_params)
+:vr_params(vr_params)
 {
     QPalette p = palette();
     p.setColor(QPalette::Window, Qt::black);
     setPalette(p);
 
-    //some defaults in the abscence of any settings
+    startFullScreen = false;
+    fileName = "";
+    fileType = "";
+    forceFileType = false;
     videoWidth = 1920;
     videoHeight = 1080;
-    frameRepeats = 0;
-    luminanceOffset1 = -0.0625;
-    chrominanceOffset1 = -0.5;
-    luminanceMul = 1.0;
-    chrominanceMul = 1.0;
-    luminanceOffset2 = 0.0;
-    chrominanceOffset2 = 0.0;
-    interlacedSource = false;
-    deinterlace = false;
-    fileName = "";
-    forceFileType = false;
-    matrixScaling = false;
-    fileType = "";
-    matrixKr = 0.2126;
-    matrixKg = 0.7152;
-    matrixKb = 0.0722;
-    startFullScreen = false;
-    osdScale = 1.0;
-    osdBackTransparency = 0.7;
-    osdTextTransparency = 0.5;
-    looping = true;
-    quitAtEnd = false;
+
     hideMouse = false;
-
-#ifdef Q_OS_UNIX
-    fontFile = "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf";
-#endif
-
-#ifdef Q_OS_MACX
-    fontFile = "/Library/Fonts/GillSans.dfont";
-#endif
+    looping = true;
+	quitAtEnd = false;
 
     //override settings with command line
     parseCommandLine(argc, argv);
@@ -142,7 +121,8 @@ MainWindow::MainWindow(int argc, char **argv)
     //central widget is the threaded openGL video widget
     //which pulls video from the videoRead
     //and gets stats for the OSD from the readThread
-    glvideo_mt = new GLvideo_mt(this, videoTransport, frameQueue);
+    glvideo_mt = new GLvideo_mt(this, videoTransport, frameQueue, vr_params);
+
     setCentralWidget(glvideo_mt);
     glvideo_mt->start();
     
@@ -190,39 +170,16 @@ MainWindow::MainWindow(int argc, char **argv)
     //key 258, press=lock controls, hold=unlock controls
 #endif
 
-
-    
     //video reader parameters
     videoTransport->setLooping(looping);
     connect(videoTransport, SIGNAL(endOfFile()), this, SLOT(endOfFile()));
 
     //rendering thread parameters
-    glvideo_mt->setFrameRepeats(frameRepeats);
-    glvideo_mt->setFontFile(fontFile);
-    glvideo_mt->setLuminanceOffset1(luminanceOffset1);
-    glvideo_mt->setChrominanceOffset1(chrominanceOffset1);
-    glvideo_mt->setLuminanceMultiplier(luminanceMul);
-    glvideo_mt->setChrominanceMultiplier(chrominanceMul);
-    glvideo_mt->setLuminanceOffset2(luminanceOffset2);
-    glvideo_mt->setChrominanceOffset2(chrominanceOffset2);
-    glvideo_mt->setInterlacedSource(interlacedSource);
-    glvideo_mt->setDeinterlace(deinterlace);
-    glvideo_mt->setMatrixScaling(matrixScaling);
-    glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
-    glvideo_mt->setCaption(caption);
-    glvideo_mt->setOsdScale(osdScale);
-    glvideo_mt->setOsdState(osdState);
-    glvideo_mt->setOsdTextTransparency(osdTextTransparency);
-    glvideo_mt->setOsdBackTransparency(osdBackTransparency);
-    glvideo_mt->setAlwaysHideMouse(hideMouse);
-
-    
 }
 
 void MainWindow::parseCommandLine(int argc, char **argv)
 {
     allParsed = true;    //default to command line parsing succeeding
-
     try {
 
         // Declare the supported options.
@@ -231,30 +188,30 @@ void MainWindow::parseCommandLine(int argc, char **argv)
         desc.add_options()
             ("width,w",       po::value(&videoWidth),         "int    1920    Width of video luminance component")
             ("height,h",      po::value(&videoHeight),        "int    1080    Height of video luminance component")
-            ("repeats,r",     po::value(&frameRepeats),       "int    0       Frame is repeated r extra times")
+            ("repeats,r",     po::value(&vr_params.frame_repeats),       "int    0       Frame is repeated r extra times")
             ("loop,l",        po::value(&looping),            "bool   1       Video file is played repeatedly")
             ("quit,q",                                        "               Exit at end of video file")
-            ("interlace,i",   po::value(&interlacedSource),   "bool   false   Interlaced source [1], progressive[0]")
-            ("deinterlace,d", po::value(&deinterlace),        "bool   false   Deinterlace on [1], off [0]")
-            ("yoffset",       po::value(&luminanceOffset1),   "float -0.0625  Luminance data values offset")
-            ("coffset",       po::value(&chrominanceOffset1), "float -0.5     Chrominance data values offset")
-            ("ymult",         po::value(&luminanceMul),       "float  1.0     Luminance multipler")
-            ("cmult",         po::value(&chrominanceMul),     "float  1.0     Chrominance multiplier")
-            ("yoffset2",      po::value(&luminanceOffset2),   "float  0.0     Multiplied Luminance offset 2")
-            ("coffset2",      po::value(&chrominanceOffset2), "float  0.0     Multiplied Chrominance offset 2")
-            ("mscale,m",      po::value(&matrixScaling),      "bool   0       Matrix scale [0] Y*1.0, C*1.0,\n"
+            ("interlace,i",   po::value(&vr_params.interlaced_source),   "bool   false   Interlaced source [1], progressive[0]")
+            ("deinterlace,d", po::value(&vr_params.deinterlace),        "bool   false   Deinterlace on [1], off [0]")
+            ("yoffset",       po::value(&vr_params.luminance_offset1),   "float -0.0625  Luminance data values offset")
+            ("coffset",       po::value(&vr_params.chrominance_offset1), "float -0.5     Chrominance data values offset")
+            ("ymult",         po::value(&vr_params.luminance_mul),       "float  1.0     Luminance multipler")
+            ("cmult",         po::value(&vr_params.chrominance_mul),     "float  1.0     Chrominance multiplier")
+            ("yoffset2",      po::value(&vr_params.luminance_offset2),   "float  0.0     Multiplied Luminance offset 2")
+            ("coffset2",      po::value(&vr_params.chrominance_offset2), "float  0.0     Multiplied Chrominance offset 2")
+            ("mscale,m",      po::value(&vr_params.matrix_scaling),      "bool   0       Matrix scale [0] Y*1.0, C*1.0,\n"
                                                               "               [1] Y*(255/219) C*(255/224)")
-            ("matrixkr",      po::value(&matrixKr),           "float  0.2126  Colour Matrix Kr")
-            ("matrixkg",      po::value(&matrixKg),           "float  0.7152  Colour Matrix Kg")
-            ("matrixkb",      po::value(&matrixKb),           "float  0.0722  Colour Matrix Kb\n"
+            ("matrixkr",      po::value(&vr_params.matrix_Kr),           "float  0.2126  Colour Matrix Kr")
+            ("matrixkg",      po::value(&vr_params.matrix_Kg),           "float  0.7152  Colour Matrix Kg")
+            ("matrixkb",      po::value(&vr_params.matrix_Kb),           "float  0.0722  Colour Matrix Kb\n"
                                                               "               ITU-R BT709/BT1361, SMPTE274M/296M")
             ("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
                                                               "               ITU-R BT601/BT470, SMPTE170M/293M")
             ("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")
-            ("osdscale",      po::value(&osdScale),           "float  1.0     OSD size scaling factor")
-            ("osdbackalpha",  po::value(&osdBackTransparency),"float  0.7     Transparency for OSD background")
-            ("osdtextalpha",  po::value(&osdTextTransparency),"float  0.5     Transparency for OSD text")
-            ("osdstate",      po::value(&osdState),           "int    0       OSD initial state")
+            ("osdscale",      po::value(&vr_params.osd_scale),           "float  1.0     OSD size scaling factor")
+            ("osdbackalpha",  po::value(&vr_params.osd_back_alpha),"float  0.7     Transparency for OSD background")
+            ("osdtextalpha",  po::value(&vr_params.osd_text_alpha),"float  0.5     Transparency for OSD text")
+            ("osdstate",      po::value(&vr_params.osd_bot),           "int    0       OSD initial state")
             ("filetype,t",    po::value<string>(),            "string         Force file type\n"
                                                               "               [i420|yv12|uyvy|v210|v216]")
             ("full,f",                                        "               Start in full screen mode")
@@ -294,18 +251,18 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 
         if (vm.count("fontfile")) {
             string tmp = vm["fontfile"].as<string>();
-            fontFile = tmp.data();
+            vr_params.font_file = tmp.data();
 
 #ifdef HAVE_FTGL
             //check OSD font file exists
-            QFileInfo fi(fontFile);
+            QFileInfo fi(vr_params.font_file);
             if(fi.exists() == false) {
-                printf("Cannot find OSD font file %s\n", fontFile.toLatin1().data());
+                printf("Cannot find OSD font file %s\n", vr_params.font_file.toLatin1().data());
                 allParsed = false;
             }
             else {
                 if(fi.isReadable() == false) {
-                    printf("Cannot read OSD font file %s\n", fontFile.toLatin1().data());
+                    printf("Cannot read OSD font file %s\n", vr_params.font_file.toLatin1().data());
                     allParsed = false;
                 }
             }
@@ -343,7 +300,7 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 
         if(vm.count("caption")) {
             string tmp = vm["caption"].as<string>();
-            caption = tmp.data();
+            vr_params.caption = tmp.data();
         }
 
         if (vm.count("video") == 0) {
@@ -629,17 +586,24 @@ void MainWindow::setFullScreen(bool fullscreen)
 
 void MainWindow::setHDTVMatrix()
 {
-    glvideo_mt->setMatrix(0.2126, 0.7152, 0.0722);
+	vr_params.matrix_Kr = 0.2126;
+	vr_params.matrix_Kg = 0.7152;
+	vr_params.matrix_Kb = 0.0722;
+	vr_params.matrix_valid = false;
 }
 
 void MainWindow::setSDTVMatrix()
 {
-    glvideo_mt->setMatrix(0.299, 0.587, 0.114);
+	vr_params.matrix_Kr = 0.299;
+	vr_params.matrix_Kg = 0.587;
+	vr_params.matrix_Kb = 0.114;
+	vr_params.matrix_valid = false;
 }
 
 void MainWindow::setUserMatrix()
 {
-    glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
+		/* todo */
+//    glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
 }
 
 void MainWindow::endOfFile()

@@ -31,8 +31,10 @@
 #include "videoTransport.h"
 #include "frameQueue.h"
 
-GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, FrameQueue *f)
-    : QGLWidget(parent), vt(v), fq(f), renderThread(new GLvideo_rt(*this))
+#include "GLvideo_params.h"
+
+GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, FrameQueue *f, GLvideo_params& vr_params)
+    : QGLWidget(parent), vt(v), fq(f), renderThread(new GLvideo_rt(*this, vr_params)), vr_params(vr_params)
 {
     setMouseTracking(true);
     connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
@@ -41,8 +43,6 @@ GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, FrameQueue *f)
 
 void GLvideo_mt::stop()
 {
-    renderThread->stop();
-    renderThread->wait();
 }
 
 void GLvideo_mt::start()
@@ -73,90 +73,21 @@ void GLvideo_mt::setAlwaysHideMouse(bool h)
     if(alwaysHideMouse) hideMouse();
 }
 
-
-void GLvideo_mt::setOsdScale(float s)
-{
-    renderThread->setOsdScale(s);
-}
-
-void GLvideo_mt::setOsdState(int s)
-{
-    renderThread->setOsdState(s);
-}
-
-void GLvideo_mt::setOsdTextTransparency(float t)
-{
-    renderThread->setOsdTextTransparency(t);
-}
-
-void GLvideo_mt::setOsdBackTransparency(float t)
-{
-    renderThread->setOsdBackTransparency(t);
-}
-
-void GLvideo_mt::togglePerf()
-{
-    renderThread->togglePerf();
-}
-
-void GLvideo_mt::toggleOSD()
-{
-    renderThread->toggleOSD();
-}
-
-void GLvideo_mt::toggleAspectLock()
-{
-    renderThread->toggleAspectLock();
-}
-
-void GLvideo_mt::toggleLuminance()
-{
-    renderThread->toggleLuminance();
-}
-
-void GLvideo_mt::toggleChrominance()
-{
-    renderThread->toggleChrominance();
-}
-
-void GLvideo_mt::setInterlacedSource(bool i)
-{
-    renderThread->setInterlacedSource(i);
-}
-
-void GLvideo_mt::toggleDeinterlace()
-{
-    renderThread->toggleDeinterlace();
-}
-
-void GLvideo_mt::setDeinterlace(bool d)
-{
-    renderThread->setDeinterlace(d);
-}
-
-void GLvideo_mt::setMatrixScaling(bool s)
-{
-    renderThread->setMatrixScaling(s);
-}
-
-void GLvideo_mt::setMatrix(float Kr, float Kg, float Kb)
-{
-    renderThread->setMatrix(Kr, Kg, Kb);
-}
-
-void GLvideo_mt::toggleMatrixScaling()
-{
-    renderThread->toggleMatrixScaling();
-}
+void GLvideo_mt::togglePerf() { vr_params.osd_perf ^= 1; }
+void GLvideo_mt::toggleOSD() { ++vr_params.osd_bot; }
+void GLvideo_mt::toggleAspectLock() { vr_params.aspect_ratio_lock ^= 1; }
+void GLvideo_mt::toggleLuminance() { vr_params.matrix_valid = 0; }
+void GLvideo_mt::toggleChrominance() { vr_params.matrix_valid = 0; }
+void GLvideo_mt::toggleDeinterlace() { vr_params.deinterlace ^= 1; }
 
 void GLvideo_mt::initializeGL()
 {
     //handled by the worker thread
 }
 
+/* rendering is done here. */
 void GLvideo_mt::paintGL()
 {
-    //handled by the worker thread
 }
 
 void GLvideo_mt::paintEvent(QPaintEvent * event)
@@ -171,49 +102,4 @@ void GLvideo_mt::resizeEvent(QResizeEvent * event)
     //is slow to start the first window resize event will issue a makeCurrent() before
     //the rendering thread does, stealing the openGL context from it
     renderThread->resizeViewport(event->size().width(), event->size().height());
-}
-
-void GLvideo_mt::setFrameRepeats(int repeats)
-{
-    renderThread->setFrameRepeats(repeats);
-}
-
-void GLvideo_mt::setFontFile(QString &fontFile)
-{
-    renderThread->setFontFile(fontFile.toLatin1().data());
-}
-
-void GLvideo_mt::setLuminanceMultiplier(float m)
-{
-    renderThread->setLuminanceMultiplier(m);
-}
-
-void GLvideo_mt::setChrominanceMultiplier(float m)
-{
-    renderThread->setChrominanceMultiplier(m);
-}
-
-void GLvideo_mt::setLuminanceOffset1(float o)
-{
-    renderThread->setLuminanceOffset1(o);
-}
-
-void GLvideo_mt::setChrominanceOffset1(float o)
-{
-    renderThread->setChrominanceOffset1(o);
-}
-
-void GLvideo_mt::setLuminanceOffset2(float o)
-{
-    renderThread->setLuminanceOffset2(o);
-}
-
-void GLvideo_mt::setChrominanceOffset2(float o)
-{
-    renderThread->setChrominanceOffset2(o);
-}
-
-void GLvideo_mt::setCaption(QString &caption)
-{
-    renderThread->setCaption(caption.toLatin1().data());
 }

@@ -40,12 +40,13 @@ class ReaderInterface;
 class FrameQueue;
 class VideoTransport;
 class GLvideo_mt;
+class GLvideo_params;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 public:
-    MainWindow(int argc, char **argv);
+    MainWindow(int argc, char **argv, GLvideo_params& vr_params);
     bool allParsed;   //flag to say that all commandline parameters were parsed OK.
 
 protected:
@@ -107,43 +108,22 @@ private:
 
     void setFullScreen(bool);
     ReaderInterface *reader;
-    //YUVReader *reader;    
+    //YUVReader *reader;
     FrameQueue *frameQueue;
     VideoTransport *videoTransport;
     GLvideo_mt *glvideo_mt;
 
-    //data from the command line parameters
+	GLvideo_params& vr_params;
+
+    bool startFullScreen;
+    QString fileName;
+    QString fileType;
+    bool forceFileType;
     int videoWidth;
     int videoHeight;
-    int frameRepeats;
-    int framePolarity;
-    QString fileName;
-    QString fontFile;
-
-    bool forceFileType;
-    QString fileType;
-    QString caption;
-
-    float luminanceOffset1;
-    float chrominanceOffset1;
-    float luminanceMul;
-    float chrominanceMul;
-    float luminanceOffset2;
-    float chrominanceOffset2;
-    bool  interlacedSource;
-    bool  deinterlace;
-    bool  matrixScaling;
-    float matrixKr;
-    float matrixKg;
-    float matrixKb;
-    bool startFullScreen;
-    float osdScale;
-    int osdState;
-    float osdBackTransparency;
-    float osdTextTransparency;
+    bool hideMouse;
     bool looping;
     bool quitAtEnd;
-    bool hideMouse;
 };
 
 #endif
