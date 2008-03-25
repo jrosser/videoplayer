@@ -77,22 +77,29 @@ void TradTex::renderVideo(VideoData *video_data, GLuint shader_prog)
     GLfuncs::glUniform1iARB(i, 0);  /* Bind Ytex to texture unit 0 */
 
     glDisable(GL_TEXTURE_RECTANGLE_ARB);
+
 #if 0
+    /* enable this to view the luma texture being rendered without
+     * going through the shader */
 	GLfuncs::glUseProgramObjectARB(0);
-    i = GL_REPLACE; glTexEnviv(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, &i); 
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 #endif
+
+    /* NB, texture coordinates are relative to the texture data, (0,0)
+     * is the first texture pixel uploaded, since we use two different
+     * coordinate systems, the texture appears to be upside down */
     glBegin(GL_QUADS);
-        glTexCoord2i(0,0);
+        glTexCoord2i(0, video_data->Yheight);
 	glColor3f(1., 0., 0.);
         glVertex2i(0,0);
-        glTexCoord2i(video_data->Ywidth,0);
+        glTexCoord2i(video_data->Ywidth, video_data->Yheight);
 	glColor3f(0., 1., 0.);
         glVertex2i(video_data->Ywidth,0);
-        glTexCoord2i(video_data->Ywidth, video_data->Yheight);
+        glTexCoord2i(video_data->Ywidth,0);
 	glColor3f(0., 0., 1.);
         glVertex2i(video_data->Ywidth, video_data->Yheight);
-        glTexCoord2i(0, video_data->Yheight);
+        glTexCoord2i(0,0);
 	glColor3f(0., 0., 0.);
         glVertex2i(0, video_data->Yheight);
     glEnd();
