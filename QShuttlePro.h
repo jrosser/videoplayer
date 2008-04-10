@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: QShuttlePro.h,v 1.8 2008-02-05 00:12:06 asuraparaju Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research

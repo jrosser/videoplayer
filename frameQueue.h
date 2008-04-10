@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: frameQueue.h,v 1.2 2008-03-10 10:20:43 jrosser Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research

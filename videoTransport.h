@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoTransport.h,v 1.1 2008-02-25 15:08:06 jrosser Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research

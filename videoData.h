@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.h,v 1.16 2008-03-28 17:04:36 jrosser Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research
