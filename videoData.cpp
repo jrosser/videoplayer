@@ -250,8 +250,8 @@ readv210sample_pos0of3(uint8_t* data)
 void unpackv210line(uint8_t* dst, uint8_t* src, uint_t luma_width)
 {
     /* number of blocks completely filled with active samples (6 per block) */
-    const int num_firstpass_samples = 2*(luma_width/6)*6;
-    int x;
+    const uint_t num_firstpass_samples = 2*(luma_width/6)*6;
+    uint_t x;
     for (x=0; x < num_firstpass_samples; src += 16) {
         dst[x++] = readv210sample_pos0of3(src + 0) >> 2; /* Cb */
         dst[x++] = readv210sample_pos1of3(src + 0) >> 2; /* Y' */
