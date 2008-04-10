@@ -1,6 +1,6 @@
+#include <string.h>
 #include <cassert>
 
-#include "GLfuncs.h"
 #include "GLvideo_pbotex.h"
 
 #include "videoData.h"
@@ -14,13 +14,13 @@ PboTex::~PboTex()
 void PboTex::createTextures(VideoData *video_data)
 {
     glGenTextures(3, (GLuint *)&textures);
-    GLfuncs::glGenBuffers(1, &buf);
+    glGenBuffers(1, &buf);
 
     /* The explicit bind to the zero pixel unpack buffer object allows
      * passing NULL in glTexImage2d() to be unspecified texture data
      * (ie, create the storage for the texture but don't upload antything
      */
-    GLfuncs::glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 
     if(video_data->isPlanar) {
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB,textures.u);
@@ -48,59 +48,59 @@ void PboTex::uploadTextures(VideoData *video_data)
 {
     void *ioMem;
     
-    GLfuncs::glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, buf);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, buf);
     
     if(video_data->isPlanar) {
-        GLfuncs::glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->UdataSize, NULL, GL_STREAM_DRAW);
-        ioMem = GLfuncs::glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+        glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->UdataSize, NULL, GL_STREAM_DRAW);
+        ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
         assert(ioMem);
         memcpy(ioMem, video_data->Udata, video_data->UdataSize);
-        GLfuncs::glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.u);
         glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, video_data->Cwidth, video_data->Cheight, video_data->glFormat, video_data->glType, BUFFER_OFFSET(0));
 
-        GLfuncs::glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->VdataSize, NULL, GL_STREAM_DRAW);
-        ioMem = GLfuncs::glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+        glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->VdataSize, NULL, GL_STREAM_DRAW);
+        ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
         assert(ioMem);
         memcpy(ioMem, video_data->Vdata, video_data->VdataSize);
-        GLfuncs::glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
         glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.v);
         glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, video_data->Cwidth, video_data->Cheight, video_data->glFormat, video_data->glType, BUFFER_OFFSET(0));
     }
 
-    GLfuncs::glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->YdataSize, NULL, GL_STREAM_DRAW);
-    ioMem = GLfuncs::glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->YdataSize, NULL, GL_STREAM_DRAW);
+    ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
     assert(ioMem);
     memcpy(ioMem, video_data->Ydata, video_data->YdataSize);
-    GLfuncs::glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.y);
     glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, video_data->Ywidth, video_data->Yheight, video_data->glFormat, video_data->glType, BUFFER_OFFSET(0));
 
-    GLfuncs::glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 }
 
 void PboTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    GLfuncs::glUseProgramObjectARB(shader_prog);
+    glUseProgramObjectARB(shader_prog);
     int i;
     if (video_data->isPlanar) {
-    	GLfuncs::glActiveTexture(GL_TEXTURE1);
+    	glActiveTexture(GL_TEXTURE1);
     	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.u);
-    	i = GLfuncs::glGetUniformLocationARB(shader_prog, "Utex");
-    	GLfuncs::glUniform1iARB(i, 1);  /* Bind Ytex to texture unit 1 */
+    	i = glGetUniformLocationARB(shader_prog, "Utex");
+    	glUniform1iARB(i, 1);  /* Bind Ytex to texture unit 1 */
     
-    	GLfuncs::glActiveTexture(GL_TEXTURE2);
+    	glActiveTexture(GL_TEXTURE2);
     	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.v);
-    	i = GLfuncs::glGetUniformLocationARB(shader_prog, "Vtex");
-    	GLfuncs::glUniform1iARB(i, 2);  /* Bind Ytex to texture unit 2 */
+    	i = glGetUniformLocationARB(shader_prog, "Vtex");
+    	glUniform1iARB(i, 2);  /* Bind Ytex to texture unit 2 */
     }
 
-    GLfuncs::glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.y);
-    i = GLfuncs::glGetUniformLocationARB(shader_prog, "Ytex");
-    GLfuncs::glUniform1iARB(i, 0);  /* Bind Ytex to texture unit 0 */
+    i = glGetUniformLocationARB(shader_prog, "Ytex");
+    glUniform1iARB(i, 0);  /* Bind Ytex to texture unit 0 */
 
     glDisable(GL_TEXTURE_RECTANGLE_ARB);
     glBegin(GL_QUADS);
@@ -117,7 +117,7 @@ void PboTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 	glColor3f(0., 0., 0.);
         glVertex2i(0, video_data->Yheight);
     glEnd();
-    GLfuncs::glUseProgramObjectARB(0);
+    glUseProgramObjectARB(0);
     glDisable(GL_TEXTURE_RECTANGLE_ARB);
 }
 } // namespace

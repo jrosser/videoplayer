@@ -1,5 +1,4 @@
 TEMPLATE = app
-LIBS += -lboost_program_options
 
 QT += opengl
 CONFIG += thread console debug
@@ -9,16 +8,12 @@ HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h vi
 SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp util.cpp
 
 # openGL video widget source files
-HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLfuncs.h GLloadexts.h GLvideo_renderer.h GLvideo_repeater.h shaders.h
-SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLloadexts.cpp
+HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_renderer.h GLvideo_repeater.h shaders.h
+SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp
 
 # video texture transfer engines
 HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
 SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp
-
-# video frame repeating engines
-HEADERS += GLvideo_glxrep.h
-SOURCES += GLvideo_glxrep.cpp
 
 #DEFINES += HAVE_DIRAC
 
@@ -42,9 +37,13 @@ contains(DEFINES, HAVE_DIRAC) {
 }
 
 linux-g++ {
+  # video frame repeating engines
+  HEADERS += GLvideo_x11rep.h
+  SOURCES += GLvideo_x11rep.cpp
+
   SOURCES += QShuttlePro.cpp
   HEADERS += QShuttlePro.h
-  LIBS += -lftgl
+  LIBS += -lftgl -lGLEW
   DEFINES += HAVE_FTGL
   INCLUDEPATH += /usr/include/freetype2
 }
@@ -70,6 +69,9 @@ macx {
   LIBPATH += $(SDKROOT)/usr/X11R6/lib
   LIBS += -lfreetype
 
+  #glew
+  LIBS += -lGLEW
+
   #openGL
   INCLUDEPATH += /usr/X11/include
 
@@ -79,4 +81,15 @@ macx {
     /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib
 }
 
+win32 {
+	LIBS += -Lc:/boost/boost_1_34_1/lib
+	INCLUDEPATH += c:/boost/boost_1_34_1/
+} else {
+	LIBS += -lboost_program_options
+}
+
+win32 {
+	INCLUDEPATH += c:/glew/include
+	LIBS += -Lc:/glew/lib -lglew
+}
 

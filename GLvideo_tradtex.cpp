@@ -1,6 +1,5 @@
-#include "GLfuncs.h"
-#include "GLvideo_tradtex.h"
 
+#include "GLvideo_tradtex.h"
 #include "videoData.h"
 
 namespace GLVideoRenderer {
@@ -57,31 +56,31 @@ void TradTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    GLfuncs::glUseProgramObjectARB(shader_prog);
+    glUseProgramObjectARB(shader_prog);
     int i;
     if (video_data->isPlanar) {
-    	GLfuncs::glActiveTexture(GL_TEXTURE1);
+    	glActiveTexture(GL_TEXTURE1);
     	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.u);
-    	i = GLfuncs::glGetUniformLocationARB(shader_prog, "Utex");
-    	GLfuncs::glUniform1iARB(i, 1);  /* Bind Ytex to texture unit 1 */
+    	i = glGetUniformLocationARB(shader_prog, "Utex");
+    	glUniform1iARB(i, 1);  /* Bind Ytex to texture unit 1 */
     
-    	GLfuncs::glActiveTexture(GL_TEXTURE2);
+    	glActiveTexture(GL_TEXTURE2);
     	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.v);
-    	i = GLfuncs::glGetUniformLocationARB(shader_prog, "Vtex");
-    	GLfuncs::glUniform1iARB(i, 2);  /* Bind Ytex to texture unit 2 */
+    	i = glGetUniformLocationARB(shader_prog, "Vtex");
+    	glUniform1iARB(i, 2);  /* Bind Ytex to texture unit 2 */
     }
 
-    GLfuncs::glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.y);
-    i = GLfuncs::glGetUniformLocationARB(shader_prog, "Ytex");
-    GLfuncs::glUniform1iARB(i, 0);  /* Bind Ytex to texture unit 0 */
+    i = glGetUniformLocationARB(shader_prog, "Ytex");
+    glUniform1iARB(i, 0);  /* Bind Ytex to texture unit 0 */
 
     glDisable(GL_TEXTURE_RECTANGLE_ARB);
 
 #if 0
     /* enable this to view the luma texture being rendered without
      * going through the shader */
-	GLfuncs::glUseProgramObjectARB(0);
+	glUseProgramObjectARB(0);
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     glEnable(GL_TEXTURE_RECTANGLE_ARB);
 #endif
@@ -103,7 +102,7 @@ void TradTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 	glColor3f(0., 0., 0.);
         glVertex2i(0, video_data->Yheight);
     glEnd();
-    GLfuncs::glUseProgramObjectARB(0);
+    glUseProgramObjectARB(0);
     glDisable(GL_TEXTURE_RECTANGLE_ARB);
 }
 } // namespace

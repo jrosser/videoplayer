@@ -28,9 +28,6 @@
 
 #include <stdio.h>
 
-#include "GLfuncs.h"
-#include "GLloadexts.h"
-
 #include <QtGui>
 #include "GLvideo_rt.h"
 #include "GLvideo_mt.h"
@@ -38,7 +35,7 @@
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
 
-#include "GLvideo_glxrep.h"
+#include "GLvideo_x11rep.h"
 
 #ifdef HAVE_FTGL
 #include "FTGL/FTGLPolygonFont.h"
@@ -100,17 +97,17 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 {
     GLint length = 0;            //log length
 
-    shaders[n] = GLfuncs::glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+    shaders[n] = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
 
     if(DEBUG) printf("Shader program is %s\n", src);
 
-    GLfuncs::glShaderSourceARB(shaders[n], 1, (const GLcharARB**)&src, NULL);
-    GLfuncs::glCompileShaderARB(shaders[n]);
+    glShaderSourceARB(shaders[n], 1, (const GLcharARB**)&src, NULL);
+    glCompileShaderARB(shaders[n]);
 
-    GLfuncs::glGetObjectParameterivARB(shaders[n], GL_OBJECT_COMPILE_STATUS_ARB, &compiled[n]);
-    GLfuncs::glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+    glGetObjectParameterivARB(shaders[n], GL_OBJECT_COMPILE_STATUS_ARB, &compiled[n]);
+    glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
     char *s=(char *)malloc(length);
-    GLfuncs::glGetInfoLogARB(shaders[n], length, &length ,s);
+    glGetInfoLogARB(shaders[n], length, &length ,s);
     if(DEBUG)printf("Compile Status %d, Log: (%d) %s\n", compiled[n], length, length ? s : NULL);
     if(compiled[n] <= 0) {
         printf("Compile Failed: %s\n", gluErrorString(glGetError()));
@@ -119,16 +116,16 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
     free(s);
 
        /* Set up program objects. */
-    programs[n]=GLfuncs::glCreateProgramObjectARB();
-    GLfuncs::glAttachObjectARB(programs[n], shaders[n]);
-    GLfuncs::glLinkProgramARB(programs[n]);
+    programs[n]=glCreateProgramObjectARB();
+    glAttachObjectARB(programs[n], shaders[n]);
+    glLinkProgramARB(programs[n]);
 
     /* And print the link log. */
     if(compiled[n]) {
-        GLfuncs::glGetObjectParameterivARB(programs[n], GL_OBJECT_LINK_STATUS_ARB, &linked[n]);
-        GLfuncs::glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+        glGetObjectParameterivARB(programs[n], GL_OBJECT_LINK_STATUS_ARB, &linked[n]);
+        glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
         s=(char *)malloc(length);
-        GLfuncs::glGetInfoLogARB(shaders[n], length, &length, s);
+        glGetInfoLogARB(shaders[n], length, &length, s);
         if(DEBUG) printf("Link Status %d, Log: (%d) %s\n", linked[n], length, s);
         free(s);
     }
@@ -368,8 +365,12 @@ void GLvideo_rt::run()
 
     //initialise OpenGL
     glw.makeCurrent();
-    GLfuncs::loadGLExtSyms();
+    //loadGLExtSyms();
 
+    GLenum err = glewInit();
+    if(GLEW_OK != err)
+    	qWarning() << "failed to init glew";
+    
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glViewport(0,0, displayheight, displaywidth);
@@ -466,52 +467,52 @@ void GLvideo_rt::run()
                 if(DEBUG) printf("Updating fragment shader variables\n");
             buildColourMatrix(colourMatrix, params.matrix_Kr, params.matrix_Kg, params.matrix_Kb, params.matrix_scaling, params.matrix_scaling);
 
-    		GLfuncs::glUseProgramObjectARB(programs[currentShader]);
+    		glUseProgramObjectARB(programs[currentShader]);
                 //data about the input file to the shader
-                int i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "Yheight");
-                GLfuncs::glUniform1fARB(i, videoData->Yheight);
+                int i = glGetUniformLocationARB(programs[currentShader], "Yheight");
+                glUniform1fARB(i, videoData->Yheight);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "Ywidth");
-                GLfuncs::glUniform1fARB(i, videoData->Ywidth);
+                i = glGetUniformLocationARB(programs[currentShader], "Ywidth");
+                glUniform1fARB(i, videoData->Ywidth);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "CHsubsample");
-                GLfuncs::glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
+                i = glGetUniformLocationARB(programs[currentShader], "CHsubsample");
+                glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "CVsubsample");
-                GLfuncs::glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
+                i = glGetUniformLocationARB(programs[currentShader], "CVsubsample");
+                glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
 
                 //settings from the c++ program to the shader
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
+                i = glGetUniformLocationARB(programs[currentShader], "yuvOffset1");
                 float offset1[3];
                 offset1[0] = params.luminance_offset1;
                 offset1[1] = params.chrominance_offset1;
                 offset1[2] = params.chrominance_offset1;
-                GLfuncs::glUniform3fvARB(i, 1, &offset1[0]);
+                glUniform3fvARB(i, 1, &offset1[0]);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvMul");
+                i = glGetUniformLocationARB(programs[currentShader], "yuvMul");
                 float mul[3];
                 mul[0] = params.luminance_mul;
                 mul[1] = params.chrominance_mul;
                 mul[2] = params.chrominance_mul;
-                GLfuncs::glUniform3fvARB(i, 1, &mul[0]);
+                glUniform3fvARB(i, 1, &mul[0]);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
+                i = glGetUniformLocationARB(programs[currentShader], "yuvOffset2");
                 float offset2[3];
                 offset2[0] = params.luminance_offset2;
                 offset2[1] = params.chrominance_offset2;
                 offset2[2] = params.chrominance_offset2;
-                GLfuncs::glUniform3fvARB(i, 1, &offset2[0]);
+                glUniform3fvARB(i, 1, &offset2[0]);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "colorMatrix");
-                GLfuncs::glUniformMatrix3fvARB(i, 1, false, colourMatrix);
+                i = glGetUniformLocationARB(programs[currentShader], "colorMatrix");
+                glUniformMatrix3fvARB(i, 1, false, colourMatrix);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "interlacedSource");
-                GLfuncs::glUniform1iARB(i, params.interlaced_source);
+                i = glGetUniformLocationARB(programs[currentShader], "interlacedSource");
+                glUniform1iARB(i, params.interlaced_source);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "deinterlace");
-                GLfuncs::glUniform1iARB(i, params.deinterlace);
+                i = glGetUniformLocationARB(programs[currentShader], "deinterlace");
+                glUniform1iARB(i, params.deinterlace);
                 perf_updateVars = perfTimer.elapsed();
-    		GLfuncs::glUseProgramObjectARB(0);
+    		glUseProgramObjectARB(0);
             }
             
             if(doResize /* && displaywidth>0 && displayheight>0*/) {
@@ -559,11 +560,11 @@ void GLvideo_rt::run()
             //	for(int i=0; i<=interlacedSource; i++) {
             //
             //		//load the field and direction variables into the YUV->RGB shader
-            //		int i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "field");
-            //		GLfuncs::glUniform1iARB(i, field);
+            //		int i = glGetUniformLocationARB(programs[currentShader], "field");
+            //		glUniform1iARB(i, field);
             //
-            //		i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "direction");
-            //		GLfuncs::glUniform1iARB(i, direction);
+            //		i = glGetUniformLocationARB(programs[currentShader], "direction");
+            //		glUniform1iARB(i, direction);
             //
             //		//the frame repeater renders to an intermediate framebuffer object
             //		repeater->setupRGBdestination();
@@ -591,13 +592,13 @@ void GLvideo_rt::run()
             //
             
             if(params.interlaced_source) {
-   		GLfuncs::glUseProgramObjectARB(programs[currentShader]);
-                int i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "field");
-                GLfuncs::glUniform1iARB(i, field);
+   		glUseProgramObjectARB(programs[currentShader]);
+                int i = glGetUniformLocationARB(programs[currentShader], "field");
+                glUniform1iARB(i, field);
 
-                i = GLfuncs::glGetUniformLocationARB(programs[currentShader], "direction");
-                GLfuncs::glUniform1iARB(i, direction);
-    		GLfuncs::glUseProgramObjectARB(0);
+                i = glGetUniformLocationARB(programs[currentShader], "direction");
+                glUniform1iARB(i, direction);
+    		glUseProgramObjectARB(0);
             }
 
 			/* reset all state vars */

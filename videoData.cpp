@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.cpp,v 1.22 2008-03-13 11:38:50 jrosser Exp $
+* $Id: videoData.cpp,v 1.23 2008-03-28 17:04:36 jrosser Exp $
 *
 * The MIT License
 *
@@ -29,6 +29,7 @@
 #include "videoData.h"
 
 #include <stdlib.h>
+#include <malloc.h>
 
 #ifdef Q_OS_WIN32
 #define valloc malloc

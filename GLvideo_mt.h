@@ -29,7 +29,8 @@
 #ifndef GLVIDEO_MT_H
 #define GLVIDEO_MT_H
 
-#include "GLfuncs.h"
+#include "GLvideo_rt.h"
+
 #include <QtGui>
 #include <QGLWidget>
 

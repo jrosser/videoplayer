@@ -1,7 +1,7 @@
 #ifndef __GLVIDEO_RENDERER_H
 #define __GLVIDEO_RENDERER_H
 
-#include "GLfuncs.h"
+#include <GL/glew.h>
 
 class VideoData;
 

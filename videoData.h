@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: videoData.h,v 1.15 2008-03-13 11:38:50 jrosser Exp $
+* $Id: videoData.h,v 1.16 2008-03-28 17:04:36 jrosser Exp $
 *
 * The MIT License
 *
@@ -29,7 +29,7 @@
 #ifndef VIDEODATA_H_
 #define VIDEODATA_H_
 
-#include "GLfuncs.h"
+#include <GL/glew.h>
 
 class VideoData
 {
