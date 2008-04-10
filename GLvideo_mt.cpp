@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: GLvideo_mt.cpp,v 1.29 2008/03/13 11:38:49 jrosser Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research

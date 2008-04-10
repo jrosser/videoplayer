@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: mainwindow.cpp,v 1.49 2008/03/13 11:38:49 jrosser Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research

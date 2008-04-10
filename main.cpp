@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: main.cpp,v 1.9 2008-02-05 00:12:06 asuraparaju Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research

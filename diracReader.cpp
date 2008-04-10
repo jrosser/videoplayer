@@ -1,7 +1,5 @@
 /* ***** BEGIN LICENSE BLOCK *****
 *
-* $Id: diracReader.cpp,v 1.3 2008-03-10 11:47:41 jrosser Exp $
-*
 * The MIT License
 *
 * Copyright (c) 2008 BBC Research
