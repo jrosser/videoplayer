@@ -378,7 +378,14 @@ void GLvideo_rt::run()
     GLenum err = glewInit();
     if(GLEW_OK != err)
     	qWarning() << "failed to init glew";
-    
+
+#ifdef Q_OS_WIN32
+    wglSwapIntervalEXT(1);
+#endif
+#ifdef Q_OS_MAC
+    my_aglSwapInterval(1);
+#endif
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glViewport(0,0, displayheight, displaywidth);
