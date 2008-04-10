@@ -43,9 +43,13 @@ linux-g++ {
 
   SOURCES += QShuttlePro.cpp
   HEADERS += QShuttlePro.h
-  LIBS += -lftgl -lGLEW
+
+  # GLEW is not managed by pkgconfig
+  LIBS += -lGLEW
+
+  CONFIG += link_pkgconfig
+  PKGCONFIG += ftgl
   DEFINES += HAVE_FTGL
-  INCLUDEPATH += /usr/include/freetype2
 }
 
 macx {
