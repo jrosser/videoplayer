@@ -563,8 +563,14 @@ void GLvideo_rt::run()
             		delete font;
 
             	font = new FTGLPolygonFont(params.font_file.toLatin1().constData());
-            	font->FaceSize(72);
-            	font->CharMap(ft_encoding_unicode);
+                if (!font->Error()) {
+            	    font->FaceSize(72);
+            	    font->CharMap(ft_encoding_unicode);
+                }
+		else {
+			delete font;
+			font = NULL;
+		}
             }
 #endif
             
