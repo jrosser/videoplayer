@@ -1,0 +1,16 @@
+debug
+release
+Makefile*
+*.pdb
+*.ncb
+*.sln
+*.suo
+*.vcproj*
+moc_*
+videoplayer
+.cdtproject
+.project
+.settings
+.*
+*.o
+*~
