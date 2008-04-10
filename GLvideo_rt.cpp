@@ -214,7 +214,7 @@ void drawText(char *str, FTFont *font)
     glDisable(GL_POLYGON_SMOOTH);
 }
 
-void draw2Text(const char *str1, const char *str2, int h_spacing, FTFont *font)
+void draw2Text(const char *str1, const char *str2, float h_spacing, FTFont *font)
 {
     glEnable(GL_POLYGON_SMOOTH);
     glPushMatrix();
@@ -223,7 +223,7 @@ void draw2Text(const char *str1, const char *str2, int h_spacing, FTFont *font)
     font->Render(str1);
     glPopMatrix();
 
-    glTranslated(h_spacing, 0, 0);
+    glTranslatef(h_spacing, 0, 0);
 
     glPushMatrix();
     font->Render(str2);
@@ -233,7 +233,7 @@ void draw2Text(const char *str1, const char *str2, int h_spacing, FTFont *font)
     glDisable(GL_POLYGON_SMOOTH);
 }
 
-void drawPerfTimer(const char *str, int num, const char *units, int h_spacing, FTFont *font)
+void drawPerfTimer(const char *str, int num, const char *units, float h_spacing, FTFont *font)
 {
 	char str2[255];
 	sprintf(str2, "%d%s", num, units);
