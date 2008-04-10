@@ -86,14 +86,23 @@ macx {
 }
 
 win32 {
-	LIBS += -Lc:/boost/boost_1_34_1/lib
-	INCLUDEPATH += c:/boost/boost_1_34_1/
+	DEFINES += _CRT_SECURE_NO_WARNINGS
+
+	LIBS += -Lc:\boost\boost_1_34_1\lib
+	INCLUDEPATH += c:\boost\boost_1_34_1\
+
+	DEFINES += GLEW_STATIC
+	LIBS += c:\glew\lib\glew32s.lib
+	INCLUDEPATH += c:\glew\include
+
+	LIBS += c:\freetype-2.3.5\objs\freetype235.lib
+	INCLUDEPATH += c:\freetype-2.3.5\include
+
+	LIBS += c:\FTGL\win32_vcpp\build\ftgl_static_MT.lib
+	INCLUDEPATH += c:\ftgl
+	DEFINES += HAVE_FTGL
+
+	QMAKE_LFLAGS += /VERBOSE:LIB
 } else {
 	LIBS += -lboost_program_options
 }
-
-win32 {
-	INCLUDEPATH += c:/glew/include
-	LIBS += -Lc:/glew/lib -lglew
-}
-
