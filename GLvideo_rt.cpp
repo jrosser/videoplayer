@@ -365,6 +365,14 @@ void GLvideo_rt::run()
 
     //initialise OpenGL
     glw.makeCurrent();
+    const QGLContext* context = glw.context();
+
+    while (!context || !context->isValid()) {
+        msleep(50);
+        glw.makeCurrent();
+        context = glw.context();
+    }
+
     //loadGLExtSyms();
 
     GLenum err = glewInit();
