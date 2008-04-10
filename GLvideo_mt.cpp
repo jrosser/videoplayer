@@ -34,6 +34,7 @@
 GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, FrameQueue *f, GLvideo_params& vr_params)
     : QGLWidget(parent), vt(v), fq(f), renderThread(new GLvideo_rt(*this, vr_params)), vr_params(vr_params)
 {
+	alwaysHideMouse = false;
     setMouseTracking(true);
     connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
     mouseHideTimer.setSingleShot(true);
