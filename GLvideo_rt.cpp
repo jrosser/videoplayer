@@ -337,6 +337,7 @@ void GLvideo_rt::run()
 
     VideoData *videoData = NULL;
 
+    //monitoring
     QTime fpsIntervalTime;        //measures FPS, averaged over several frames
     QTime frameIntervalTime;    //measured the total period of each frame
     QTime perfTimer;            //performance timer for measuring indivdual processes during rendering
@@ -346,8 +347,6 @@ void GLvideo_rt::run()
     //flags and status
     int lastsrcwidth = 0;
     int lastsrcheight = 0;
-    bool createGLTextures = false;
-    bool updateShaderVars = false;
 
     //declare shadow variables for the thread worker and initialise them
     bool doRendering = true;
@@ -371,8 +370,6 @@ void GLvideo_rt::run()
         context = glw.context();
     }
 
-    //loadGLExtSyms();
-
     GLenum err = glewInit();
     if(GLEW_OK != err)
     	qWarning() << "failed to init glew";
@@ -394,6 +391,10 @@ void GLvideo_rt::run()
     compileFragmentShaders();
 
     while (doRendering) {
+    	
+        bool createGLTextures = false;
+        bool updateShaderVars = false;
+    	
         perfTimer.start();
 
         //read frame data, one frame at a time, or after we have displayed the second field
@@ -475,10 +476,14 @@ void GLvideo_rt::run()
                 createGLTextures = false;
             }
 
+            if(params.matrix_valid == false) {
+                buildColourMatrix(colourMatrix, params.matrix_Kr, params.matrix_Kg, params.matrix_Kb, params.matrix_scaling, params.matrix_scaling);
+                updateShaderVars = true;
+            }
+            
             if(updateShaderVars) {
                 perfTimer.restart();
                 if(DEBUG) printf("Updating fragment shader variables\n");
-            buildColourMatrix(colourMatrix, params.matrix_Kr, params.matrix_Kg, params.matrix_Kb, params.matrix_scaling, params.matrix_scaling);
 
     		glUseProgramObjectARB(programs[currentShader]);
                 //data about the input file to the shader
@@ -516,7 +521,7 @@ void GLvideo_rt::run()
                 offset2[2] = params.chrominance_offset2;
                 glUniform3fvARB(i, 1, &offset2[0]);
 
-                i = glGetUniformLocationARB(programs[currentShader], "colorMatrix");
+                i = glGetUniformLocationARB(programs[currentShader], "colourMatrix");
                 glUniformMatrix3fvARB(i, 1, false, colourMatrix);
 
                 i = glGetUniformLocationARB(programs[currentShader], "interlacedSource");
@@ -528,7 +533,9 @@ void GLvideo_rt::run()
     		glUseProgramObjectARB(0);
             }
             
-            if(doResize /* && displaywidth>0 && displayheight>0*/) {
+            //if the size of the window has changed (doResize)
+            //or the shape of the video in the window has changed
+            if(doResize || (params.view_valid == false)) {
                 //resize the viewport, once we have some video
                 //if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
 
@@ -623,6 +630,7 @@ void GLvideo_rt::run()
 			/* reset all state vars */
 			params.matrix_valid = true;
 			params.osd_valid = true;
+			params.view_valid = true;
 			doResize = false;
 
             //upload the texture data for each new frame, or for before we render the first field

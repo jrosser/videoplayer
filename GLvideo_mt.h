@@ -65,9 +65,7 @@ public slots:
     void toggleLuminance();
     void toggleChrominance();
     void toggleDeinterlace();
-#if 0
     void toggleMatrixScaling();
-#endif
     void setAlwaysHideMouse(bool h);
 
 private slots:

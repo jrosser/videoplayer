@@ -70,11 +70,13 @@ int main(int argc, char **argv)
     vr_params.chrominance_offset2 = 0.0;
     vr_params.interlaced_source = false;
     vr_params.deinterlace = false;
+    vr_params.matrix_valid = false;    
     vr_params.matrix_scaling = false;
     vr_params.matrix_Kr = 0.2126;
     vr_params.matrix_Kg = 0.7152;
     vr_params.matrix_Kb = 0.0722;
-
+    vr_params.aspect_ratio_lock = true;
+    
     MainWindow window(argc, argv, vr_params);
 
     if(window.allParsed) {

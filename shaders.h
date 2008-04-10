@@ -19,7 +19,7 @@ static const char *shaderPlanarSrc=
   "uniform vec3 yuvOffset1;\n"
   "uniform vec3 yuvMul;\n"
   "uniform vec3 yuvOffset2;\n"
-  "uniform mat3 colorMatrix;\n"
+  "uniform mat3 colourMatrix;\n"
 
   "void main(void) {\n"
   " float nx,ny,a;\n"
@@ -50,7 +50,7 @@ static const char *shaderPlanarSrc=
   " yuv = yuv + yuvOffset1;\n"
   " yuv = yuv * yuvMul;\n"
   " yuv = yuv + yuvOffset2;\n"
-  " rgb = yuv * colorMatrix;\n"
+  " rgb = yuv * colourMatrix;\n"
 
   "    a=1.0;\n"
 
@@ -75,7 +75,7 @@ static const char *shaderUYVYSrc=
   "uniform vec3 yuvOffset1;\n"
   "uniform vec3 yuvMul;\n"
   "uniform vec3 yuvOffset2;\n"
-  "uniform mat3 colorMatrix;\n"
+  "uniform mat3 colourMatrix;\n"
 
   "void main(void) {\n"
   " float nx,ny,a;\n"
@@ -114,7 +114,7 @@ static const char *shaderUYVYSrc=
   " yuv = yuv + yuvOffset1;\n"
   " yuv = yuv * yuvMul;\n"
   " yuv = yuv + yuvOffset2;\n"
-  " rgb = yuv * colorMatrix;\n"
+  " rgb = yuv * colourMatrix;\n"
 
   " a=1.0;\n"
 

@@ -73,10 +73,11 @@ void GLvideo_mt::setAlwaysHideMouse(bool h)
 
 void GLvideo_mt::togglePerf() { vr_params.osd_perf ^= 1; }
 void GLvideo_mt::toggleOSD() { ++vr_params.osd_bot; }
-void GLvideo_mt::toggleAspectLock() { vr_params.aspect_ratio_lock ^= 1; }
+void GLvideo_mt::toggleAspectLock() { vr_params.aspect_ratio_lock ^= 1; vr_params.view_valid = false; }
 void GLvideo_mt::toggleLuminance() { vr_params.matrix_valid = 0; }
 void GLvideo_mt::toggleChrominance() { vr_params.matrix_valid = 0; }
 void GLvideo_mt::toggleDeinterlace() { vr_params.deinterlace ^= 1; }
+void GLvideo_mt::toggleMatrixScaling() { vr_params.matrix_scaling ^= 1; vr_params.matrix_valid = false; }
 
 void GLvideo_mt::initializeGL()
 {
