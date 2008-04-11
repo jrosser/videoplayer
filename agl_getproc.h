@@ -1,6 +1,7 @@
 #ifndef AGL_GETPROC_H_
 #define AGL_GETPROC_H_
 
+void my_aglEnableMultiThreading(void);
 void my_aglSwapInterval(int interval);
 void * aglGetProcAddress(char * pszProc);
 void aglInitEntryPoints(void);
