@@ -1,6 +1,9 @@
 #include "GLvideo_tradtex.h"
 #include "videoData.h"
 
+//needed for NULL
+#include <stdio.h>
+
 namespace GLVideoRenderer
 {
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))

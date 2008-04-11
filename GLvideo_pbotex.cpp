@@ -1,6 +1,9 @@
 #include <string.h>
 #include <cassert>
 
+//needed for NULL
+#include <stdio.h>
+
 #include "GLvideo_pbotex.h"
 
 #include "videoData.h"

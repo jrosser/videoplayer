@@ -27,9 +27,10 @@
 #include "videoData.h"
 
 #include <stdlib.h>
-#include <malloc.h>
+#include <QtGlobal>
 
 #ifdef Q_OS_WIN32
+#include <malloc.h>
 #define valloc malloc
 #endif
 

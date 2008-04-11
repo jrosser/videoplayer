@@ -49,6 +49,10 @@
 
 #include "shaders.h"
 
+#ifdef Q_OS_MACX
+#include "agl_getproc.h"
+#endif
+
 //FIXME - nasty global variables
 //rendering performance monitoring
 int perf_getParams;
@@ -109,8 +113,8 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 	char *s=(char *)malloc(length);
 	glGetInfoLogARB(shaders[n], length, &length, s);
 	if (DEBUG)
-		printf("Compile Status %d, Log: (%d) %s\n", compiled[n], length,
-		       length ? s : NULL);
+		printf("Compile Status %d, Log: (%d) %s\n", (int)compiled[n], (int)length,
+		       (int)length ? s : NULL);
 	if (compiled[n] <= 0) {
 		printf("Compile Failed: %s\n", gluErrorString(glGetError()));
 		throw /* */;
@@ -131,7 +135,7 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 		s=(char *)malloc(length);
 		glGetInfoLogARB(shaders[n], length, &length, s);
 		if (DEBUG)
-			printf("Link Status %d, Log: (%d) %s\n", linked[n], length, s);
+			printf("Link Status %d, Log: (%d) %s\n", (int)linked[n], (int)length, s);
 		free(s);
 	}
 }
