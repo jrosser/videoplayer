@@ -157,8 +157,8 @@ MainWindow::MainWindow(int argc, char **argv, GLvideo_params& vr_params) :
 	connect(shuttle, SIGNAL(key267Pressed()), videoTransport, SLOT(transportPlayPause()));
 	connect(shuttle, SIGNAL(key265Pressed()), videoTransport, SLOT(transportFwd1()));
 	connect(shuttle, SIGNAL(key259Pressed()), this, SLOT(toggleFullScreen()));
-	connect(shuttle, SIGNAL(key256Pressed()), glvideo_mt, SLOT(toggleOSD()));
-	connect(shuttle, SIGNAL(key257Pressed()), glvideo_mt, SLOT(toggleAspectLock()));
+	connect(shuttle, SIGNAL(key256Pressed()), this, SLOT(toggleOSD()));
+	connect(shuttle, SIGNAL(key257Pressed()), this, SLOT(toggleAspectLock()));
 
 	//this is what the IngexPlayer also does
 	//key 269, press=previous mark, hold=start of file
@@ -419,13 +419,13 @@ void MainWindow::createActions()
 	toggleLuminanceAct = new QAction("Toggle Luminance", this);
 	toggleLuminanceAct->setShortcut(tr("y"));
 	addAction(toggleLuminanceAct);
-	connect(toggleLuminanceAct, SIGNAL(triggered()), glvideo_mt,
+	connect(toggleLuminanceAct, SIGNAL(triggered()), this,
 	        SLOT(toggleLuminance()));
 
 	toggleChrominanceAct = new QAction("Toggle Chrominance", this);
 	toggleChrominanceAct->setShortcut(tr("c"));
 	addAction(toggleChrominanceAct);
-	connect(toggleChrominanceAct, SIGNAL(triggered()), glvideo_mt,
+	connect(toggleChrominanceAct, SIGNAL(triggered()), this,
 	        SLOT(toggleChrominance()));
 
 	toggleAspectLockAct = new QAction("Toggle Aspect Ratio Lock", this);
@@ -617,11 +617,11 @@ void MainWindow::toggleAspectLock()
 }
 void MainWindow::toggleLuminance()
 {
-	/* todo */
+	vr_params.show_luma ^= 1;
 }
 void MainWindow::toggleChrominance()
 {
-	/* todo */
+	vr_params.show_chroma ^= 1;
 }
 void MainWindow::toggleDeinterlace()
 {

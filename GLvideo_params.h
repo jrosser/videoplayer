@@ -47,6 +47,10 @@ struct GLvideo_params {
 	float luminance_offset2;
 	float chrominance_offset2;
 
+	/*optionally turn off luminance or chrominance channels*/
+	bool show_luma;
+	bool show_chroma;
+
 	/* set the video levels to computer (0-255)
 	 * or video (16-235) */
 	bool matrix_scaling;

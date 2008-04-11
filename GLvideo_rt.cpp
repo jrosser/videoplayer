@@ -373,14 +373,14 @@ void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
 
 	i = glGetUniformLocationARB(program, "yuvMul");
 	float mul[3];
-	mul[0] = params.luminance_mul;
-	mul[1] = params.chrominance_mul;
-	mul[2] = params.chrominance_mul;
+	mul[0] = params.show_luma ? params.luminance_mul : 0.0;
+	mul[1] = params.show_chroma ? params.chrominance_mul : 0.0;
+	mul[2] = params.show_chroma ? params.chrominance_mul : 0.0;
 	glUniform3fvARB(i, 1, &mul[0]);
 
 	i = glGetUniformLocationARB(program, "yuvOffset2");
 	float offset2[3];
-	offset2[0] = params.luminance_offset2;
+	offset2[0] = params.show_luma ? params.luminance_offset2 : 0.5;
 	offset2[1] = params.chrominance_offset2;
 	offset2[2] = params.chrominance_offset2;
 	glUniform3fvARB(i, 1, &offset2[0]);

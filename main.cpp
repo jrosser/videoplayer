@@ -76,6 +76,8 @@ int main(int argc, char **argv)
 	vr_params.matrix_Kg = 0.7152;
 	vr_params.matrix_Kb = 0.0722;
 	vr_params.aspect_ratio_lock = true;
+	vr_params.show_luma = true;
+	vr_params.show_chroma = true;
 
 	MainWindow window(argc, argv, vr_params);
 
