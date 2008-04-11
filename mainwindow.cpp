@@ -61,6 +61,10 @@ MainWindow::MainWindow(int argc, char **argv, GLvideo_params& vr_params) :
 	videoWidth = 1920;
 	videoHeight = 1080;
 
+	userKr = (float)0.2126;
+	userKg = (float)0.7152;
+	userKb = (float)0.0722;
+
 	hideMouse = false;
 	looping = true;
 	quitAtEnd = false;
@@ -198,9 +202,9 @@ void MainWindow::parseCommandLine(int argc, char **argv)
             ("coffset2",      po::value(&vr_params.chrominance_offset2), "float  0.0     Multiplied Chrominance offset 2")
             ("mscale,m",      po::value(&vr_params.matrix_scaling),      "bool   0       Matrix scale [0] Y*1.0, C*1.0,\n"
                                                               "               [1] Y*(255/219) C*(255/224)")
-            ("matrixkr",      po::value(&vr_params.matrix_Kr),           "float  0.2126  Colour Matrix Kr")
-            ("matrixkg",      po::value(&vr_params.matrix_Kg),           "float  0.7152  Colour Matrix Kg")
-            ("matrixkb",      po::value(&vr_params.matrix_Kb),           "float  0.0722  Colour Matrix Kb\n"
+            ("matrixkr",      po::value(&userKr),           "float  0.2126  Colour Matrix Kr")
+            ("matrixkg",      po::value(&userKg),           "float  0.7152  Colour Matrix Kg")
+            ("matrixkb",      po::value(&userKb),           "float  0.0722  Colour Matrix Kb\n"
                                                               "               ITU-R BT709/BT1361, SMPTE274M/296M")
             ("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
                                                               "               ITU-R BT601/BT470, SMPTE170M/293M")
@@ -245,6 +249,9 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 		if (vm.count("hidemouse")) {
 			hideMouse=true;
 		}
+
+		if (vm.count("matrixkr") || vm.count("matrixkg") || vm.count("matrixkb"))
+			setUserMatrix();
 
 		if (vm.count("fontfile")) {
 			string tmp = vm["fontfile"].as<string>();
@@ -596,8 +603,10 @@ void MainWindow::setSDTVMatrix()
 
 void MainWindow::setUserMatrix()
 {
-	/* todo */
-	//    glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
+	vr_params.matrix_Kr = userKr;
+	vr_params.matrix_Kg = userKg;
+	vr_params.matrix_Kb = userKb;
+	vr_params.matrix_valid = false;
 }
 
 void MainWindow::togglePerf()

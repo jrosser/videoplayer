@@ -119,6 +119,10 @@ QShuttlePro *shuttle;
 
 	GLvideo_params& vr_params;
 
+	float userKr;
+	float userKg;
+	float userKb;
+
 	bool startFullScreen;
 	QString fileName;
 	QString fileType;
