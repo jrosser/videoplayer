@@ -343,6 +343,61 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 }
 #endif
 
+void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
+                                  GLvideo_params &params, float *colourMatrix)
+{
+	if (DEBUG)
+		printf("Updating fragment shader variables\n");
+
+	glUseProgramObjectARB(program);
+	//data about the input file to the shader
+	int i = glGetUniformLocationARB(program, "Yheight");
+	glUniform1fARB(i, videoData->Yheight);
+
+	i = glGetUniformLocationARB(program, "Ywidth");
+	glUniform1fARB(i, videoData->Ywidth);
+
+	i = glGetUniformLocationARB(program, "CHsubsample");
+	glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
+
+	i = glGetUniformLocationARB(program, "CVsubsample");
+	glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
+
+	//settings from the c++ program to the shader
+	i = glGetUniformLocationARB(program, "yuvOffset1");
+	float offset1[3];
+	offset1[0] = params.luminance_offset1;
+	offset1[1] = params.chrominance_offset1;
+	offset1[2] = params.chrominance_offset1;
+	glUniform3fvARB(i, 1, &offset1[0]);
+
+	i = glGetUniformLocationARB(program, "yuvMul");
+	float mul[3];
+	mul[0] = params.luminance_mul;
+	mul[1] = params.chrominance_mul;
+	mul[2] = params.chrominance_mul;
+	glUniform3fvARB(i, 1, &mul[0]);
+
+	i = glGetUniformLocationARB(program, "yuvOffset2");
+	float offset2[3];
+	offset2[0] = params.luminance_offset2;
+	offset2[1] = params.chrominance_offset2;
+	offset2[2] = params.chrominance_offset2;
+	glUniform3fvARB(i, 1, &offset2[0]);
+
+	i = glGetUniformLocationARB(program, "colourMatrix");
+	glUniformMatrix3fvARB(i, 1, false, colourMatrix);
+
+	i = glGetUniformLocationARB(program, "interlacedSource");
+	glUniform1iARB(i, params.interlaced_source);
+
+	i = glGetUniformLocationARB(program, "deinterlace");
+	glUniform1iARB(i, params.deinterlace);
+
+	glUseProgramObjectARB(0);
+}
+
+
 void GLvideo_rt::run()
 {
 	if (DEBUG)
@@ -406,7 +461,6 @@ void GLvideo_rt::run()
 	while (doRendering) {
 
 		bool createGLTextures = false;
-		bool updateShaderVars = false;
 
 		perfTimer.start();
 
@@ -466,7 +520,6 @@ void GLvideo_rt::run()
 
 				doResize = true;
 				createGLTextures = true;
-				updateShaderVars = true;
 
 				lastsrcwidth = videoData->Ywidth;
 				lastsrcheight = videoData->Yheight;
@@ -486,7 +539,6 @@ void GLvideo_rt::run()
 						printf("Changing shader from %d to %d\n",
 						       currentShader, newShader);
 					createGLTextures = true;
-					updateShaderVars = true;
 					currentShader = newShader;
 				}
 			}
@@ -502,71 +554,12 @@ void GLvideo_rt::run()
 				buildColourMatrix(colourMatrix, params.matrix_Kr,
 				                  params.matrix_Kg, params.matrix_Kb,
 				                  params.matrix_scaling, params.matrix_scaling);
-				updateShaderVars = true;
 			}
 
-			if (updateShaderVars) {
-				perfTimer.restart();
-				if (DEBUG)
-					printf("Updating fragment shader variables\n");
-
-				glUseProgramObjectARB(programs[currentShader]);
-				//data about the input file to the shader
-				int i = glGetUniformLocationARB(programs[currentShader],
-				                                "Yheight");
-				glUniform1fARB(i, videoData->Yheight);
-
-				i = glGetUniformLocationARB(programs[currentShader], "Ywidth");
-				glUniform1fARB(i, videoData->Ywidth);
-
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "CHsubsample");
-				glUniform1fARB(i,
-				                (float)(videoData->Ywidth / videoData->Cwidth));
-
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "CVsubsample");
-				glUniform1fARB(i, (float)(videoData->Yheight
-				    / videoData->Cheight));
-
-				//settings from the c++ program to the shader
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "yuvOffset1");
-				float offset1[3];
-				offset1[0] = params.luminance_offset1;
-				offset1[1] = params.chrominance_offset1;
-				offset1[2] = params.chrominance_offset1;
-				glUniform3fvARB(i, 1, &offset1[0]);
-
-				i = glGetUniformLocationARB(programs[currentShader], "yuvMul");
-				float mul[3];
-				mul[0] = params.luminance_mul;
-				mul[1] = params.chrominance_mul;
-				mul[2] = params.chrominance_mul;
-				glUniform3fvARB(i, 1, &mul[0]);
-
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "yuvOffset2");
-				float offset2[3];
-				offset2[0] = params.luminance_offset2;
-				offset2[1] = params.chrominance_offset2;
-				offset2[2] = params.chrominance_offset2;
-				glUniform3fvARB(i, 1, &offset2[0]);
-
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "colourMatrix");
-				glUniformMatrix3fvARB(i, 1, false, colourMatrix);
-
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "interlacedSource");
-				glUniform1iARB(i, params.interlaced_source);
-
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "deinterlace");
-				glUniform1iARB(i, params.deinterlace);
-				perf_updateVars = perfTimer.elapsed();
-				glUseProgramObjectARB(0);
-			}
+			//update the uniform variables in the fragment shader
+			perfTimer.restart();
+			updateShaderVars(programs[currentShader], videoData, params, colourMatrix);
+			perf_updateVars = perfTimer.elapsed();
 
 			//if the size of the window has changed (doResize)
 			//or the shape of the video in the window has changed

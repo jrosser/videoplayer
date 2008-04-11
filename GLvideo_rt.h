@@ -60,9 +60,10 @@ public:
 private:
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
+	void updateShaderVars(int program, VideoData *videoData, GLvideo_params& params, float *colourMatrix);
 #ifdef HAVE_FTGL
 	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd,
-	               float osdScale);
+		float osdScale);
 	void renderPerf(VideoData *videoData, FTFont *font);
 #endif
 
