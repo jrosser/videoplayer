@@ -59,13 +59,6 @@ public:
 protected:
 
 public slots:
-	void toggleOSD();
-	void togglePerf();
-	void toggleAspectLock();
-	void toggleLuminance();
-	void toggleChrominance();
-	void toggleDeinterlace();
-	void toggleMatrixScaling();
 	void setAlwaysHideMouse(bool h);
 
 private slots:

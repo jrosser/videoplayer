@@ -397,24 +397,24 @@ void MainWindow::createActions()
 	toggleMatrixScalingAct = new QAction("Toggle Colour Matrix Scaling", this);
 	toggleMatrixScalingAct ->setShortcut(tr("m"));
 	addAction(toggleMatrixScalingAct);
-	connect(toggleMatrixScalingAct, SIGNAL(triggered()), glvideo_mt,
+	connect(toggleMatrixScalingAct, SIGNAL(triggered()), this,
 	        SLOT(toggleMatrixScaling()));
 
 	toggleDeinterlaceAct = new QAction("Toggle Deinterlacing", this);
 	toggleDeinterlaceAct->setShortcut(tr("i"));
 	addAction(toggleDeinterlaceAct);
-	connect(toggleDeinterlaceAct, SIGNAL(triggered()), glvideo_mt,
+	connect(toggleDeinterlaceAct, SIGNAL(triggered()), this,
 	        SLOT(toggleDeinterlace()));
 
 	toggleOSDAct = new QAction("Toggle OSD", this);
 	toggleOSDAct->setShortcut(tr("o"));
 	addAction(toggleOSDAct);
-	connect(toggleOSDAct, SIGNAL(triggered()), glvideo_mt, SLOT(toggleOSD()));
+	connect(toggleOSDAct, SIGNAL(triggered()), this, SLOT(toggleOSD()));
 
 	togglePerfAct = new QAction("Toggle Performance", this);
 	togglePerfAct->setShortcut(tr("?"));
 	addAction(togglePerfAct);
-	connect(togglePerfAct, SIGNAL(triggered()), glvideo_mt, SLOT(togglePerf()));
+	connect(togglePerfAct, SIGNAL(triggered()), this, SLOT(togglePerf()));
 
 	toggleLuminanceAct = new QAction("Toggle Luminance", this);
 	toggleLuminanceAct->setShortcut(tr("y"));
@@ -431,7 +431,7 @@ void MainWindow::createActions()
 	toggleAspectLockAct = new QAction("Toggle Aspect Ratio Lock", this);
 	toggleAspectLockAct->setShortcut(tr("a"));
 	addAction(toggleAspectLockAct);
-	connect(toggleAspectLockAct, SIGNAL(triggered()), glvideo_mt,
+	connect(toggleAspectLockAct, SIGNAL(triggered()), this,
 	        SLOT(toggleAspectLock()));
 
 	viewFullScreenAct = new QAction("View full screen", this);
@@ -598,6 +598,39 @@ void MainWindow::setUserMatrix()
 {
 	/* todo */
 	//    glvideo_mt->setMatrix(matrixKr, matrixKg, matrixKb);
+}
+
+void MainWindow::togglePerf()
+{
+	vr_params.osd_perf ^= 1;
+}
+
+void MainWindow::toggleOSD()
+{
+	++vr_params.osd_bot;
+}
+
+void MainWindow::toggleAspectLock()
+{
+	vr_params.aspect_ratio_lock ^= 1;
+	vr_params.view_valid = false;
+}
+void MainWindow::toggleLuminance()
+{
+	/* todo */
+}
+void MainWindow::toggleChrominance()
+{
+	/* todo */
+}
+void MainWindow::toggleDeinterlace()
+{
+	vr_params.deinterlace ^= 1;
+}
+void MainWindow::toggleMatrixScaling()
+{
+	vr_params.matrix_scaling ^= 1;
+	vr_params.matrix_valid = false;
 }
 
 void MainWindow::endOfFile()

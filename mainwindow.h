@@ -57,7 +57,14 @@ private slots:
 	void setUserMatrix();
 	void quit();
 	void endOfFile();
-
+	void togglePerf();
+	void toggleOSD();
+	void toggleAspectLock();
+	void toggleLuminance();
+	void toggleChrominance();
+	void toggleDeinterlace();
+	void toggleMatrixScaling();
+	
 private:
 	void createActions(void);
 	void parseCommandLine(int argc, char **argv);
