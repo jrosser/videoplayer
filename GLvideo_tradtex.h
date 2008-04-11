@@ -6,7 +6,8 @@ class VideoData;
 
 /* NB, any changes to the oublic interface
  * /must/ be reflected in GLvideo_tradtex.h */
-namespace GLVideoRenderer {
+namespace GLVideoRenderer
+{
 class TradTex : public GLVideoRenderer {
 public:
 	virtual void createTextures(VideoData *video_data);

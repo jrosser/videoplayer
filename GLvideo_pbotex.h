@@ -5,7 +5,8 @@
 
 /* NB, any changes to the public interface
  * /must/ be reflected in GLvideo_tradtex.h */
-namespace GLVideoRenderer {
+namespace GLVideoRenderer
+{
 class PboTex : public GLVideoRenderer {
 public:
 	virtual void createTextures(VideoData *video_data);

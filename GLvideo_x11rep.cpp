@@ -9,7 +9,8 @@
 
 /* NB, any changes to the public interface
  * /must/ be reflected in GLvideo_x11rep.h */
-namespace GLVideoRepeater {
+namespace GLVideoRepeater
+{
 class X11Repeater : public GLVideoRepeater {
 public:
 	virtual void createRGBDestination(VideoData *video_data);
@@ -43,7 +44,7 @@ void X11Repeater::renderVideo(VideoData *)
 unsigned int X11Repeater::repeat(unsigned int n)
 {
 	unsigned int retraceCount;
-    glXWaitVideoSyncSGI(n, 0, &retraceCount);	
+	glXWaitVideoSyncSGI(n, 0, &retraceCount);
 	return n;
 }
 

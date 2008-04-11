@@ -3,7 +3,8 @@
 
 class VideoData;
 
-namespace GLVideoRepeater {
+namespace GLVideoRepeater
+{
 class GLVideoRepeater {
 public:
 	virtual void createRGBDestination(VideoData *video_data) = 0;
@@ -11,7 +12,10 @@ public:
 	virtual void setupScreenDestination() = 0;
 	virtual unsigned int repeat(unsigned int) = 0;
 	virtual void renderVideo(VideoData *video_data) = 0;
-	virtual ~GLVideoRepeater() {};
+	virtual ~GLVideoRepeater()
+	{
+	}
+	;
 };
 }
 

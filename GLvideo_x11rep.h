@@ -5,13 +5,14 @@
 
 class VideoData;
 
-namespace GLVideoRepeater {
+namespace GLVideoRepeater
+{
 class X11Repeater : public GLVideoRepeater {
 public:
 	virtual void createRGBDestination(VideoData *video_data);
 	virtual void setupRGBDestination();
 	virtual void setupScreenDestination();
-	virtual unsigned int repeat(unsigned int);	
+	virtual unsigned int repeat(unsigned int);
 	virtual void renderVideo(VideoData *video_data);
 	virtual ~X11Repeater();
 };
