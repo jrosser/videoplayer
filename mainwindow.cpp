@@ -266,26 +266,22 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 #endif
 		}
 
+		if(vm.count("caption")) {
+			string tmp = vm["caption"].as<string>();
+			vr_params.caption = tmp.data();
+		}
+
+		QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0");
+#ifdef HAVE_DIRAC
+		known_extensions.append(" drc");
+#endif
+
 		if (vm.count("filetype")) {
 			string tmp = vm["filetype"].as<string>();
 			fileType = tmp.data();
 
-			if((fileType.toLower() == "i420") ||
-				(fileType.toLower() == "yv12") ||
-				(fileType.toLower() == "420p") ||
-				(fileType.toLower() == "422p") ||
-				(fileType.toLower() == "444p") ||
-				(fileType.toLower() == "uyvy") ||
-				(fileType.toLower() == "v216") ||
-				(fileType.toLower() == "v210") ||
-				(fileType.toLower() == "16p4") ||
-				(fileType.toLower() == "16p2") ||
-				(fileType.toLower() == "16p0")
-#ifdef HAVE_DIRAC    
-				|| (fileType.toLower() == "drc")
-#endif
-			) {
-
+			if(known_extensions.contains(fileType.toLower(), Qt::CaseInsensitive))
+			{
 				forceFileType=true;
 			}
 			else {
@@ -293,11 +289,6 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 				allParsed = false;
 			}
 
-		}
-
-		if(vm.count("caption")) {
-			string tmp = vm["caption"].as<string>();
-			vr_params.caption = tmp.data();
 		}
 
 		if (vm.count("video") == 0) {
@@ -311,32 +302,14 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 			QFileInfo fi(fileName);
 
 			if(fi.exists()) {
-
 				if(forceFileType == false) {
-
 					//file extension must be one we know about
-					if((fi.suffix().toLower() == "i420") ||
-						(fi.suffix().toLower() == "yv12") ||
-						(fi.suffix().toLower() == "420p") ||
-						(fi.suffix().toLower() == "422p") ||
-						(fi.suffix().toLower() == "444p") ||
-						(fi.suffix().toLower() == "uyvy") ||
-						(fi.suffix().toLower() == "v216") ||
-						(fi.suffix().toLower() == "v210") ||
-						(fi.suffix().toLower() == "16p4") ||
-						(fi.suffix().toLower() == "16p2") ||
-						(fi.suffix().toLower() == "16p0")
-#ifdef HAVE_DIRAC    
-						|| (fi.suffix().toLower() == "drc")
-#endif
-					) {
-					}
-					else {
+					if(known_extensions.contains(fi.suffix().toLower(), Qt::CaseInsensitive) == false)
+					{
 						printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
 						printf("Please specify file format with the -t flag\n");
 						allParsed = false;
 					}
-
 				}
 			}
 			else {
@@ -344,7 +317,6 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 				allParsed = false;
 			}
 		}
-
 	}
 	catch(exception& e)
 	{
