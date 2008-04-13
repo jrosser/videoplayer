@@ -1,12 +1,21 @@
 #ifndef __SHADERS_H
 #define __SHADERS_H
 
+/* NB, http://opengl.org/registry/specs/ARB/texture_rectangle.txt states:
+ * If the string "GL_ARB_texture_rectangle" is present in the
+ * EXTENSIONS string, as queried with GetString(), then the compiler will
+ * behave as if
+ *     #extension GL_ARB_texture_rectangle : require
+ * is present in the shader.
+ */
+
 //------------------------------------------------------------------------------------------
 //shader program for planar video formats
 //should work with all planar chroma subsamplings
 //glInternalFormat=GL_LUMINANCE glFormat=GL_LUMINANCE glType=GL_UNSIGNED_BYTE
 static const char
-    *shaderPlanarSrc= "#extension GL_ARB_texture_rectangle : require\n"
+    *shaderPlanarSrc=
+	    /* "#extension GL_ARB_texture_rectangle : require\n" */
 	    "uniform sampler2DRect Ytex;\n"
 	    "uniform sampler2DRect Utex,Vtex;\n"
 	    "uniform float CHsubsample, CVsubsample;\n"
@@ -61,7 +70,8 @@ static const char
 //shader program for v216 muxed 16 bit data with glInternalFormat=GL_RGBA glFormat=GL_RGBA glType=GL_UNSIGNED_SHORT
 //there are 2 luminance samples per RGBA quad, so divide the horizontal location by two to use each RGBA value twice
 static const char
-    *shaderUYVYSrc= "#extension GL_ARB_texture_rectangle : require\n"
+    *shaderUYVYSrc=
+	    /* "#extension GL_ARB_texture_rectangle : require\n" */
 	    "uniform sampler2DRect Ytex;\n"
 	    "uniform sampler2DRect Utex,Vtex;\n"
 	    "uniform float CHsubsample, CVsubsample;\n"
