@@ -33,7 +33,9 @@
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
 
+#ifdef Q_WS_X11
 #include "GLvideo_x11rep.h"
+#endif
 
 #ifdef HAVE_FTGL
 #include "FTGL/FTGLPolygonFont.h"
