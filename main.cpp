@@ -30,10 +30,6 @@
 #include "X11/Xlib.h"
 #endif
 
-#ifdef Q_OS_MACX
-#include "agl_getproc.h"
-#endif
-
 #include <QApplication>
 
 #include "GLvideo_params.h"
@@ -44,10 +40,6 @@ int main(int argc, char **argv)
 {
 #ifdef Q_OS_LINUX
 	XInitThreads();
-#endif
-
-#ifdef Q_OS_MACX
-	aglInitEntryPoints();
 #endif
 
 	QApplication app(argc, argv);
