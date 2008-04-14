@@ -27,7 +27,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QtAssistant/QAssistantClient>
 #include <QtGui>
 
 #ifdef Q_OS_LINUX
