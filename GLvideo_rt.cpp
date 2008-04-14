@@ -450,7 +450,16 @@ void GLvideo_rt::run()
 
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
-		qWarning() << "failed to init glew";
+		qWarning() << "failed to init glew\n";
+
+	if(!GLEW_ARB_shader_objects)
+		qWarning() << "opengl implementation does not support shader objects\n";
+
+	if(!GLEW_ARB_pixel_buffer_object)
+		qWarning() << "opengl implementation does not support pixel buffer objects\n";
+
+	if(!GLEW_EXT_framebuffer_object)
+		qWarning() << "opengl implementation does not support framebuffer objects\n";
 
 #ifdef Q_OS_WIN32
 	wglSwapIntervalEXT(1);
