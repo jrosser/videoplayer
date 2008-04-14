@@ -117,7 +117,7 @@ void PboTex::uploadTextures(VideoData *video_data)
 	memcpy(ioMem, video_data->Ydata, video_data->YdataSize);
 	glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB);
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.y);
-	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, video_data->Ywidth,
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0, video_data->glYTextureWidth,
 	                video_data->Yheight, video_data->glFormat,
 	                video_data->glType, BUFFER_OFFSET(0));
 
