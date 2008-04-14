@@ -56,6 +56,7 @@ public:
 	GLvideo_rt(GLvideo_mt &glWidget, GLvideo_params& params);
 	void resizeViewport(int w, int h);
 	void run();
+	void stop();
 
 private:
 	void compileFragmentShaders();
@@ -68,6 +69,8 @@ private:
 #endif
 
 	enum ShaderPrograms {shaderUYVY, shaderPlanar, shaderMax};
+
+	bool doRendering;
 
 	GLuint programs[shaderMax]; //handles for the shaders and programs
 	GLuint shaders[shaderMax];

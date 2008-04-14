@@ -43,6 +43,7 @@ GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, FrameQueue *f,
 
 void GLvideo_mt::stop()
 {
+	renderThread->stop();
 }
 
 void GLvideo_mt::start()

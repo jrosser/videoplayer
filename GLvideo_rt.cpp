@@ -81,6 +81,12 @@ GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, GLvideo_params& params) :
 	renderer = new GLVideoRenderer::PboTex();
 }
 
+void GLvideo_rt::stop()
+{
+	doRendering = false;
+	wait();
+}
+
 void GLvideo_rt::resizeViewport(int width, int height)
 {
 	displaywidth = width;
@@ -421,7 +427,7 @@ void GLvideo_rt::run()
 	int lastsrcheight = 0;
 
 	//declare shadow variables for the thread worker and initialise them
-	bool doRendering = true;
+	doRendering = true;
 	int repeat = 0;
 	int field = 0;
 	int direction = 0;
