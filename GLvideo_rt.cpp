@@ -363,12 +363,7 @@ void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
 
 	glUseProgramObjectARB(program);
 	//data about the input file to the shader
-	int i = glGetUniformLocationARB(program, "Yheight");
-	glUniform1fARB(i, videoData->Yheight);
-
-	i = glGetUniformLocationARB(program, "Ywidth");
-	glUniform1fARB(i, videoData->Ywidth);
-
+	int i;
 	i = glGetUniformLocationARB(program, "CHsubsample");
 	glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
 

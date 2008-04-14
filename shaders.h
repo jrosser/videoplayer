@@ -9,7 +9,6 @@ static const char
     *shaderPlanarSrc= "#extension GL_ARB_texture_rectangle : require\n"
 	    "uniform sampler2DRect Ytex;\n"
 	    "uniform sampler2DRect Utex,Vtex;\n"
-	    "uniform float Yheight, Ywidth;\n"
 	    "uniform float CHsubsample, CVsubsample;\n"
 
 	    "uniform bool interlacedSource;\n"
@@ -28,7 +27,7 @@ static const char
 	    " vec3 rgb;\n"
 
 	    " nx=gl_TexCoord[0].x;\n"
-	    " ny=Yheight-gl_TexCoord[0].y;\n"
+	    " ny=gl_TexCoord[0].y;\n"
 
 	    " thisField = field;\n" //swap field order when playing interlaced pictures backwards
 	    " if(direction < 0) thisField = 1 - field;\n" //swap field order when playing interlaced pictures backwards
@@ -65,7 +64,6 @@ static const char
     *shaderUYVYSrc= "#extension GL_ARB_texture_rectangle : require\n"
 	    "uniform sampler2DRect Ytex;\n"
 	    "uniform sampler2DRect Utex,Vtex;\n"
-	    "uniform float Yheight, Ywidth;\n"
 	    "uniform float CHsubsample, CVsubsample;\n"
 
 	    "uniform bool interlacedSource;\n"
@@ -87,7 +85,7 @@ static const char
 	    " int  thisField;\n"
 
 	    " nx=gl_TexCoord[0].x;\n"
-	    " ny=Yheight-gl_TexCoord[0].y;\n"
+	    " ny=gl_TexCoord[0].y;\n"
 
 	    " thisField = field;\n"
 	    " if(direction < 0) thisField = 1 - field;\n" //swap field order when playing interlaced pictures backwards

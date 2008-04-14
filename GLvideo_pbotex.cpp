@@ -149,16 +149,16 @@ void PboTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 
 	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glBegin(GL_QUADS);
-	glTexCoord2i(0, 0);
+	glTexCoord2i(0, video_data->Yheight);
 	glColor3f(1., 0., 0.);
 	glVertex2i(0, 0);
-	glTexCoord2i(video_data->Ywidth, 0);
+	glTexCoord2i(video_data->Ywidth, video_data->Yheight);
 	glColor3f(0., 1., 0.);
 	glVertex2i(video_data->Ywidth, 0);
-	glTexCoord2i(video_data->Ywidth, video_data->Yheight);
+	glTexCoord2i(video_data->Ywidth, 0);
 	glColor3f(0., 0., 1.);
 	glVertex2i(video_data->Ywidth, video_data->Yheight);
-	glTexCoord2i(0, video_data->Yheight);
+	glTexCoord2i(0, 0);
 	glColor3f(0., 0., 0.);
 	glVertex2i(0, video_data->Yheight);
 	glEnd();
