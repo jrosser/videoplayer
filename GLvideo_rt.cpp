@@ -124,7 +124,7 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 		printf("Compile Status %d, Log: (%d) %s\n", (int)compiled[n], (int)length,
 		       (int)length ? s : NULL);
 	if (compiled[n] <= 0) {
-		printf("Compile Failed: %s\n", gluErrorString(glGetError()));
+		printf("Compile Failed: %s\n", s);
 		throw /* */;
 	}
 	free(s);
