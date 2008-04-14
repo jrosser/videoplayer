@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <QtGlobal>
 
+#include <QtGlobal>
+
 #ifdef Q_OS_WIN32
 #include <malloc.h>
 #define valloc malloc
