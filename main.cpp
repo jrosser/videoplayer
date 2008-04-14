@@ -61,6 +61,7 @@ int main(int argc, char **argv)
 	vr_params.osd_text_alpha = (float)0.5;
 	vr_params.osd_perf = false;
 	vr_params.osd_bot = OSD_NONE;
+	vr_params.osd_valid = false;
 	vr_params.font_file = DEFAULT_FONTFILE;
 	vr_params.luminance_offset1 = (float)-0.0625;
 	vr_params.chrominance_offset1 = (float)-0.5;
