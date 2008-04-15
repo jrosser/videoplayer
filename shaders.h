@@ -128,8 +128,8 @@ static const char
 	    " nx=gl_TexCoord[0].x;\n"
 	    " ny=gl_TexCoord[0].y;\n"
 
-	    " rgba = texture2DRect(Ytex, vec2(floor(nx/2.0), ny));\n" //sample every other RGBA quad to get luminance
-	    " yuv[0] = (fract(nx/2.0) < 0.5) ? rgba.g : rgba.a;\n" //pick the correct luminance from G or A for this pixel
+	    " rgba = texture2DRect(Ytex, vec2(floor(nx), ny));\n" //sample every other RGBA quad to get luminance
+	    " yuv[0] = (fract(nx) < 0.5) ? rgba.g : rgba.a;\n" //pick the correct luminance from G or A for this pixel
 	    " yuv[1] = rgba.r;\n"
 	    " yuv[2] = rgba.b;\n"
 
@@ -176,19 +176,19 @@ static const char
 
 	    " if(mod(floor(ny) + float(field), 2.0) > 0.5) {\n"
 	    "     //interpolated line in a field\n"
-	    "     above = texture2DRect(Ytex, vec2(floor(nx/2.0), ny+1.0));\n"
-	    "     below = texture2DRect(Ytex, vec2(floor(nx/2.0), ny-1.0));\n"
+	    "     above = texture2DRect(Ytex, vec2(floor(nx), ny+1.0));\n"
+	    "     below = texture2DRect(Ytex, vec2(floor(nx), ny-1.0));\n"
 
-	    "     yuv[0]  = (fract(nx/2.0) < 0.5) ? above.g : above.a;\n"
-	    "     yuv[0] += (fract(nx/2.0) < 0.5) ? below.g : below.a;\n"
+	    "     yuv[0]  = (fract(nx) < 0.5) ? above.g : above.a;\n"
+	    "     yuv[0] += (fract(nx) < 0.5) ? below.g : below.a;\n"
 	    "     yuv[1] = above.r + below.r;\n"
 	    "     yuv[2] = above.b + below.b;\n"
 	    "     yuv = yuv / 2.0;"
 	    " }\n"
 	    " else {\n"
 	    "     //non interpolated line in a field\n"
-	    "     rgba = texture2DRect(Ytex, vec2(floor(nx/2.0), ny));\n" //sample every other RGBA quad to get luminance
-	    "     yuv[0] = (fract(nx/2.0) < 0.5) ? rgba.g : rgba.a;\n" //pick the correct luminance from G or A for this pixel
+	    "     rgba = texture2DRect(Ytex, vec2(floor(nx), ny));\n" //sample every other RGBA quad to get luminance
+	    "     yuv[0] = (fract(nx) < 0.5) ? rgba.g : rgba.a;\n" //pick the correct luminance from G or A for this pixel
 	    "     yuv[1] = rgba.r;\n"
 	    "     yuv[2] = rgba.b;\n"
 	    " }\n"
