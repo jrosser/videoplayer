@@ -7,16 +7,29 @@
 namespace GLVideoRenderer
 {
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
+
+TradTex::TradTex()
+{
+	textures.y = 0;
+	textures.u = 0;
+	textures.v = 0;
+}
+
 TradTex::~TradTex()
 {
+	deleteTextures();
+}
+
+void TradTex::deleteTextures()
+{
+	if(glIsTexture(textures.y)) glDeleteTextures(1, &(textures.y));
+	if(glIsTexture(textures.u)) glDeleteTextures(1, &(textures.u));
+	if(glIsTexture(textures.v)) glDeleteTextures(1, &(textures.v));	
 }
 
 void TradTex::createTextures(VideoData *video_data)
 {
-#if 0
-	if (textures != 0)
-	glDeleteTexture ...
-#endif
+	deleteTextures();
 	glGenTextures(3, (GLuint *)&textures);
 
 	if (video_data->isPlanar) {

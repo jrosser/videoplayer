@@ -11,12 +11,32 @@
 namespace GLVideoRenderer
 {
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
+
+PboTex::PboTex()
+{
+	textures.y = 0;
+	textures.u = 0;
+	textures.v = 0;
+}
+
 PboTex::~PboTex()
 {
+	deleteTextures();
+}
+
+void PboTex::deleteTextures()
+{
+	if(glIsTexture(textures.y)) glDeleteTextures(1, &(textures.y));
+	if(glIsTexture(textures.u)) glDeleteTextures(1, &(textures.u));
+	if(glIsTexture(textures.v)) glDeleteTextures(1, &(textures.v));
+
+	if(glIsBuffer(buf)) glDeleteBuffers(1, &buf);
 }
 
 void PboTex::createTextures(VideoData *video_data)
 {
+	deleteTextures();
+
 	glGenTextures(3, (GLuint *)&textures);
 	glGenBuffers(1, &buf);
 

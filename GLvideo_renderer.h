@@ -10,12 +10,10 @@ namespace GLVideoRenderer
 class GLVideoRenderer {
 public:
 	virtual void createTextures(VideoData *video_data) = 0;
+	virtual void deleteTextures() = 0;
 	virtual void uploadTextures(VideoData *video_data) = 0;
 	virtual void renderVideo(VideoData *video_data, GLuint shader) = 0;
-	virtual ~GLVideoRenderer()
-	{
-	}
-	;
+	virtual ~GLVideoRenderer() {};
 };
 }
 

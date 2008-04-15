@@ -9,7 +9,9 @@ namespace GLVideoRenderer
 {
 class PboTex : public GLVideoRenderer {
 public:
+	PboTex();
 	virtual void createTextures(VideoData *video_data);
+	virtual void deleteTextures();
 	virtual void uploadTextures(VideoData *video_data);
 	virtual void renderVideo(VideoData *video_data, GLuint shader);
 	virtual ~PboTex();
