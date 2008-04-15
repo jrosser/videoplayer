@@ -98,8 +98,10 @@ void GLvideo_rt::resizeViewport(int width, int height)
 
 void GLvideo_rt::compileFragmentShaders()
 {
-	compileFragmentShader((int)shaderPlanar, shaderPlanarSrc);
-	compileFragmentShader((int)shaderUYVY, shaderUYVYSrc);
+	compileFragmentShader(shaderPlanar | Progressive , shaderPlanarProSrc);
+	compileFragmentShader(shaderPlanar | Deinterlace , shaderPlanarDeintSrc);
+	compileFragmentShader(shaderUYVY | Progressive, shaderUYVYProSrc);
+	compileFragmentShader(shaderUYVY | Deinterlace, shaderUYVYDeintSrc);
 }
 
 void GLvideo_rt::compileFragmentShader(int n, const char *src)
@@ -395,12 +397,6 @@ void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
 	i = glGetUniformLocationARB(program, "colourMatrix");
 	glUniformMatrix3fvARB(i, 1, false, colourMatrix);
 
-	i = glGetUniformLocationARB(program, "interlacedSource");
-	glUniform1iARB(i, params.interlaced_source);
-
-	i = glGetUniformLocationARB(program, "deinterlace");
-	glUniform1iARB(i, params.deinterlace);
-
 	glUseProgramObjectARB(0);
 }
 
@@ -422,6 +418,7 @@ void GLvideo_rt::run()
 	//flags and status
 	int lastsrcwidth = 0;
 	int lastsrcheight = 0;
+	bool lastisplanar = false;
 
 	//declare shadow variables for the thread worker and initialise them
 	doRendering = true;
@@ -527,8 +524,9 @@ void GLvideo_rt::run()
 			perf_convertFormat = perfTimer.elapsed();
 
 			//check for video dimensions changing
-			if (lastsrcwidth != videoData->Ywidth || lastsrcheight
-			    != videoData->Yheight) {
+			if ((lastsrcwidth != videoData->Ywidth)
+			    || (lastsrcheight != videoData->Yheight)
+			    || (lastisplanar != videoData->isPlanar)) {
 				if (DEBUG)
 					printf("Changing video dimensions to %dx%d\n",
 					       videoData->Ywidth, videoData->Yheight);
@@ -539,31 +537,23 @@ void GLvideo_rt::run()
 
 				lastsrcwidth = videoData->Ywidth;
 				lastsrcheight = videoData->Yheight;
+				lastisplanar = videoData->isPlanar;
 			}
 
-			//check for the shader changing
-			{
-				int newShader = currentShader;
+			if (videoData->isPlanar)
+				currentShader = shaderPlanar;
+			else
+				currentShader = shaderUYVY;
 
-				if (videoData->isPlanar)
-					newShader = shaderPlanar;
-				else
-					newShader = shaderUYVY;
-
-				if (newShader != currentShader) {
-					if (DEBUG)
-						printf("Changing shader from %d to %d\n",
-						       currentShader, newShader);
-					createGLTextures = true;
-					currentShader = newShader;
-				}
-			}
+			if (params.deinterlace)
+				currentShader |= Deinterlace;
+			else
+				currentShader &= ~Deinterlace;
 
 			if (createGLTextures) {
 				if (DEBUG)
 					printf("Creating GL textures\n");
 				renderer->createTextures(videoData);
-				createGLTextures = false;
 			}
 
 			if (params.matrix_valid == false) {
@@ -634,10 +624,10 @@ void GLvideo_rt::run()
 			//
 			//		//load the field and direction variables into the YUV->RGB shader
 			//		int i = glGetUniformLocationARB(programs[currentShader], "field");
-			//		glUniform1iARB(i, field);
-			//
-			//		i = glGetUniformLocationARB(programs[currentShader], "direction");
-			//		glUniform1iARB(i, direction);
+			//		if (direction >= 0)
+			//			glUniform1iARB(i, field);
+			//		else
+			//			glUniform1iARB(i, 1 - field);
 			//
 			//		//the frame repeater renders to an intermediate framebuffer object
 			//		repeater->setupRGBdestination();
@@ -664,15 +654,17 @@ void GLvideo_rt::run()
 			//
 			//
 
-			if (params.interlaced_source) {
+			if (params.deinterlace) {
 				glUseProgramObjectARB(programs[currentShader]);
 				int i = glGetUniformLocationARB(programs[currentShader],
 				                                "field");
-				glUniform1iARB(i, field);
 
-				i = glGetUniformLocationARB(programs[currentShader],
-				                            "direction");
-				glUniform1iARB(i, direction);
+				/* swap the field order when playing interlaced pictures backwards */
+				if (direction >= 0)
+					glUniform1iARB(i, field);
+				else
+					glUniform1iARB(i, 1 - field);
+
 				glUseProgramObjectARB(0);
 			}
 

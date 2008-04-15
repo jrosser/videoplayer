@@ -59,6 +59,15 @@ public:
 	void stop();
 
 private:
+	enum ShaderPrograms {
+		Progressive = 0x0,
+		Deinterlace = 0x1,
+		shaderUYVY = 0,
+		shaderPlanar = 2,
+		/* Increment in steps of 2 */
+		shaderBogus,
+		shaderMax};
+
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
 	void updateShaderVars(int program, VideoData *videoData, GLvideo_params& params, float *colourMatrix);
@@ -67,8 +76,6 @@ private:
 		float osdScale);
 	void renderPerf(VideoData *videoData, FTFont *font);
 #endif
-
-	enum ShaderPrograms {shaderUYVY, shaderPlanar, shaderMax};
 
 	bool doRendering;
 
