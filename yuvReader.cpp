@@ -176,12 +176,12 @@ void YUVReader::pullFrame(int frameNumber, VideoData*& dst)
 	//deal with frame number wrapping
 	if (frameNumber < 0) {
 		frameNumber *= -1;
-		frameNumber %= lastFrameNum;
+		frameNumber %= (lastFrameNum + 1);
 		frameNumber = lastFrameNum - frameNumber;
 	}
 
 	if (frameNumber > lastFrameNum)
-		frameNumber %= lastFrameNum;
+		frameNumber %= (lastFrameNum + 1);
 
 	//set frame number and first/last flags
 	frame->frameNum = frameNumber;
