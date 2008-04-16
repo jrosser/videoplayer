@@ -1,7 +1,7 @@
 TEMPLATE = app
 
 QT += opengl
-CONFIG += thread console debug
+CONFIG += thread console debug_and_release
 
 # source files
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h config.h
@@ -74,23 +74,81 @@ macx {
 }
 
 win32 {
-	DEFINES += _CRT_SECURE_NO_WARNINGS
 
-	LIBS += -Lc:\boost\boost_1_34_1\lib
-	INCLUDEPATH += c:\boost\boost_1_34_1\
+	contains(QMAKE_CXX, cl) {
+		#win32 builds using the msvc toolchain
+		message("configuring for win32 msvc build")
 
-	DEFINES += GLEW_STATIC
-	LIBS += c:\glew\lib\glew32s.lib
-	INCLUDEPATH += c:\glew\include
+		WINLIBS = c:\libs-msvc2008
+		QMAKE_LFLAGS += /VERBOSE:LIB
+		DEFINES += _CRT_SECURE_NO_WARNINGS
 
-	LIBS += c:\freetype-2.3.5\objs\freetype235.lib
-	INCLUDEPATH += c:\freetype-2.3.5\include
+		#----------------------------------------------------
+		# glew
+		DEFINES += GLEW_STATIC
+		LIBS += $$WINLIBS\glew\lib\glew32s.lib
+		INCLUDEPATH += $$WINLIBS\glew\include
 
-	LIBS += c:\FTGL\win32_vcpp\build\ftgl_static_MT.lib
-	INCLUDEPATH += c:\ftgl
-	DEFINES += HAVE_FTGL
+		#----------------------------------------------------
+		# boost
+		LIBS += -L$$WINLIBS\boost_1_35_0\stage\lib
+		INCLUDEPATH += $$WINLIBS\boost_1_35_0\
 
-	QMAKE_LFLAGS += /VERBOSE:LIB
+		#----------------------------------------------------
+		# freetype
+		FT_LIB = $$WINLIBS\freetype-2.3.5\objs\freetype235
+		CONFIG(debug, debug|release) {
+			FT_LIB = $$join(FT_LIB,,, _D.lib)
+		} else {
+			FT_LIB = $$join(FT_LIB,,, .lib)
+		}
+		LIBS += $$FT_LIB
+		INCLUDEPATH += $$WINLIBS\freetype-2.3.5\include
+
+		#----------------------------------------------------
+		# ftgl
+		FTGL_LIB += $$WINLIBS\FTGL\win32_vcpp\build\ftgl_static
+		CONFIG(debug, debug|release) {
+			FTGL_LIB = $$join(FTGL_LIB,,, _MT_d.lib)
+		} else {
+			FTGL_LIB = $$join(FTGL_LIB,,, _MT.lib)
+		}
+		LIBS += $$FTGL_LIB
+		INCLUDEPATH += $$WINLIBS\ftgl
+		DEFINES += HAVE_FTGL
+
+	} else {
+		#win32 builds using the mingw toolchain
+		message("configuring for win32 mingw build")
+
+		MINGWLIBS = c:\libs-mingw
+
+		#----------------------------------------------------
+		# glew
+		DEFINES += GLEW_STATIC
+		LIBS = $$MINGWLIBS\glew\lib\libglew32.a
+		INCLUDEPATH += $$MINGWLIBS\glew\include
+
+		#----------------------------------------------------
+		# boost
+		LIBS += $$MINGWLIBS\boost_1_35_0\stage\lib\libboost_program_options-mgw34-mt-s-1_35.lib
+		INCLUDEPATH += $$MINGWLIBS\boost_1_35_0
+
+		#----------------------------------------------------
+		# ftgl
+		LIBS += $$MINGWLIBS\FTGL\src\libftgl.a
+		INCLUDEPATH += $$MINGWLIBS\FTGL
+		DEFINES += HAVE_FTGL
+
+		#----------------------------------------------------
+		# freetype
+		# this was compiled with msvc using /GS- to turn off buffer security checks
+		LIBS += $$MINGWLIBS\freetype-2.3.5\lib\libfreetype.a
+		INCLUDEPATH += $$MINGWLIBS\freetype-2.3.5\include
+
+		#doh! these need to be on the linker command line after the freetype and ftgl .a files
+		LIBS += -lopengl32 -lglu32
+	}
 } else {
 	LIBS += -lboost_program_options
 }
