@@ -382,185 +382,44 @@ void MainWindow::usage()
 //generate actions for menus and keypress handlers
 void MainWindow::createActions()
 {
-	quitAct = new QAction("Quit", this);
-	quitAct->setShortcut(tr("Q"));
-	addAction(quitAct);
-	connect(quitAct, SIGNAL(triggered()), this, SLOT(quit()));
+#define ADDACT(str, key, target, fn) \
+	do { QAction *a = new QAction(str, this); \
+	     a->setShortcut(tr(key)); \
+	     addAction(a); \
+	     connect(a, SIGNAL(triggered()), target, SLOT(fn())); \
+	} while(0);
 
-	setUserMatrixAct = new QAction("Set user Matrix", this);
-	setUserMatrixAct->setShortcut(tr("k"));
-	addAction(setUserMatrixAct);
-	connect(setUserMatrixAct, SIGNAL(triggered()), this, SLOT(setUserMatrix()));
-
-	setHDTVMatrixAct = new QAction("Set HDTV Matrix", this);
-	setHDTVMatrixAct->setShortcut(tr("h"));
-	addAction(setHDTVMatrixAct);
-	connect(setHDTVMatrixAct, SIGNAL(triggered()), this, SLOT(setHDTVMatrix()));
-
-	setSDTVMatrixAct = new QAction("Set SDTV Matrix", this);
-	setSDTVMatrixAct->setShortcut(tr("j"));
-	addAction(setSDTVMatrixAct);
-	connect(setSDTVMatrixAct, SIGNAL(triggered()), this, SLOT(setSDTVMatrix()));
-
-	toggleMatrixScalingAct = new QAction("Toggle Colour Matrix Scaling", this);
-	toggleMatrixScalingAct ->setShortcut(tr("m"));
-	addAction(toggleMatrixScalingAct);
-	connect(toggleMatrixScalingAct, SIGNAL(triggered()), this,
-	        SLOT(toggleMatrixScaling()));
-
-	toggleDeinterlaceAct = new QAction("Toggle Deinterlacing", this);
-	toggleDeinterlaceAct->setShortcut(tr("i"));
-	addAction(toggleDeinterlaceAct);
-	connect(toggleDeinterlaceAct, SIGNAL(triggered()), this,
-	        SLOT(toggleDeinterlace()));
-
-	toggleOSDAct = new QAction("Toggle OSD", this);
-	toggleOSDAct->setShortcut(tr("o"));
-	addAction(toggleOSDAct);
-	connect(toggleOSDAct, SIGNAL(triggered()), this, SLOT(toggleOSD()));
-
-	togglePerfAct = new QAction("Toggle Performance", this);
-	togglePerfAct->setShortcut(tr("?"));
-	addAction(togglePerfAct);
-	connect(togglePerfAct, SIGNAL(triggered()), this, SLOT(togglePerf()));
-
-	toggleLuminanceAct = new QAction("Toggle Luminance", this);
-	toggleLuminanceAct->setShortcut(tr("y"));
-	addAction(toggleLuminanceAct);
-	connect(toggleLuminanceAct, SIGNAL(triggered()), this,
-	        SLOT(toggleLuminance()));
-
-	toggleChrominanceAct = new QAction("Toggle Chrominance", this);
-	toggleChrominanceAct->setShortcut(tr("c"));
-	addAction(toggleChrominanceAct);
-	connect(toggleChrominanceAct, SIGNAL(triggered()), this,
-	        SLOT(toggleChrominance()));
-
-	toggleAspectLockAct = new QAction("Toggle Aspect Ratio Lock", this);
-	toggleAspectLockAct->setShortcut(tr("a"));
-	addAction(toggleAspectLockAct);
-	connect(toggleAspectLockAct, SIGNAL(triggered()), this,
-	        SLOT(toggleAspectLock()));
-
-	viewFullScreenAct = new QAction("View full screen", this);
-	viewFullScreenAct->setShortcut(tr("f"));
-	addAction(viewFullScreenAct);
-	connect(viewFullScreenAct, SIGNAL(triggered()), this,
-	        SLOT(toggleFullScreen()));
-
-	escapeFullScreenAct = new QAction("Escape full screen", this);
-	escapeFullScreenAct->setShortcut(tr("Escape"));
-	addAction(escapeFullScreenAct);
-	connect(escapeFullScreenAct, SIGNAL(triggered()), this,
-	        SLOT(escapeFullScreen()));
-
-	transportFwd100Act = new QAction("Forward 100x", this);
-	transportFwd100Act->setShortcut(tr("7"));
-	addAction(transportFwd100Act);
-	connect(transportFwd100Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd100()));
-
-	transportFwd50Act = new QAction("Forward 50x", this);
-	transportFwd50Act->setShortcut(tr("6"));
-	addAction(transportFwd50Act);
-	connect(transportFwd50Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd50()));
-
-	transportFwd20Act = new QAction("Forward 20x", this);
-	transportFwd20Act->setShortcut(tr("5"));
-	addAction(transportFwd20Act);
-	connect(transportFwd20Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd20()));
-
-	transportFwd10Act = new QAction("Forward 10x", this);
-	transportFwd10Act->setShortcut(tr("4"));
-	addAction(transportFwd10Act);
-	connect(transportFwd10Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd10()));
-
-	transportFwd5Act = new QAction("Forward 5x", this);
-	transportFwd5Act->setShortcut(tr("3"));
-	addAction(transportFwd5Act);
-	connect(transportFwd5Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd5()));
-
-	transportFwd2Act = new QAction("Forward 2x", this);
-	transportFwd2Act->setShortcut(tr("2"));
-	addAction(transportFwd2Act);
-	connect(transportFwd2Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd2()));
-
-	transportFwd1Act = new QAction("Forward 1x", this);
-	transportFwd1Act->setShortcut(tr("1"));
-	addAction(transportFwd1Act);
-	connect(transportFwd1Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd1()));
-
-	transportStopAct = new QAction("Stop", this);
-	transportStopAct->setShortcut(tr("s"));
-	addAction(transportStopAct);
-	connect(transportStopAct, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportStop()));
-
-	transportRev1Act = new QAction("Reverse 1x", this);
-	transportRev1Act->setShortcut(tr("Ctrl+1"));
-	addAction(transportRev1Act);
-	connect(transportRev1Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportRev1()));
-
-	transportRev2Act = new QAction("Reverse 2x", this);
-	transportRev2Act->setShortcut(tr("Ctrl+2"));
-	addAction(transportRev2Act);
-	connect(transportRev2Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportRev2()));
-
-	transportRev5Act = new QAction("Reverse 5x", this);
-	transportRev5Act->setShortcut(tr("Ctrl+3"));
-	addAction(transportRev5Act);
-	connect(transportRev5Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportRev5()));
-
-	transportRev10Act = new QAction("Reverse 10x", this);
-	transportRev10Act->setShortcut(tr("Ctrl+4"));
-	addAction(transportRev10Act);
-	connect(transportRev10Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportRev10()));
-
-	transportRev20Act = new QAction("Reverse 20x", this);
-	transportRev20Act->setShortcut(tr("Ctrl+5"));
-	addAction(transportRev20Act);
-	connect(transportRev20Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportRev20()));
-
-	transportRev50Act = new QAction("Reverse 50x", this);
-	transportRev50Act->setShortcut(tr("Ctrl+6"));
-	addAction(transportFwd100Act);
-	connect(transportFwd100Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportFwd100()));
-
-	transportRev100Act = new QAction("Reverse 100x", this);
-	transportRev100Act->setShortcut(tr("Ctrl+7"));
-	addAction(transportRev100Act);
-	connect(transportRev100Act, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportRev100()));
-
-	transportPlayPauseAct = new QAction("Play/Pause", this);
-	transportPlayPauseAct->setShortcut(tr("Space"));
-	addAction(transportPlayPauseAct);
-	connect(transportPlayPauseAct, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportPlayPause()));
-
-	transportJogFwdAct = new QAction("Jog Forward", this);
-	transportJogFwdAct->setShortcut(tr("."));
-	addAction(transportJogFwdAct);
-	connect(transportJogFwdAct, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportJogFwd()));
-
-	transportJogRevAct = new QAction("Jog Reverse", this);
-	transportJogRevAct->setShortcut(tr(","));
-	addAction(transportJogRevAct);
-	connect(transportJogRevAct, SIGNAL(triggered()), videoTransport,
-	        SLOT(transportJogRev()));
+	ADDACT("Quit", "Q", this, quit);
+	ADDACT("Use user Matrix", "k", this, setUserMatrix);
+	ADDACT("Set HDTV Matrix", "h", this, setHDTVMatrix);
+	ADDACT("Set SDTV Matrix", "j", this, setSDTVMatrix);
+	ADDACT("Toggle colour matrix scaling", "m", this, toggleMatrixScaling);
+	ADDACT("Toggle deinterlacing", "i", this, toggleDeinterlace);
+	ADDACT("Toggle OSD", "o", this, toggleOSD);
+	ADDACT("Toggle performance", "?", this, togglePerf);
+	ADDACT("Toggle luma", "y", this, toggleLuminance);
+	ADDACT("Toggle chroma", "c", this, toggleChrominance);
+	ADDACT("Toggle aspect ratio Lock", "a", this, toggleAspectLock);
+	ADDACT("Toggle full screen", "toggleFullScreen", this, toggleFullScreen);
+	ADDACT("Escape full screen", "Escape", this, escapeFullScreen);
+	ADDACT("Forward 1x", "1", videoTransport, transportFwd1);
+	ADDACT("Forward 2x", "2", videoTransport, transportFwd2);
+	ADDACT("Forward 5x", "5", videoTransport, transportFwd5);
+	ADDACT("Forward 10x", "10", videoTransport, transportFwd10);
+	ADDACT("Forward 20x", "20", videoTransport, transportFwd20);
+	ADDACT("Forward 50x", "50", videoTransport, transportFwd50);
+	ADDACT("Forward 100x", "100", videoTransport, transportFwd100);
+	ADDACT("Stop", "s", videoTransport, transportStop);
+	ADDACT("Reverse 1x", "Ctrl+1", videoTransport, transportRev1);
+	ADDACT("Reverse 2x", "Ctrl+2", videoTransport, transportRev2);
+	ADDACT("Reverse 5x", "Ctrl+3", videoTransport, transportRev5);
+	ADDACT("Reverse 10x", "Ctrl+4", videoTransport, transportRev10);
+	ADDACT("Reverse 20x", "Ctrl+5", videoTransport, transportRev20);
+	ADDACT("Reverse 50x", "Ctrl+6", videoTransport, transportRev50);
+	ADDACT("Reverse 100x", "Ctrl+7", videoTransport, transportRev100);
+	ADDACT("Play/Pause", "Space", videoTransport, transportPlayPause);
+	ADDACT("Jog Forward", ".", videoTransport, transportJogFwd);
+	ADDACT("Jog Reverse", ",", videoTransport, transportJogRev);
 }
 
 //slot to receive full screen toggle command

@@ -73,43 +73,6 @@ private:
 QShuttlePro *shuttle;
 #endif
 
-	QAction *quitAct;
-
-	//display actions
-	QAction *setUserMatrixAct;
-	QAction *setHDTVMatrixAct;
-	QAction *setSDTVMatrixAct;
-	QAction *toggleMatrixScalingAct;
-	QAction *toggleOSDAct;
-	QAction *togglePerfAct;
-	QAction *toggleAspectLockAct;
-	QAction *viewFullScreenAct;
-	QAction *escapeFullScreenAct;
-	QAction *toggleLuminanceAct;
-	QAction *toggleChrominanceAct;
-	QAction *toggleDeinterlaceAct;
-
-	//transport control actions
-	QAction *transportFwd100Act;
-	QAction *transportFwd50Act;
-	QAction *transportFwd20Act;
-	QAction *transportFwd10Act;
-	QAction *transportFwd5Act;
-	QAction *transportFwd2Act;
-	QAction *transportFwd1Act;
-	QAction *transportStopAct;
-	QAction *transportRev1Act;
-	QAction *transportRev2Act;
-	QAction *transportRev5Act;
-	QAction *transportRev10Act;
-	QAction *transportRev20Act;
-	QAction *transportRev50Act;
-	QAction *transportRev100Act;
-
-	QAction *transportPlayPauseAct;
-	QAction *transportJogFwdAct;
-	QAction *transportJogRevAct;
-
 	void setFullScreen(bool);
 	ReaderInterface *reader;
 	FrameQueue *frameQueue;
