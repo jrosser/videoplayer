@@ -55,8 +55,11 @@ int main(int argc, char **argv)
 	vr_params.osd_bot = OSD_NONE;
 	vr_params.osd_valid = false;
 	vr_params.font_file = DEFAULT_FONTFILE;
-	vr_params.luminance_offset1 = (float)-0.0625;
-	vr_params.chrominance_offset1 = (float)-0.5;
+	vr_params.input_luma_range = 220;
+	vr_params.input_luma_blacklevel = 16;
+	vr_params.input_chroma_blacklevel = 128;
+	vr_params.output_blacklevel = 16;
+	vr_params.output_range = 220;
 	vr_params.luminance_mul = (float)1.0;
 	vr_params.chrominance_mul = (float)1.0;
 	vr_params.luminance_offset2 = (float)0.0;
@@ -64,7 +67,7 @@ int main(int argc, char **argv)
 	vr_params.interlaced_source = false;
 	vr_params.deinterlace = false;
 	vr_params.matrix_valid = false;
-	vr_params.matrix_scaling = false;
+	//vr_params.matrix_scaling = false;
 	vr_params.matrix_Kr = (float)0.2126;
 	vr_params.matrix_Kg = (float)0.7152;
 	vr_params.matrix_Kb = (float)0.0722;

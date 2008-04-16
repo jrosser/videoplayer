@@ -1,6 +1,8 @@
 #ifndef __GLVIDEO_PARAMS_H
 #define __GLVIDEO_PARAMS_H
 
+#include <QtCore>
+
 enum OSDmode {
 	OSD_NONE = 0,
 	OSD_FRAMENUM,
@@ -40,8 +42,11 @@ struct GLvideo_params {
 	 * offset1 result is multiplied by mul
 	 * offset2 is then added */
 	bool matrix_valid;
-	float luminance_offset1;
-	float chrominance_offset1;
+	int input_luma_range;
+	int input_luma_blacklevel;
+	int input_chroma_blacklevel;
+	int output_range;
+	int output_blacklevel;
 	float luminance_mul;
 	float chrominance_mul;
 	float luminance_offset2;
@@ -50,10 +55,6 @@ struct GLvideo_params {
 	/*optionally turn off luminance or chrominance channels*/
 	bool show_luma;
 	bool show_chroma;
-
-	/* set the video levels to computer (0-255)
-	 * or video (16-235) */
-	bool matrix_scaling;
 
 	/* what colour matrix */
 	float matrix_Kr;

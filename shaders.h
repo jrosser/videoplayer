@@ -21,15 +21,11 @@ static const char
 	    "uniform sampler2DRect Utex,Vtex;\n"
 	    "uniform float CHsubsample, CVsubsample;\n"
 
-	    "uniform vec3 yuvOffset1;\n"
-	    "uniform vec3 yuvMul;\n"
-	    "uniform vec3 yuvOffset2;\n"
-	    "uniform mat3 colourMatrix;\n"
+	    "uniform mat4 colour_matrix;\n"
 
 	    "void main(void) {\n"
-	    " float nx,ny,a;\n"
-	    " vec3 yuv;\n"
-	    " vec3 rgb;\n"
+	    " float nx,ny;\n"
+	    " vec4 yuv;\n"
 
 	    " nx=gl_TexCoord[0].x;\n"
 	    " ny=gl_TexCoord[0].y;\n"
@@ -37,15 +33,9 @@ static const char
 	    " yuv[0]=texture2DRect(Ytex,vec2(nx,ny)).r;\n"
 	    " yuv[1]=texture2DRect(Utex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
 	    " yuv[2]=texture2DRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
+	    " yuv[3]=1.0;\n"
 
-	    " yuv = yuv + yuvOffset1;\n"
-	    " yuv = yuv * yuvMul;\n"
-	    " yuv = yuv + yuvOffset2;\n"
-	    " rgb = yuv * colourMatrix;\n"
-
-	    "    a=1.0;\n"
-
-	    " gl_FragColor=vec4(rgb ,a);\n"
+	    " gl_FragColor = colour_matrix * yuv;\n"
 	    "}\n";
 
 /*---------------------------------------------------------------------------*/
@@ -61,15 +51,12 @@ static const char
 	    "uniform float CHsubsample, CVsubsample;\n"
 
 	    "uniform int  field;\n"
-	    "uniform vec3 yuvOffset1;\n"
-	    "uniform vec3 yuvMul;\n"
-	    "uniform vec3 yuvOffset2;\n"
-	    "uniform mat3 colourMatrix;\n"
+
+	    "uniform mat4 colour_matrix;\n"
 
 	    "void main(void) {\n"
-	    " float nx,ny,a;\n"
-	    " vec3 yuv;\n"
-	    " vec3 rgb;\n"
+	    " float nx,ny;\n"
+	    " vec4 yuv;\n"
 
 	    " nx=gl_TexCoord[0].x;\n"
 	    " ny=gl_TexCoord[0].y;\n"
@@ -88,14 +75,9 @@ static const char
 	    "     yuv[2]=texture2DRect(Vtex,vec2(nx/CHsubsample, ny/CVsubsample)).r;\n"
 	    " }\n"
 
-	    " yuv = yuv + yuvOffset1;\n"
-	    " yuv = yuv * yuvMul;\n"
-	    " yuv = yuv + yuvOffset2;\n"
-	    " rgb = yuv * colourMatrix;\n"
+	    " yuv[3]=1.0;\n"
 
-	    "    a=1.0;\n"
-
-	    " gl_FragColor=vec4(rgb ,a);\n"
+	    " gl_FragColor = colour_matrix * yuv;\n"
 	    "}\n";
 
 /*---------------------------------------------------------------------------*/
@@ -112,18 +94,14 @@ static const char
 	    "uniform sampler2DRect Ytex;\n"
 	    "uniform float CHsubsample, CVsubsample;\n"
 
-	    "uniform vec3 yuvOffset1;\n"
-	    "uniform vec3 yuvMul;\n"
-	    "uniform vec3 yuvOffset2;\n"
-	    "uniform mat3 colourMatrix;\n"
+	    "uniform mat4 colour_matrix;\n"
 
 	    "void main(void) {\n"
-	    " float nx,ny,a;\n"
-	    " vec3 yuv;\n"
+	    " float nx,ny;\n"
+	    " vec4 yuv;\n"
 	    " vec4 rgba;\n"
 	    " vec4 above;\n"
 	    " vec4 below;\n"
-	    " vec3 rgb;\n"
 
 	    " nx=gl_TexCoord[0].x;\n"
 	    " ny=gl_TexCoord[0].y;\n"
@@ -132,15 +110,9 @@ static const char
 	    " yuv[0] = (fract(nx) < 0.5) ? rgba.g : rgba.a;\n" //pick the correct luminance from G or A for this pixel
 	    " yuv[1] = rgba.r;\n"
 	    " yuv[2] = rgba.b;\n"
+	    " yuv[3]=1.0;\n"
 
-	    " yuv = yuv + yuvOffset1;\n"
-	    " yuv = yuv * yuvMul;\n"
-	    " yuv = yuv + yuvOffset2;\n"
-	    " rgb = yuv * colourMatrix;\n"
-
-	    " a=1.0;\n"
-
-	    " gl_FragColor=vec4(rgb, a);\n"
+	    " gl_FragColor = colour_matrix * yuv;\n"
 	    "}\n";
 
 /*---------------------------------------------------------------------------*/
@@ -158,18 +130,15 @@ static const char
 	    "uniform float CHsubsample, CVsubsample;\n"
 
 	    "uniform int  field;\n"
-	    "uniform vec3 yuvOffset1;\n"
-	    "uniform vec3 yuvMul;\n"
-	    "uniform vec3 yuvOffset2;\n"
-	    "uniform mat3 colourMatrix;\n"
+
+	    "uniform mat4 colour_matrix;\n"
 
 	    "void main(void) {\n"
-	    " float nx,ny,a;\n"
-	    " vec3 yuv;\n"
+	    " float nx,ny;\n"
+	    " vec4 yuv;\n"
 	    " vec4 rgba;\n"
 	    " vec4 above;\n"
 	    " vec4 below;\n"
-	    " vec3 rgb;\n"
 
 	    " nx=gl_TexCoord[0].x;\n"
 	    " ny=gl_TexCoord[0].y;\n"
@@ -193,13 +162,8 @@ static const char
 	    "     yuv[2] = rgba.b;\n"
 	    " }\n"
 
-	    " yuv = yuv + yuvOffset1;\n"
-	    " yuv = yuv * yuvMul;\n"
-	    " yuv = yuv + yuvOffset2;\n"
-	    " rgb = yuv * colourMatrix;\n"
+	    " yuv[3]=1.0;\n"
 
-	    " a=1.0;\n"
-
-	    " gl_FragColor=vec4(rgb, a);\n"
+	    " gl_FragColor = colour_matrix * yuv;\n"
 	    "}\n";
 #endif

@@ -194,14 +194,15 @@ void MainWindow::parseCommandLine(int argc, char **argv)
             ("quit,q",                                        "               Exit at end of video file")
             ("interlace,i",   po::value(&vr_params.interlaced_source),   "bool   false   Interlaced source [1], progressive[0]")
             ("deinterlace,d", po::value(&vr_params.deinterlace),        "bool   false   Deinterlace on [1], off [0]")
-            ("yoffset",       po::value(&vr_params.luminance_offset1),   "float -0.0625  Luminance data values offset")
-            ("coffset",       po::value(&vr_params.chrominance_offset1), "float -0.5     Chrominance data values offset")
-            ("ymult",         po::value(&vr_params.luminance_mul),       "float  1.0     Luminance multipler")
-            ("cmult",         po::value(&vr_params.chrominance_mul),     "float  1.0     Chrominance multiplier")
-            ("yoffset2",      po::value(&vr_params.luminance_offset2),   "float  0.0     Multiplied Luminance offset 2")
-            ("coffset2",      po::value(&vr_params.chrominance_offset2), "float  0.0     Multiplied Chrominance offset 2")
-            ("mscale,m",      po::value(&vr_params.matrix_scaling),      "bool   0       Matrix scale [0] Y*1.0, C*1.0,\n"
-                                                              "               [1] Y*(255/219) C*(255/224)")
+            ("yrange",        po::value(&vr_params.input_luma_range),   "int    220     Range of input luma (white-black+1)")
+            ("yblack",        po::value(&vr_params.input_luma_blacklevel),   "int    16      Blacklevel of input luma")
+            ("cblack",        po::value(&vr_params.input_chroma_blacklevel),   "int    16      Blacklevel of input chroma")
+            ("out-range",     po::value(&vr_params.output_range),   "int    220     Range of R'G'B' output (white-black+1)")
+            ("out-black",     po::value(&vr_params.output_blacklevel),   "int    16      Blacklevel of R'G'B' output")
+            ("ymult",         po::value(&vr_params.luminance_mul),       "float  1.0     User luma multipler")
+            ("cmult",         po::value(&vr_params.chrominance_mul),     "float  1.0     User chroma multiplier")
+            ("yoffset2",      po::value(&vr_params.luminance_offset2),   "float  0.0     User luma offset2")
+            ("coffset2",      po::value(&vr_params.chrominance_offset2), "float  0.0     User chroma offset2")
             ("matrixkr",      po::value(&userKr),           "float  0.2126  Colour Matrix Kr")
             ("matrixkg",      po::value(&userKg),           "float  0.7152  Colour Matrix Kg")
             ("matrixkb",      po::value(&userKb),           "float  0.0722  Colour Matrix Kb\n"
@@ -627,10 +628,28 @@ void MainWindow::toggleAspectLock()
 void MainWindow::toggleLuminance()
 {
 	vr_params.show_luma ^= 1;
+	if (vr_params.show_luma) {
+		vr_params.luminance_mul = 1.;
+		vr_params.luminance_offset2 = 0.;
+	}
+	else {
+		vr_params.luminance_mul = 0.;
+		vr_params.luminance_offset2 = 128./255.;
+	}
+	vr_params.matrix_valid = false;
 }
 void MainWindow::toggleChrominance()
 {
 	vr_params.show_chroma ^= 1;
+	if (vr_params.show_chroma) {
+		vr_params.chrominance_mul = 1.;
+		vr_params.chrominance_offset2 = 0.;
+	}
+	else {
+		vr_params.chrominance_mul = 0.;
+		vr_params.chrominance_offset2 = 0.;
+	}
+	vr_params.matrix_valid = false;
 }
 void MainWindow::toggleDeinterlace()
 {
@@ -638,7 +657,7 @@ void MainWindow::toggleDeinterlace()
 }
 void MainWindow::toggleMatrixScaling()
 {
-	vr_params.matrix_scaling ^= 1;
+	//vr_params.matrix_scaling ^= 1;
 	vr_params.matrix_valid = false;
 }
 

@@ -358,7 +358,7 @@ void GLvideo_rt::renderPerf(VideoData *videoData, FTFont *font)
 #endif
 
 void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
-                                  GLvideo_params &params, float *colourMatrix)
+                                  GLvideo_params &params, float colour_matrix[4][4])
 {
 	if (DEBUG)
 		printf("Updating fragment shader variables\n");
@@ -372,30 +372,8 @@ void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
 	i = glGetUniformLocationARB(program, "CVsubsample");
 	glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
 
-	//settings from the c++ program to the shader
-	i = glGetUniformLocationARB(program, "yuvOffset1");
-	float offset1[3];
-	offset1[0] = params.luminance_offset1;
-	offset1[1] = params.chrominance_offset1;
-	offset1[2] = params.chrominance_offset1;
-	glUniform3fvARB(i, 1, &offset1[0]);
-
-	i = glGetUniformLocationARB(program, "yuvMul");
-	float mul[3];
-	mul[0] = params.show_luma ? params.luminance_mul : 0.0;
-	mul[1] = params.show_chroma ? params.chrominance_mul : 0.0;
-	mul[2] = params.show_chroma ? params.chrominance_mul : 0.0;
-	glUniform3fvARB(i, 1, &mul[0]);
-
-	i = glGetUniformLocationARB(program, "yuvOffset2");
-	float offset2[3];
-	offset2[0] = params.show_luma ? params.luminance_offset2 : 0.5;
-	offset2[1] = params.chrominance_offset2;
-	offset2[2] = params.chrominance_offset2;
-	glUniform3fvARB(i, 1, &offset2[0]);
-
-	i = glGetUniformLocationARB(program, "colourMatrix");
-	glUniformMatrix3fvARB(i, 1, false, colourMatrix);
+	i = glGetUniformLocationARB(program, "colour_matrix");
+	glUniformMatrix4fvARB(i, 1, true, (float*) colour_matrix);
 
 	glUseProgramObjectARB(0);
 }
@@ -426,7 +404,7 @@ void GLvideo_rt::run()
 	int field = 0;
 	int direction = 0;
 	int currentShader = 0;
-	float colourMatrix[9];
+	float colour_matrix[4][4];
 
 #ifdef HAVE_FTGL
 	FTFont *font = NULL;
@@ -557,14 +535,12 @@ void GLvideo_rt::run()
 			}
 
 			if (params.matrix_valid == false) {
-				buildColourMatrix(colourMatrix, params.matrix_Kr,
-				                  params.matrix_Kg, params.matrix_Kb,
-				                  params.matrix_scaling, params.matrix_scaling);
+				buildColourMatrix(colour_matrix, params);
 			}
 
 			//update the uniform variables in the fragment shader
 			perfTimer.restart();
-			updateShaderVars(programs[currentShader], videoData, params, colourMatrix);
+			updateShaderVars(programs[currentShader], videoData, params, colour_matrix);
 			perf_updateVars = perfTimer.elapsed();
 
 			//if the size of the window has changed (doResize)

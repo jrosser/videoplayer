@@ -1,7 +1,8 @@
 #ifndef __UTIL_H
 #define __UTIL_H
 
-void buildColourMatrix(float* matrix, float Kr, float Kg, float Kb,
-                       bool Yscale, bool CScale);
+struct GLvideo_params;
+
+void buildColourMatrix(float dst[4][4], const GLvideo_params &p);
 
 #endif
