@@ -49,7 +49,7 @@ QShuttlePro::QShuttlePro()
 	if (DEBUG)
 		printf("Starting ShuttlePro\n");
 
-	fd = 0;
+	fd = -1;
 	jogvalue = 0;
 	shuttlevalue = 0;
 	self = 0;
@@ -72,8 +72,10 @@ int QShuttlePro::openShuttle()
 {
 	const char* g_eventDeviceTemplate = "/dev/input/event%d";
 
-	const ShuttleData g_supportedShuttles[] = { { 0x0b33, 0x0010,
-	    "Contour ShuttlePro" }, { 0x0b33, 0x0030, "Contour ShuttlePro V2" } };
+	const ShuttleData g_supportedShuttles[] = {
+		{ 0x0b33, 0x0010, "Contour ShuttlePro" },
+		{ 0x0b33, 0x0030, "Contour ShuttlePro V2" },
+	};
 
 	int numSupportedShuttles = sizeof(g_supportedShuttles)
 	    / sizeof(ShuttleData);
@@ -82,38 +84,37 @@ int QShuttlePro::openShuttle()
 	char eventDevName[256];
 
 	int grab = 1;
-	int foundIt=0;
 
 	/* go through the event devices and check whether it is a supported shuttle */
 	for (int i = 0; i < EVENT_DEV_INDEX_MAX; i++) {
-
 		sprintf(eventDevName, g_eventDeviceTemplate, i);
 
-		if ((fd = open(eventDevName, O_RDONLY)) != -1) {
-			/* get the device information */
-			if (ioctl(fd, EVIOCGID, &deviceInfo) >= 0) {
-				for (int j = 0; j < numSupportedShuttles; j++) {
-					/* check the vendor and product id */
-					if (g_supportedShuttles[j].vendor == deviceInfo.vendor
-					    && g_supportedShuttles[j].product == deviceInfo.product) {
-						/* try grab the device for exclusive access */
-						if (ioctl(fd, EVIOCGRAB, &grab) != 0) {
-							printf("Failed to grab jog-shuttle device for exclusive access\n");
-						}
+		if ((fd = open(eventDevName, O_RDONLY)) == -1)
+			continue;
 
-						if (DEBUG)
-							printf("Found shuttle at %s\n", eventDevName);
+		/* get the device information */
+		if (ioctl(fd, EVIOCGID, &deviceInfo) < 0)
+			continue;
 
-						foundIt = 1;
-						goto exit;
-					}
-				}
+		for (int j = 0; j < numSupportedShuttles; j++) {
+			/* check the vendor and product id */
+			if (g_supportedShuttles[j].vendor != deviceInfo.vendor
+				|| g_supportedShuttles[j].product != deviceInfo.product)
+				continue;
+
+				/* try grab the device for exclusive access */
+			if (ioctl(fd, EVIOCGRAB, &grab) != 0) {
+				printf("Failed to grab jog-shuttle device for exclusive access\n");
 			}
 
+			if (DEBUG)
+				printf("Found shuttle at %s\n", eventDevName);
+
+			goto found;
 		}
 	}
-
-	exit: return foundIt;
+	return 0;
+	found: return 1;
 }
 
 void QShuttlePro::shuttle(int value)
@@ -212,25 +213,28 @@ void QShuttlePro::jog(unsigned int value)
 	if (value == jogvalue)
 		return;
 
-	if (jogvalue != 0xffff) {
-		if ((value + 1 == jogvalue)
-		    || (jogvalue == 1 && value == MAX_JOG_VALUE)) {
-			if (DEBUG)
-				printf("Jog backward, %d\n", value);
-			emit(jogBackward());
-		}
-		else if ((value == jogvalue + 1) || (jogvalue == MAX_JOG_VALUE && value
-		    == 1)) {
-			if (DEBUG)
-				printf("Jog forward, %d\n", value);
-			emit(jogForward());
-		}
-		else {
-			if (DEBUG)
-				printf("Jog value is confused!\n");
-		}
+	if (jogvalue == 0xffff) {
+		goto exit;
 	}
 
+	if ((value + 1 == jogvalue)
+		|| (jogvalue == 1 && value == MAX_JOG_VALUE)) {
+		if (DEBUG)
+			printf("Jog backward, %d\n", value);
+		emit(jogBackward());
+	}
+	else if ((value == jogvalue + 1) || (jogvalue == MAX_JOG_VALUE && value
+		== 1)) {
+		if (DEBUG)
+			printf("Jog forward, %d\n", value);
+		emit(jogForward());
+	}
+	else {
+		if (DEBUG)
+			printf("Jog value is confused!\n");
+	}
+
+exit:
 	jogvalue = value;
 }
 
@@ -347,49 +351,48 @@ void QShuttlePro::run()
 	signal(SIGUSR1, signalHandler); //handler for sigusr1
 
 	while (running) {
-		if (fd > 0) {
-
-			FD_ZERO(&rfds);
-			FD_SET(fd, &rfds);
-			/* TODO: is there a way to find out how many sec between sync events? */
-			tv.tv_sec = 4; /* > sync events interval. */
-			tv.tv_usec = 0;
-
-			int retval = select(fd + 1, &rfds, NULL, NULL, &tv);
-
-			if (retval == -1) {
-				if (DEBUG)
-					printf("Select Error!\n"); /* select error */
-				continue;
-			}
-			else if (retval) {
-				numRead = read(fd, &inEvent, sizeof(struct input_event));
-
-				if (numRead > 0)
-					process_event(inEvent);
-
-				if (numRead < 0) {
-					//we have lost the ShuttlePro - probably unplugged
-					if (DEBUG)
-						printf("Lost connection to ShuttlePro\n");
-					close(fd);
-					fd=0;
-				}
-			}
-			else {
-				if (DEBUG)
-					printf("Timeout\n");
-				//we got nothing.... what does this mean???
-			}
-		}
-		else {
+		if (fd < 0) {
 			//have not yet opened the ShuttlePro properly, try again, waiting if we fail
 			if (openShuttle() == 0) {
 				tv.tv_sec = 1;
 				tv.tv_usec = 0;
 				//use select() rather than sleep(), as it is woken by signals
 				select(1, NULL, NULL, NULL, &tv);
+				continue;
 			}
+		}
+
+		FD_ZERO(&rfds);
+		FD_SET(fd, &rfds);
+		/* TODO: is there a way to find out how many sec between sync events? */
+		tv.tv_sec = 4; /* > sync events interval. */
+		tv.tv_usec = 0;
+
+		int retval = select(fd + 1, &rfds, NULL, NULL, &tv);
+
+		if (retval == -1) {
+			if (DEBUG)
+				printf("Select Error!\n"); /* select error */
+			continue;
+		}
+		else if (retval) {
+			numRead = read(fd, &inEvent, sizeof(struct input_event));
+
+			if (numRead > 0)
+				process_event(inEvent);
+
+			if (numRead < 0) {
+				//we have lost the ShuttlePro - probably unplugged
+				if (DEBUG)
+					printf("Lost connection to ShuttlePro\n");
+				close(fd);
+				fd=-1;
+			}
+		}
+		else {
+			if (DEBUG)
+				printf("Timeout\n");
+			//we got nothing.... what does this mean???
 		}
 	}
 }

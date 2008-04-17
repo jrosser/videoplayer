@@ -86,7 +86,7 @@ private:
 	{
 		short vendor;
 		short product;
-		char* name;
+		const char* name;
 	}ShuttleData;
 
 	int fd;
