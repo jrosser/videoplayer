@@ -171,10 +171,6 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 		}
 
 		if (vm.count("matrixkr") || vm.count("matrixkg") || vm.count("matrixkb")) {
-			vp.userKr = vp.matrix_Kr;
-			vp.userKg = vp.matrix_Kg;
-			vp.userKb = vp.matrix_Kb;
-
 			if (vp.matrix_Kr + vp.matrix_Kg + vp.matrix_Kb < 1.0)
 				printf("Warning, luma coefficients do not sum to one\n");
 		}
@@ -292,9 +288,6 @@ int main(int argc, char **argv)
 	vr_params.matrix_valid = false;
 	//vr_params.matrix_scaling = false;
 	SetLumaCoeffsRec709(vr_params);
-	vr_params.userKr = vr_params.matrix_Kr;
-	vr_params.userKg = vr_params.matrix_Kg;
-	vr_params.userKb = vr_params.matrix_Kb;
 	vr_params.aspect_ratio_lock = true;
 	vr_params.show_luma = true;
 	vr_params.show_chroma = true;

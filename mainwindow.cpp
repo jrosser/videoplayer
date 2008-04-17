@@ -40,12 +40,10 @@
 #include "QShuttlePro.h"
 #endif
 
-#include "GLvideo_params.h"
-
 using namespace std;
 
 MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params) :
-	vr_params(vr_params)
+	vr_params(vr_params), vr_params_orig(vr_params)
 {
 	QPalette p = palette();
 	p.setColor(QPalette::Window, Qt::black);
@@ -236,9 +234,9 @@ void MainWindow::setSDTVMatrix()
 
 void MainWindow::setUserMatrix()
 {
-	vr_params.matrix_Kr = vr_params.userKr;
-	vr_params.matrix_Kg = vr_params.userKg;
-	vr_params.matrix_Kb = vr_params.userKb;
+	vr_params.matrix_Kr = vr_params_orig.matrix_Kr;
+	vr_params.matrix_Kg = vr_params_orig.matrix_Kg;
+	vr_params.matrix_Kb = vr_params_orig.matrix_Kb;
 	vr_params.matrix_valid = false;
 }
 
@@ -257,12 +255,13 @@ void MainWindow::toggleAspectLock()
 	vr_params.aspect_ratio_lock ^= 1;
 	vr_params.view_valid = false;
 }
+
 void MainWindow::toggleLuminance()
 {
 	vr_params.show_luma ^= 1;
 	if (vr_params.show_luma) {
-		vr_params.luminance_mul = 1.;
-		vr_params.luminance_offset2 = 0.;
+		vr_params.luminance_mul = vr_params_orig.luminance_mul;
+		vr_params.luminance_offset2 = vr_params_orig.luminance_offset2;
 	}
 	else {
 		vr_params.luminance_mul = 0.;
@@ -270,12 +269,13 @@ void MainWindow::toggleLuminance()
 	}
 	vr_params.matrix_valid = false;
 }
+
 void MainWindow::toggleChrominance()
 {
 	vr_params.show_chroma ^= 1;
 	if (vr_params.show_chroma) {
-		vr_params.chrominance_mul = 1.;
-		vr_params.chrominance_offset2 = 0.;
+		vr_params.chrominance_mul = vr_params_orig.chrominance_mul;
+		vr_params.chrominance_offset2 = vr_params_orig.chrominance_offset2;
 	}
 	else {
 		vr_params.chrominance_mul = 0.;
@@ -283,10 +283,12 @@ void MainWindow::toggleChrominance()
 	}
 	vr_params.matrix_valid = false;
 }
+
 void MainWindow::toggleDeinterlace()
 {
 	vr_params.deinterlace ^= 1;
 }
+
 void MainWindow::toggleMatrixScaling()
 {
 	//vr_params.matrix_scaling ^= 1;

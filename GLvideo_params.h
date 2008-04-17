@@ -60,9 +60,6 @@ struct GLvideo_params {
 	float matrix_Kr;
 	float matrix_Kg;
 	float matrix_Kb;
-	float userKr;
-	float userKg;
-	float userKb;
 
 	/* @interlaced_source@ modifies behaviour when repeating
 	 * frames (paused) and playing backwards (field reversal)

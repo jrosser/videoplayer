@@ -29,6 +29,8 @@
 
 #include <QtGui>
 
+#include "GLvideo_params.h"
+
 #ifdef Q_OS_LINUX
 class QShuttlePro;
 #endif
@@ -91,6 +93,7 @@ QShuttlePro *shuttle;
 	GLvideo_mt *glvideo_mt;
 
 	GLvideo_params& vr_params;
+	GLvideo_params vr_params_orig;
 
 	bool quit_at_end;
 };
