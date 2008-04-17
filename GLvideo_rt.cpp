@@ -624,7 +624,7 @@ void GLvideo_rt::run()
 			//
 			//			//the frame repeater returns the number of times it managed to repeat the frame
 			//			//this may be more than once, depending on the platform
-			//			r += repeater->repeat(frameRepeats);            
+			//			r += repeater->repeat(frameRepeats);
 			//		}
 			//	}
 			//

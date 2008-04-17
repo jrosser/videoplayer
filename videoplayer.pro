@@ -32,7 +32,7 @@ contains(DEFINES, HAVE_DIRAC) {
 
 	#schroedinger library
 	SCHRO_INSTALL_PATH = /usr/local
-	#SCHRO_INSTALL_PATH = /Users/andrea/build/schroedinger-Darwin-i386	
+	#SCHRO_INSTALL_PATH = /Users/andrea/build/schroedinger-Darwin-i386
 	INCLUDEPATH += $$SCHRO_INSTALL_PATH/include/schroedinger-1.0
 	LIBPATH += $$SCHRO_INSTALL_PATH/lib
 	LIBS += -lschroedinger-1.0
@@ -73,7 +73,7 @@ macx {
 
   #see http://developer.apple.com/qa/qa2007/qa1567.html
   QMAKE_LFLAGS += -dylib_file \
-    /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:\ 
+    /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:\
     /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib
 }
 

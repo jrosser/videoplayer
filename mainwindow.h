@@ -74,7 +74,7 @@ private slots:
 	void toggleChrominance();
 	void toggleDeinterlace();
 	void toggleMatrixScaling();
-	
+
 private:
 	void createActions(void);
 	void parseCommandLine(int argc, char **argv);

@@ -63,7 +63,7 @@ int FrameQueue::wantedFrameNum(bool future)
 	if (reader->randomAccess == false)
 		return 0;
 
-	//if we can seek then get the number of the last frame in the queue	
+	//if we can seek then get the number of the last frame in the queue
 	if (future == true) {
 		if (futureFrames.size())
 			lastFrame = futureFrames.last()->frameNum;

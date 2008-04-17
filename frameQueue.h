@@ -79,7 +79,7 @@ private:
 	VideoData *displayFrame;
 	int displayFrameNum;
 
-	//playback status    
+	//playback status
 	int direction;
 	int speed;
 

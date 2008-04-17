@@ -114,4 +114,3 @@ buildColourMatrix(float dst[4][4], const GLvideo_params &p)
 
 	/* printf("---\n");matrix_dump4(dst); */
 }
-

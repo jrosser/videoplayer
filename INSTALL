@@ -3,23 +3,24 @@ Real Time Video Player for raw YUV files
 To build on Linux systems
 ------------------------
 
-Prerequisites: Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com
+Prerequisites:
+ - Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com
 
-			 
 qmake              #generate makefile from videoplayer.pro
-make		       #generate videoplayer execuatable
+make               #generate videoplayer execuatable
 
 
 To build on Mac OS X systems
 ---------------------------
 
-Prerequisites: Mac OS X 10.5 / Leopard
-			   Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com/
-			   Xcode toolchain
-			   
-			   Optionally FTGL text rendering library, can be installed with MacPorts www.macports.org
-			   If you do not want to use FTGL, the on screen display can be disabled by commenting out the
-			   lines in the macx/ftgl section of videoplayer.pro
-			   
+Prerequisites:
+ - Mac OS X 10.5 / Leopard
+ - Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com/
+ - Xcode toolchain
+
+ - Optionally FTGL text rendering library, can be installed with MacPorts www.macports.org
+ - If you do not want to use FTGL, the on screen display can be disabled by commenting out the
+ -  lines in the macx/ftgl section of videoplayer.pro
+
 qmake -spec macx-g++    #generate makefile from videoplayer.pro
-make             		#compile videoplayer executable
+make                    #compile videoplayer executable

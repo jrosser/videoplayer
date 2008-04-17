@@ -66,7 +66,7 @@ MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params) :
 
 	//object that generates frames to be inserted into the frame queue
 	reader = NULL;
-#ifdef HAVE_DIRAC    
+#ifdef HAVE_DIRAC
 	//make dirac reader if required
 	if(qt_params.fileType.toLower() == "drc") {
 		DiracReader *r = new DiracReader( *frameQueue );

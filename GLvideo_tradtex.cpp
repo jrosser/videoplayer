@@ -24,7 +24,7 @@ void TradTex::deleteTextures()
 {
 	if(glIsTexture(textures.y)) glDeleteTextures(1, &(textures.y));
 	if(glIsTexture(textures.u)) glDeleteTextures(1, &(textures.u));
-	if(glIsTexture(textures.v)) glDeleteTextures(1, &(textures.v));	
+	if(glIsTexture(textures.v)) glDeleteTextures(1, &(textures.v));
 }
 
 void TradTex::createTextures(VideoData *video_data)

@@ -69,13 +69,13 @@ Standard Definition video can be played from a single HDD.
 1920x1080 HDTV at 25/30fps can be played from four HDDs in software RAID-0.
 1920x1080 HDTV at 50/60fps can be played from eight HDDs in software RAID-0.
 
-It should be noted that the continuous read rate of a HDD varies across the 
-platters. It may be possible to play back from fewer disks than described 
+It should be noted that the continuous read rate of a HDD varies across the
+platters. It may be possible to play back from fewer disks than described
 above, but frames may be dropped at certain filesystem occupancies.
 
 If a large disk array is not available, system RAM can be used to cache video
-files if enough is available. Source video can be copied to /tmp and then 
-played. Alternatively, video can be played from a slow HDD and will stutter 
+files if enough is available. Source video can be copied to /tmp and then
+played. Alternatively, video can be played from a slow HDD and will stutter
 on the first loop of the file. Subsequent loops will play in real time as the
 video data is now cached by the operating system.
 
