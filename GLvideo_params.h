@@ -60,6 +60,9 @@ struct GLvideo_params {
 	float matrix_Kr;
 	float matrix_Kg;
 	float matrix_Kb;
+	float userKr;
+	float userKg;
+	float userKb;
 
 	/* @interlaced_source@ modifies behaviour when repeating
 	 * frames (paused) and playing backwards (field reversal)
@@ -73,4 +76,25 @@ struct GLvideo_params {
 	bool aspect_ratio_lock;
 };
 
+/* SetLumaCoeffsRec709
+ * Set Kr,Kg,Kb to have the luma coefficients defined in ITU-R Rec BT.709
+ * NB, these are *not* the colour primaries */
+static inline void
+SetLumaCoeffsRec709(GLvideo_params &p)
+{
+	p.matrix_Kr = 0.2126;
+	p.matrix_Kg = 0.7152;
+	p.matrix_Kb = 0.0722;
+}
+
+/* SetLumaCoeffsRec601
+ * Set Kr,Kg,Kb to have the luma coefficients defined in ITU-R Rec BT.601
+ * NB, these are *not* the colour primaries */
+static inline void
+SetLumaCoeffsRec601(GLvideo_params &p)
+{
+	p.matrix_Kr = 0.299;
+	p.matrix_Kg = 0.587;
+	p.matrix_Kb = 0.114;
+}
 #endif

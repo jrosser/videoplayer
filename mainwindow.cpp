@@ -42,46 +42,24 @@
 
 #include "GLvideo_params.h"
 
-#include <iostream>
-#include <boost/program_options.hpp>
-namespace po = boost::program_options;
 using namespace std;
 
-MainWindow::MainWindow(int argc, char **argv, GLvideo_params& vr_params) :
+MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params) :
 	vr_params(vr_params)
 {
 	QPalette p = palette();
 	p.setColor(QPalette::Window, Qt::black);
 	setPalette(p);
 
-	startFullScreen = false;
-	fileName = "";
-	fileType = "";
-	forceFileType = false;
-	videoWidth = 1920;
-	videoHeight = 1080;
+	quit_at_end = qt_params.quit_at_end;
 
-	userKr = (float)0.2126;
-	userKg = (float)0.7152;
-	userKb = (float)0.0722;
-
-	hideMouse = false;
-	looping = true;
-	quitAtEnd = false;
-
-	//override settings with command line
-	parseCommandLine(argc, argv);
-
-	if (allParsed == false)
-		return;
-
-	if (hideMouse) {
+	if (qt_params.hideMouse) {
 		//hide the mouse pointer from the start if requestes
 		setCursor(QCursor(Qt::BlankCursor));
 	}
 
 	setWindowTitle("VideoPlayer");
-	setFullScreen(startFullScreen);
+	setFullScreen(qt_params.startFullScreen);
 
 	//object containing a seperate thread that manages the lists of frames to be displayed
 	frameQueue = new FrameQueue();
@@ -90,10 +68,10 @@ MainWindow::MainWindow(int argc, char **argv, GLvideo_params& vr_params) :
 	reader = NULL;
 #ifdef HAVE_DIRAC    
 	//make dirac reader if required
-	if(fileType.toLower() == "drc") {
+	if(qt_params.fileType.toLower() == "drc") {
 		DiracReader *r = new DiracReader( *frameQueue );
 
-		r->setFileName(fileName);
+		r->setFileName(qt_params.fileName);
 		reader = r;
 		r->start(QThread::LowestPriority);
 	}
@@ -104,11 +82,11 @@ MainWindow::MainWindow(int argc, char **argv, GLvideo_params& vr_params) :
 		YUVReader *r = new YUVReader( *frameQueue );
 
 		//YUV reader parameters
-		r->setVideoWidth(videoWidth);
-		r->setVideoHeight(videoHeight);
-		r->setForceFileType(forceFileType);
-		r->setFileType(fileType);
-		r->setFileName(fileName);
+		r->setVideoWidth(qt_params.videoWidth);
+		r->setVideoHeight(qt_params.videoHeight);
+		r->setForceFileType(qt_params.forceFileType);
+		r->setFileType(qt_params.fileType);
+		r->setFileName(qt_params.fileName);
 
 		reader = r;
 	}
@@ -172,211 +150,10 @@ MainWindow::MainWindow(int argc, char **argv, GLvideo_params& vr_params) :
 #endif
 
 	//video reader parameters
-	videoTransport->setLooping(looping);
+	videoTransport->setLooping(qt_params.looping);
 	connect(videoTransport, SIGNAL(endOfFile()), this, SLOT(endOfFile()));
 
 	//rendering thread parameters
-}
-
-void MainWindow::parseCommandLine(int argc, char **argv)
-{
-	allParsed = true; //default to command line parsing succeeding
-	try {
-
-        // Declare the supported options.
-        po::options_description desc("Allowed options            type   default  description\n"
-                                     "===============            ====   =======  ===========");
-        desc.add_options()
-            ("width,w",       po::value(&videoWidth),         "int    1920    Width of video luminance component")
-            ("height,h",      po::value(&videoHeight),        "int    1080    Height of video luminance component")
-            ("repeats,r",     po::value(&vr_params.frame_repeats),       "int    0       Frame is repeated r extra times")
-            ("loop,l",        po::value(&looping),            "bool   1       Video file is played repeatedly")
-            ("quit,q",                                        "               Exit at end of video file")
-            ("interlace,i",   po::value(&vr_params.interlaced_source),   "bool   false   Interlaced source [1], progressive[0]")
-            ("deinterlace,d", po::value(&vr_params.deinterlace),        "bool   false   Deinterlace on [1], off [0]")
-            ("yrange",        po::value(&vr_params.input_luma_range),   "int    220     Range of input luma (white-black+1)")
-            ("yblack",        po::value(&vr_params.input_luma_blacklevel),   "int    16      Blacklevel of input luma")
-            ("cblack",        po::value(&vr_params.input_chroma_blacklevel),   "int    16      Blacklevel of input chroma")
-            ("out-range",     po::value(&vr_params.output_range),   "int    220     Range of R'G'B' output (white-black+1)")
-            ("out-black",     po::value(&vr_params.output_blacklevel),   "int    16      Blacklevel of R'G'B' output")
-            ("ymult",         po::value(&vr_params.luminance_mul),       "float  1.0     User luma multipler")
-            ("cmult",         po::value(&vr_params.chrominance_mul),     "float  1.0     User chroma multiplier")
-            ("yoffset2",      po::value(&vr_params.luminance_offset2),   "float  0.0     User luma offset2")
-            ("coffset2",      po::value(&vr_params.chrominance_offset2), "float  0.0     User chroma offset2")
-            ("matrixkr",      po::value(&userKr),           "float  0.2126  Colour Matrix Kr")
-            ("matrixkg",      po::value(&userKg),           "float  0.7152  Colour Matrix Kg")
-            ("matrixkb",      po::value(&userKb),           "float  0.0722  Colour Matrix Kb\n"
-                                                              "               ITU-R BT709/BT1361, SMPTE274M/296M")
-            ("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
-                                                              "               ITU-R BT601/BT470, SMPTE170M/293M")
-            ("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")
-            ("osdscale",      po::value(&vr_params.osd_scale),           "float  1.0     OSD size scaling factor")
-            ("osdbackalpha",  po::value(&vr_params.osd_back_alpha),"float  0.7     Transparency for OSD background")
-            ("osdtextalpha",  po::value(&vr_params.osd_text_alpha),"float  0.5     Transparency for OSD text")
-            ("osdstate",      po::value(&vr_params.osd_bot),           "int    0       OSD initial state")
-            ("filetype,t",    po::value<string>(),            "string         Force file type\n"
-                                                              "               [i420|yv12|uyvy|v210|v216]")
-            ("full,f",                                        "               Start in full screen mode")
-            ("hidemouse",                                     "               Never show the mouse pointer")
-            ("caption",       po::value<string>(),            "string         OSD Caption text")
-            ("video",                                         "               Video file to play")
-            ("help",                                          "               Show usage information");
-
-        //file filename is a 'positional option' that we give the name 'video' to
-		po::positional_options_description p;
-		p.add("video", -1);
-
-		po::variables_map vm;
-		po::store(po::command_line_parser(argc, argv). options(desc).positional(p).run(), vm);
-		po::notify(vm);
-
-		if (vm.count("help")) {
-			usage();
-			std::cout << desc << std::endl;
-		}
-
-		if (vm.count("sd")) {
-			setSDTVMatrix();
-		}
-
-		if (vm.count("full")) {
-			startFullScreen=true;
-		}
-
-		if (vm.count("quit")) {
-			quitAtEnd=true;
-		}
-
-		if (vm.count("hidemouse")) {
-			hideMouse=true;
-		}
-
-		if (vm.count("matrixkr") || vm.count("matrixkg") || vm.count("matrixkb"))
-			setUserMatrix();
-
-		if (vm.count("fontfile")) {
-			string tmp = vm["fontfile"].as<string>();
-			vr_params.font_file = tmp.data();
-
-#ifdef WITH_OSD
-			//check OSD font file exists
-			QFileInfo fi(vr_params.font_file);
-			if(fi.exists() == false) {
-				printf("Cannot find OSD font file %s\n", vr_params.font_file.toLatin1().data());
-				allParsed = false;
-			}
-			else {
-				if(fi.isReadable() == false) {
-					printf("Cannot read OSD font file %s\n", vr_params.font_file.toLatin1().data());
-					allParsed = false;
-				}
-			}
-#endif
-		}
-
-		if(vm.count("caption")) {
-			string tmp = vm["caption"].as<string>();
-			vr_params.caption = tmp.data();
-		}
-
-		QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0");
-#ifdef HAVE_DIRAC
-		known_extensions.append(" drc");
-#endif
-
-		if (vm.count("filetype")) {
-			string tmp = vm["filetype"].as<string>();
-			fileType = tmp.data();
-
-			if(known_extensions.contains(fileType.toLower(), Qt::CaseInsensitive))
-			{
-				forceFileType=true;
-			}
-			else {
-				printf("Unknown file type %s\n", fileType.toLatin1().data());
-				allParsed = false;
-			}
-
-		}
-
-		if (vm.count("video") == 0) {
-			printf("No file to play!\n");
-			allParsed = false;
-		}
-		else {
-			string tmp = vm["video"].as<string>();
-			fileName = tmp.data();
-
-			QFileInfo fi(fileName);
-
-			if(fi.exists()) {
-				if(forceFileType == false) {
-					//file extension must be one we know about
-					if(known_extensions.contains(fi.suffix().toLower(), Qt::CaseInsensitive) == false)
-					{
-						printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
-						printf("Please specify file format with the -t flag\n");
-						allParsed = false;
-					}
-				}
-			}
-			else {
-				printf("File %s does not exist\n", fileName.toLatin1().data());
-				allParsed = false;
-			}
-		}
-	}
-	catch(exception& e)
-	{
-		printf("Command line error : ");
-		cout << e.what() << "\n";
-		allParsed = false;
-	}
-}
-
-void MainWindow::usage()
-{
-	printf("\nOpenGL accelerated YUV video player.");
-	printf("\n");
-	printf("\nUsage: progname -<flag1> [<flag1_val>] ... <input>");
-	printf("\n");
-	printf("\nSupported file formats:");
-	printf("\n");
-	printf("\n  .i420         4:2:0 YUV 8 bit planar");
-	printf("\n  .yv12         4:2:0 YVU 8 bit planar");
-	printf("\n  .420p         4:2:0 YUV 8 bit planar");
-	printf("\n  .422p         4:2:2 YUV 8 bit planar");
-	printf("\n  .444p         4:4:4 YUV 8 bit planar");
-	printf("\n  .uyvy         4:2:2 YUV 8 bit packed");
-	printf("\n  .v210         4:2:2 YUV 10 bit packed");
-	printf("\n  .v216         4:2:2 YUV 16 bit packed");
-	printf("\n  .16p0         4:2:0 YUV 16 bit planar");
-	printf("\n  .16p2         4:2:2 YUV 16 bit planar");
-	printf("\n  .16p4         4:4:4 YUV 16 bit planar");
-	printf("\n");
-
-	printf("\nKeypress               Action");
-	printf("\n========               ======");
-	printf("\no                      Toggle OSD state");
-	printf("\nf                      Toggle full screen mode");
-	printf("\nm                      Toggle colour matrix scaling");
-	printf("\nEsc                    Return from full screen mode to windowed");
-	printf("\na                      Toggle aspect ratio lock");
-	printf("\nd                      Toggle deinterlacing of an interlaced source");
-	printf("\nSpace                  Play/Pause");
-	printf("\ns                      Stop");
-	printf("\n1,2,3,4,5,6,7          Play forward at 1,2,5,10,20,50,100x");
-	printf("\nCTRL + 1,2,3,4,5,6,7   Play backward at 1,2,5,10,20,50,100x");
-	printf("\n>                      Jog one frame forward when paused");
-	printf("\n<                      Jog one frame backward when paused");
-	printf("\ny                      Toggle display of luminance  on/off");
-	printf("\nc                      Toggle display of chrominance on/off");
-	printf("\nh                      Switch to HDTV colour matrix kr=0.2126 kg=0.7152 kb=0.0722");
-	printf("\nj                      Switch to SDTV colour matrix kr=0.2990 kg=0.5870 kb=0.1140");
-	printf("\nk                      Switch to colour matrix kr, kg, kb from user flags");
-	printf("\nq                      Quit");
-	printf("\n");
-	printf("\n");
 }
 
 //generate actions for menus and keypress handlers
@@ -447,25 +224,21 @@ void MainWindow::setFullScreen(bool fullscreen)
 
 void MainWindow::setHDTVMatrix()
 {
-	vr_params.matrix_Kr = 0.2126;
-	vr_params.matrix_Kg = 0.7152;
-	vr_params.matrix_Kb = 0.0722;
+	SetLumaCoeffsRec709(vr_params);
 	vr_params.matrix_valid = false;
 }
 
 void MainWindow::setSDTVMatrix()
 {
-	vr_params.matrix_Kr = 0.299;
-	vr_params.matrix_Kg = 0.587;
-	vr_params.matrix_Kb = 0.114;
+	SetLumaCoeffsRec601(vr_params);
 	vr_params.matrix_valid = false;
 }
 
 void MainWindow::setUserMatrix()
 {
-	vr_params.matrix_Kr = userKr;
-	vr_params.matrix_Kg = userKg;
-	vr_params.matrix_Kb = userKb;
+	vr_params.matrix_Kr = vr_params.userKr;
+	vr_params.matrix_Kg = vr_params.userKg;
+	vr_params.matrix_Kb = vr_params.userKb;
 	vr_params.matrix_valid = false;
 }
 
@@ -522,7 +295,7 @@ void MainWindow::toggleMatrixScaling()
 
 void MainWindow::endOfFile()
 {
-	if (quitAtEnd==true)
+	if (quit_at_end == true)
 		quit();
 }
 

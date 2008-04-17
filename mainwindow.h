@@ -39,12 +39,23 @@ class VideoTransport;
 class GLvideo_mt;
 class GLvideo_params;
 
+struct Qt_params {
+	bool startFullScreen;
+	QString fileName;
+	QString fileType;
+	bool forceFileType;
+	int videoWidth;
+	int videoHeight;
+	bool hideMouse;
+	bool looping;
+	bool quit_at_end;
+};
+
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 public:
-	MainWindow(int argc, char **argv, GLvideo_params& vr_params);
-	bool allParsed; //flag to say that all commandline parameters were parsed OK.
+	MainWindow(GLvideo_params& vr_params, Qt_params& qt_params);
 
 protected:
 
@@ -81,19 +92,7 @@ QShuttlePro *shuttle;
 
 	GLvideo_params& vr_params;
 
-	float userKr;
-	float userKg;
-	float userKb;
-
-	bool startFullScreen;
-	QString fileName;
-	QString fileType;
-	bool forceFileType;
-	int videoWidth;
-	int videoHeight;
-	bool hideMouse;
-	bool looping;
-	bool quitAtEnd;
+	bool quit_at_end;
 };
 
 #endif
