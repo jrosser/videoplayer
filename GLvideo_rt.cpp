@@ -460,8 +460,8 @@ void GLvideo_rt::run()
 		if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
 			videoData = glw.vt->getNextFrame();
 			direction = glw.vt->getDirection();
-			perf_futureQueue = glw.fq->getFutureQueueLen();
-			perf_pastQueue = glw.fq->getPastQueueLen();
+			//perf_futureQueue = glw.fq->getFutureQueueLen();
+			//perf_pastQueue = glw.fq->getPastQueueLen();
 			//perf_IOLoad      = glw.fq->getIOLoad();
 			//perf_IOBandwidth = glw.fq->getIOBandwidth();
 			perf_readData = perfTimer.elapsed();

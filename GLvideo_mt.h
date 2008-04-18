@@ -43,7 +43,7 @@ class GLvideo_mt : public QGLWidget
 	Q_OBJECT
 
 public:
-	GLvideo_mt(QWidget *p, VideoTransport *vt, FrameQueue *fq, GLvideo_params& vr_params);
+	GLvideo_mt(QWidget *p, VideoTransport *vt, GLvideo_params& vr_params);
 	void setFrameRepeats(int repeats);
 	void setFontFile(QString &fontFile);
 

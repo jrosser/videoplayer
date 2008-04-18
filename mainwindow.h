@@ -31,33 +31,21 @@
 
 #include "GLvideo_params.h"
 
-#ifdef Q_OS_LINUX
-class QShuttlePro;
-#endif
-
-class ReaderInterface;
-class FrameQueue;
 class VideoTransport;
+
 class GLvideo_mt;
 class GLvideo_params;
 
 struct Qt_params {
-	bool startFullScreen;
-	QString fileName;
-	QString fileType;
-	bool forceFileType;
-	int videoWidth;
-	int videoHeight;
-	bool hideMouse;
-	bool looping;
-	bool quit_at_end;
+	bool start_fullscreen;
+	bool hidemouse;
 };
 
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 public:
-	MainWindow(GLvideo_params& vr_params, Qt_params& qt_params);
+	MainWindow(GLvideo_params&, Qt_params&, VideoTransport*);
 
 protected:
 
@@ -79,23 +67,15 @@ private slots:
 
 private:
 	void createActions(void);
-	void parseCommandLine(int argc, char **argv);
-	void usage();
-
-#ifdef Q_OS_LINUX
-QShuttlePro *shuttle;
-#endif
 
 	void setFullScreen(bool);
-	ReaderInterface *reader;
-	FrameQueue *frameQueue;
-	VideoTransport *videoTransport;
+
 	GLvideo_mt *glvideo_mt;
 
 	GLvideo_params& vr_params;
 	GLvideo_params vr_params_orig;
 
-	bool quit_at_end;
+	VideoTransport  *video_transport;
 };
 
 #endif

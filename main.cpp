@@ -39,9 +39,31 @@ using namespace std;
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
+#include "readerInterface.h"
+#include "yuvReader.h"
+#ifdef HAVE_DIRAC
+#include "diracReader.h"
+#endif
+
+#include "frameQueue.h"
+#include "videoTransport.h"
+#ifdef Q_OS_LINUX
+#include "QShuttlePro.h"
+#endif
+
 #include "GLvideo_params.h"
 
 #include "config.h"
+
+struct Transport_params {
+	bool looping;
+	QString fileName;
+	QString fileType;
+	bool quit_at_end;
+	bool forceFileType;
+	int videoWidth;
+	int videoHeight;
+};
 
 void
 usage()
@@ -90,7 +112,7 @@ usage()
 }
 
 bool
-parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
+parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp, Qt_params& qt)
 {
 	bool allParsed = true; //default to command line parsing succeeding
 	int cols = 81;
@@ -103,11 +125,11 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 		po::options_description desc("Allowed options            type   default  description\n"
 		                             "===============            ====   =======  ===========", cols);
 		desc.add_options()
-		    ("width,w",       po::value(&qt.videoWidth),         "int    1920    Width of video luma component")
-		    ("height,h",      po::value(&qt.videoHeight),        "int    1080    Height of video luma component")
+		    ("width,w",       po::value(&tp.videoWidth),         "int    1920    Width of video luma component")
+		    ("height,h",      po::value(&tp.videoHeight),        "int    1080    Height of video luma component")
 		    ("repeats,r",     po::value(&vp.frame_repeats),       "int    0       Frame is repeated r extra times")
-		    ("loop,l",        po::value(&qt.looping),            "bool   1       Video file is played repeatedly")
-		    ("quit,q",                                        "               Exit at end of video file")
+		    ("loop,l",        po::value(&tp.looping),            "bool   1       Video file is played repeatedly")
+		    ("quit,q",        po::value(&tp.quit_at_end),     "bool    0      Exit at end of video file")
 		    ("interlace,i",   po::value(&vp.interlaced_source),   "bool   false   Interlaced source [1], progressive[0]")
 		    ("deinterlace,d", po::value(&vp.deinterlace),        "bool   false   Deinterlace on [1], off [0]")
 		    ("yrange",        po::value(&vp.input_luma_range),   "int    220     Range of input luma (white-black+1)")
@@ -131,12 +153,12 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 		    ("osdbackalpha",  po::value(&vp.osd_back_alpha),"float  0.7     Transparency for OSD background")
 		    ("osdtextalpha",  po::value(&vp.osd_text_alpha),"float  0.5     Transparency for OSD text")
 		    ("osdstate",      po::value(&vp.osd_bot),           "int    0       OSD initial state")
+		    ("caption",       po::value<string>(),            "string         OSD Caption text")
 #endif
 		    ("filetype,t",    po::value<string>(),            "string         Force file type\n"
 		                                                      "               [i420|yv12|uyvy|v210|v216]")
-		    ("full,f",                                        "               Start in full screen mode")
-		    ("hidemouse",                                     "               Never show the mouse pointer")
-		    ("caption",       po::value<string>(),            "string         OSD Caption text")
+		    ("full,f",        po::value(&qt.start_fullscreen),"               Start in full screen mode")
+		    ("hidemouse",     po::value(&qt.hidemouse),       "               Never show the mouse pointer")
 		    ("video",                                         "               Video file to play")
 		    ("help",                                          "               Show usage information");
 
@@ -158,28 +180,16 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 			SetLumaCoeffsRec601(vp);
 		}
 
-		if (vm.count("full")) {
-			qt.startFullScreen=true;
-		}
-
-		if (vm.count("quit")) {
-			qt.quit_at_end=true;
-		}
-
-		if (vm.count("hidemouse")) {
-			qt.hideMouse=true;
-		}
-
 		if (vm.count("matrixkr") || vm.count("matrixkg") || vm.count("matrixkb")) {
 			if (vp.matrix_Kr + vp.matrix_Kg + vp.matrix_Kb < 1.0)
-				printf("Warning, luma coefficients do not sum to one\n");
+				printf("Warning, luma coefficients do not sum to unity\n");
 		}
 
+#ifdef WITH_OSD
 		if (vm.count("fontfile")) {
 			string tmp = vm["fontfile"].as<string>();
 			vp.font_file = tmp.data();
 
-#ifdef WITH_OSD
 			//check OSD font file exists
 			QFileInfo fi(vp.font_file);
 			if(fi.exists() == false) {
@@ -192,13 +202,13 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 					allParsed = false;
 				}
 			}
-#endif
 		}
 
 		if(vm.count("caption")) {
 			string tmp = vm["caption"].as<string>();
 			vp.caption = tmp.data();
 		}
+#endif
 
 		QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0");
 #ifdef HAVE_DIRAC
@@ -207,14 +217,12 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 
 		if (vm.count("filetype")) {
 			string tmp = vm["filetype"].as<string>();
-			qt.fileType = tmp.data();
+			tp.fileType = tmp.data();
 
-			if(known_extensions.contains(qt.fileType.toLower(), Qt::CaseInsensitive))
-			{
-				qt.forceFileType=true;
-			}
+			if(known_extensions.contains(tp.fileType.toLower(), Qt::CaseInsensitive))
+				tp.forceFileType=true;
 			else {
-				printf("Unknown file type %s\n", qt.fileType.toLatin1().data());
+				printf("Unknown file type %s\n", tp.fileType.toLatin1().data());
 				allParsed = false;
 			}
 
@@ -226,15 +234,14 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 		}
 		else {
 			string tmp = vm["video"].as<string>();
-			qt.fileName = tmp.data();
+			tp.fileName = tmp.data();
 
-			QFileInfo fi(qt.fileName);
+			QFileInfo fi(tp.fileName);
 
 			if(fi.exists()) {
-				if(qt.forceFileType == false) {
+				if(tp.forceFileType == false) {
 					//file extension must be one we know about
-					if(known_extensions.contains(fi.suffix().toLower(), Qt::CaseInsensitive) == false)
-					{
+					if(known_extensions.contains(fi.suffix().toLower(), Qt::CaseInsensitive) == false) {
 						printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
 						printf("Please specify file format with the -t flag\n");
 						allParsed = false;
@@ -242,7 +249,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params &vp, Qt_params& qt)
 				}
 			}
 			else {
-				printf("File %s does not exist\n", qt.fileName.toLatin1().data());
+				printf("File %s does not exist\n", tp.fileName.toLatin1().data());
 				allParsed = false;
 			}
 		}
@@ -286,36 +293,126 @@ int main(int argc, char **argv)
 	vr_params.interlaced_source = false;
 	vr_params.deinterlace = false;
 	vr_params.matrix_valid = false;
-	//vr_params.matrix_scaling = false;
 	SetLumaCoeffsRec709(vr_params);
 	vr_params.aspect_ratio_lock = true;
 	vr_params.show_luma = true;
 	vr_params.show_chroma = true;
 
-	struct Qt_params qt_params;
-	qt_params.startFullScreen = false;
-	qt_params.fileName = "";
-	qt_params.fileType = "";
-	qt_params.forceFileType = false;
-	qt_params.videoWidth = 1920;
-	qt_params.videoHeight = 1080;
+	struct Transport_params t_params;
+	t_params.looping = true;
+	t_params.quit_at_end = false;
+	t_params.forceFileType = false;
+	t_params.videoWidth = 1920;
+	t_params.videoHeight = 1080;
 
-	qt_params.hideMouse = false;
-	qt_params.looping = true;
-	qt_params.quit_at_end = false;
+	struct Qt_params qt_params;
+	qt_params.hidemouse = false;
+	qt_params.start_fullscreen = false;
 
 	/* QApplication will munge argc/argv, needs to be called before
 	 * parseCommandLine. Eg, useful for X11's -display :0 convention */
 	QApplication app(argc, argv);
 
 	//override settings with command line
-	if (parseCommandLine(argc, argv, vr_params, qt_params) == false) {
+	if (parseCommandLine(argc, argv, vr_params, t_params, qt_params) == false) {
 		return -1;
 	}
 
-	MainWindow window(vr_params, qt_params);
+	//object containing a seperate thread that manages the lists of frames to be displayed
+	FrameQueue* frameQueue = new FrameQueue();
+
+	//object that generates frames to be inserted into the frame queue
+	ReaderInterface* reader = NULL;
+#ifdef HAVE_DIRAC
+	//make dirac reader if required
+	if(t_params.fileType.toLower() == "drc") {
+		DiracReader *r = new DiracReader( *frameQueue );
+
+		r->setFileName(t_params.fileName);
+		reader = r;
+		r->start(QThread::LowestPriority);
+	}
+#endif
+
+	//default to YUV reader
+	if (reader == NULL) {
+		YUVReader *r = new YUVReader( *frameQueue );
+
+		//YUV reader parameters
+		r->setVideoWidth(t_params.videoWidth);
+		r->setVideoHeight(t_params.videoHeight);
+		r->setForceFileType(t_params.forceFileType);
+		r->setFileType(t_params.fileType);
+		r->setFileName(t_params.fileName);
+
+		reader = r;
+	}
+
+	frameQueue->setReader(reader);
+
+	//object controlling the video playback 'transport'
+	VideoTransport* vt = new VideoTransport(frameQueue);
+
+	frameQueue->start();
+
+	MainWindow window(vr_params, qt_params, vt);
+
+#ifdef Q_OS_LINUX
+	//shuttlePro jog dial - linux only native support at the moment
+	QShuttlePro* shuttle = new QShuttlePro();
+
+	//shuttlepro jog wheel
+	QObject::connect(shuttle, SIGNAL(jogForward()), vt, SLOT(transportJogFwd()));
+	QObject::connect(shuttle, SIGNAL(jogBackward()), vt, SLOT(transportJogRev()));
+
+	//shuttlepro shuttle dial
+	QObject::connect(shuttle, SIGNAL(shuttleRight7()), vt, SLOT(transportFwd100()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight6()), vt, SLOT(transportFwd50()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight5()), vt, SLOT(transportFwd20()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight4()), vt, SLOT(transportFwd10()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight3()), vt, SLOT(transportFwd5()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight2()), vt, SLOT(transportFwd2()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight1()), vt, SLOT(transportFwd1()));
+
+	QObject::connect(shuttle, SIGNAL(shuttleLeft7()), vt, SLOT(transportRev100()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft6()), vt, SLOT(transportRev50()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft5()), vt, SLOT(transportRev20()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft4()), vt, SLOT(transportRev10()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft3()), vt, SLOT(transportRev5()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft2()), vt, SLOT(transportRev2()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft1()), vt, SLOT(transportRev1()));
+	QObject::connect(shuttle, SIGNAL(shuttleCenter()), vt, SLOT(transportStop()));
+
+	//shuttlepro buttons
+	QObject::connect(shuttle, SIGNAL(key267Pressed()), vt, SLOT(transportPlayPause()));
+	QObject::connect(shuttle, SIGNAL(key265Pressed()), vt, SLOT(transportFwd1()));
+	QObject::connect(shuttle, SIGNAL(key259Pressed()), &window, SLOT(toggleFullScreen()));
+	QObject::connect(shuttle, SIGNAL(key256Pressed()), &window, SLOT(toggleOSD()));
+	QObject::connect(shuttle, SIGNAL(key257Pressed()), &window, SLOT(toggleAspectLock()));
+
+	//this is what the IngexPlayer also does
+	//key 269, press=previous mark, hold=start of file
+	//key 270, press=next mark, hold=end of file
+	//key 257, cycle displayed timecode type
+	//key 258, press=lock controls, hold=unlock controls
+#endif
+
+	vt->setLooping(t_params.looping);
+	if (t_params.quit_at_end)
+		QObject::connect(vt, SIGNAL(endOfFile()), &window, SLOT(endOfFile()));
 
 	window.show();
-	return app.exec();
-}
+	/* app.exec will run until the mainwindow terminates */
+	app.exec();
 
+#ifdef Q_OS_LINUX
+	if(shuttle) {
+		shuttle->stop();
+		shuttle->wait();
+	}
+#endif
+
+	frameQueue->stop();
+
+	return 0;
+}
