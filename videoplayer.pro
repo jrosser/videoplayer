@@ -91,6 +91,8 @@ win32 {
 
 		#----------------------------------------------------
 		# boost
+
+		#for auto-linking
 		LIBS += -L$$WINLIBS\boost_1_35_0\stage\lib
 		INCLUDEPATH += $$WINLIBS\boost_1_35_0\
 
@@ -115,7 +117,8 @@ win32 {
 		}
 		LIBS += $$FTGL_LIB
 		INCLUDEPATH += $$WINLIBS\ftgl
-		DEFINES += HAVE_FTGL
+		DEFINES += FTGL_LIBRARY_STATIC
+		DEFINE += HAVE_FTGL
 
 	} else {
 		#win32 builds using the mingw toolchain
@@ -142,7 +145,6 @@ win32 {
 
 		#----------------------------------------------------
 		# freetype
-		# this was compiled with msvc using /GS- to turn off buffer security checks
 		LIBS += $$MINGWLIBS\freetype-2.3.5\lib\libfreetype.a
 		INCLUDEPATH += $$MINGWLIBS\freetype-2.3.5\include
 
