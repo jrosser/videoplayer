@@ -79,8 +79,8 @@ int perf_IOBandwidth;
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, GLvideo_params& params) :
 	QThread(), glw(gl), params(params)
 {
-	//renderer = new GLVideoRenderer::TradTex();
-	renderer = new GLVideoRenderer::PboTex();
+	renderer = new GLVideoRenderer::TradTex();
+	//renderer = new GLVideoRenderer::PboTex();
 }
 
 void GLvideo_rt::stop()
