@@ -30,7 +30,7 @@ UYVY            UYVY multiplexed 8 bit data
 V210            UYVY multiplexed 10 bit data, 3 components packed into 32 bits
 
 V216            UYVY multiplexed 8-16 bit data, little endian,
-				data packed to the most significant bits
+                data packed to the most significant bits
 
 16P0            16 bit, MSbyte first, 16 bit planar data, 4:2:0 chroma
 
@@ -47,12 +47,18 @@ Ubuntu Linux 7.10 has been the main development platform. Linux is the most
 stable platform for runnung Videoplayer.
 
 Videoplayer can be compiled and run on OS X 10.5. Stability problems exist
-with the ATI graphics in Intel iMacs, and Apple specific OpenGL optimisations
-have not been done. As a result, playback of full screen HD video is currently
-limited to 30fps on a Power Mac G5. Smaller windows will play at 60fps.
+with the ATI graphics in Intel iMacs, which may be resolved with the release
+of Qt 4.4. Apple specific OpenGL optimisations have not been done.
+As a result, playback of full screen 1920x1080 video is currently limited to
+30fps on a Power Mac G5 with NVIDIA GeForce 6600 graphics. Smaller windows will
+play at 60fps. A more modern GPU may allow higher frame rates
 
-There is currently no support for the Windows platform.
-				
+Videoplayer can be compiled and run on the Windows platform. Testing has been
+done on Windows XP SP2 with both NVidia and ATI Radeon HD2400PRO graphics
+cards. Windows appears to use 100% CPU whilst waiting for VSYNC. This does
+not appear to affect performance, with NVidia GeForce 6600GT easily able to
+show 1920x1080x60fps video without dropping frames.
+
 Hardware Requirements
 ---------------------
 
@@ -74,6 +80,6 @@ on the first loop of the file. Subsequent loops will play in real time as the
 video data is now cached by the operating system.
 
 Videoplayer uses OpenGL to accelerate playback. Development has been done with
-NVidia QuadroFX3450 cards. Recent PCIe graphics cards are recommended, but no
-testing of other models has been done.
+NVidia QuadroFX3450, 6600GT, 8600GT and 8800GT cards. Recent PCIe graphics cards
+are recommended, but no testing of other models has been done.
 
