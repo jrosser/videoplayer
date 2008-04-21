@@ -15,7 +15,9 @@ SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp
 HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
 SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp
 
+# enable or disable the optional features here
 #DEFINES += HAVE_DIRAC
+DEFINES += WITH_OSD
 
 contains(DEFINES, HAVE_DIRAC) {
 	#andrea's wrapper library around the schro and dirac libraries
@@ -47,9 +49,10 @@ linux-g++ {
   # GLEW is not managed by pkgconfig
   LIBS += -lGLEW
 
-  CONFIG += link_pkgconfig
-  PKGCONFIG += ftgl
-  DEFINES += HAVE_FTGL
+  contains(DEFINES, WITH_OSD) {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += ftgl
+  }
 }
 
 macx {
@@ -60,9 +63,10 @@ macx {
   #boost
   INCLUDEPATH += /opt/local/include/boost-1_34_1/
 
-  CONFIG += link_pkgconfig
-  PKGCONFIG += ftgl
-  DEFINES += HAVE_FTGL
+  contains(DEFINES, WITH_OSD) {
+    CONFIG += link_pkgconfig
+    PKGCONFIG += ftgl
+  }
 
   #glew
   LIBS += -lGLEW
@@ -96,29 +100,30 @@ win32 {
 		LIBS += -L$$WINLIBS\boost_1_35_0\stage\lib
 		INCLUDEPATH += $$WINLIBS\boost_1_35_0\
 
-		#----------------------------------------------------
-		# freetype
-		FT_LIB = $$WINLIBS\freetype-2.3.5\objs\freetype235
-		CONFIG(debug, debug|release) {
-			FT_LIB = $$join(FT_LIB,,, _D.lib)
-		} else {
-			FT_LIB = $$join(FT_LIB,,, .lib)
-		}
-		LIBS += $$FT_LIB
-		INCLUDEPATH += $$WINLIBS\freetype-2.3.5\include
+		contains(DEFINES, WITH_OSD) {
+			#----------------------------------------------------
+			# freetype
+			FT_LIB = $$WINLIBS\freetype-2.3.5\objs\freetype235
+			CONFIG(debug, debug|release) {
+				FT_LIB = $$join(FT_LIB,,, _D.lib)
+			} else {
+				FT_LIB = $$join(FT_LIB,,, .lib)
+			}
+			LIBS += $$FT_LIB
+			INCLUDEPATH += $$WINLIBS\freetype-2.3.5\include
 
-		#----------------------------------------------------
-		# ftgl
-		FTGL_LIB += $$WINLIBS\FTGL\win32_vcpp\build\ftgl_static
-		CONFIG(debug, debug|release) {
-			FTGL_LIB = $$join(FTGL_LIB,,, _MT_d.lib)
-		} else {
-			FTGL_LIB = $$join(FTGL_LIB,,, _MT.lib)
+			#----------------------------------------------------
+			# ftgl
+			FTGL_LIB += $$WINLIBS\FTGL\win32_vcpp\build\ftgl_static
+			CONFIG(debug, debug|release) {
+				FTGL_LIB = $$join(FTGL_LIB,,, _MT_d.lib)
+			} else {
+				FTGL_LIB = $$join(FTGL_LIB,,, _MT.lib)
+			}
+			LIBS += $$FTGL_LIB
+			INCLUDEPATH += $$WINLIBS\ftgl
+			DEFINES += FTGL_LIBRARY_STATIC
 		}
-		LIBS += $$FTGL_LIB
-		INCLUDEPATH += $$WINLIBS\ftgl
-		DEFINES += FTGL_LIBRARY_STATIC
-		DEFINE += HAVE_FTGL
 
 	} else {
 		#win32 builds using the mingw toolchain
@@ -137,19 +142,21 @@ win32 {
 		LIBS += $$MINGWLIBS\boost_1_35_0\stage\lib\libboost_program_options-mgw34-mt-s-1_35.lib
 		INCLUDEPATH += $$MINGWLIBS\boost_1_35_0
 
-		#----------------------------------------------------
-		# ftgl
-		LIBS += $$MINGWLIBS\FTGL\src\libftgl.a
-		INCLUDEPATH += $$MINGWLIBS\FTGL
-		DEFINES += HAVE_FTGL
+		contains(DEFINES, WITH_OSD) {
+			#----------------------------------------------------
+			# ftgl
+			LIBS += $$MINGWLIBS\FTGL\src\libftgl.a
+			INCLUDEPATH += $$MINGWLIBS\FTGL
+			DEFINES += HAVE_FTGL
 
-		#----------------------------------------------------
-		# freetype
-		LIBS += $$MINGWLIBS\freetype-2.3.5\lib\libfreetype.a
-		INCLUDEPATH += $$MINGWLIBS\freetype-2.3.5\include
+			#----------------------------------------------------
+			# freetype
+			LIBS += $$MINGWLIBS\freetype-2.3.5\lib\libfreetype.a
+			INCLUDEPATH += $$MINGWLIBS\freetype-2.3.5\include
 
-		#doh! these need to be on the linker command line after the freetype and ftgl .a files
-		LIBS += -lopengl32 -lglu32
+			#doh! these need to be on the linker command line after the freetype and ftgl .a files
+			LIBS += -lopengl32 -lglu32
+		}
 	}
 } else {
 	LIBS += -lboost_program_options

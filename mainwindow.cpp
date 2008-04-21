@@ -258,7 +258,7 @@ void MainWindow::parseCommandLine(int argc, char **argv)
 			string tmp = vm["fontfile"].as<string>();
 			vr_params.font_file = tmp.data();
 
-#ifdef HAVE_FTGL
+#ifdef WITH_OSD
 			//check OSD font file exists
 			QFileInfo fi(vr_params.font_file);
 			if(fi.exists() == false) {

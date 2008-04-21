@@ -37,7 +37,7 @@
 #include "GLvideo_x11rep.h"
 #endif
 
-#ifdef HAVE_FTGL
+#ifdef WITH_OSD
 #include "FTGL/FTGLPolygonFont.h"
 #endif
 
@@ -150,7 +150,7 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 	}
 }
 
-#ifdef HAVE_FTGL
+#ifdef WITH_OSD
 void GLvideo_rt::renderOSD(VideoData *videoData, FTFont *font, float fps,
                            int osd, float osdScale)
 {
@@ -406,7 +406,7 @@ void GLvideo_rt::run()
 	int currentShader = 0;
 	float colour_matrix[4][4];
 
-#ifdef HAVE_FTGL
+#ifdef WITH_OSD
 	FTFont *font = NULL;
 #endif
 
@@ -573,7 +573,7 @@ void GLvideo_rt::run()
 				doResize = false;
 			}
 
-#ifdef HAVE_FTGL
+#ifdef WITH_OSD
 			if (!params.osd_valid) {
 				if (DEBUG)
 					printf("Changing font\n");
@@ -661,7 +661,7 @@ void GLvideo_rt::run()
 			renderer->renderVideo(videoData, programs[currentShader]);
 			perf_renderVideo = perfTimer.elapsed();
 
-#ifdef HAVE_FTGL
+#ifdef WITH_OSD
 			perfTimer.restart();
 			if ((params.osd_bot) && font != NULL)
 				renderOSD(videoData, font, fps, params.osd_bot,
