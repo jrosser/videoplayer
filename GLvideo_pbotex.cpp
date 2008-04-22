@@ -147,7 +147,6 @@ void PboTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 	i = glGetUniformLocationARB(shader_prog, "Ytex");
 	glUniform1iARB(i, 0); /* Bind Ytex to texture unit 0 */
 
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 	glBegin(GL_QUADS);
 	glTexCoord2i(0, video_data->Yheight);
 	glColor3f(1., 0., 0.);
@@ -163,6 +162,5 @@ void PboTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 	glVertex2i(0, video_data->Yheight);
 	glEnd();
 	glUseProgramObjectARB(0);
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 }
 } // namespace

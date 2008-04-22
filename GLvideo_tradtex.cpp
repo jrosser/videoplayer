@@ -109,16 +109,6 @@ void TradTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 	i = glGetUniformLocationARB(shader_prog, "Ytex");
 	glUniform1iARB(i, 0); /* Bind Ytex to texture unit 0 */
 
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
-
-#if 0
-	/* enable this to view the luma texture being rendered without
-	 * going through the shader */
-	glUseProgramObjectARB(0);
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-	glEnable(GL_TEXTURE_RECTANGLE_ARB);
-#endif
-
 	/* NB, texture coordinates are relative to the texture data, (0,0)
 	 * is the first texture pixel uploaded, since we use two different
 	 * coordinate systems, the texture appears to be upside down */
@@ -137,6 +127,5 @@ void TradTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 	glVertex2i(0, video_data->Yheight);
 	glEnd();
 	glUseProgramObjectARB(0);
-	glDisable(GL_TEXTURE_RECTANGLE_ARB);
 }
 } // namespace
