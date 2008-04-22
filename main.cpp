@@ -399,7 +399,7 @@ int main(int argc, char **argv)
 
 	vt->setLooping(t_params.looping);
 	if (t_params.quit_at_end)
-		QObject::connect(vt, SIGNAL(endOfFile()), &window, SLOT(endOfFile()));
+		QObject::connect(vt, SIGNAL(endOfFile()), &app, SLOT(quit()));
 
 	window.show();
 	/* app.exec will run until the mainwindow terminates */

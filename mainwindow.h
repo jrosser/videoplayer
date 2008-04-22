@@ -55,8 +55,6 @@ private slots:
 	void setHDTVMatrix();
 	void setSDTVMatrix();
 	void setUserMatrix();
-	void quit();
-	void endOfFile();
 	void togglePerf();
 	void toggleOSD();
 	void toggleAspectLock();

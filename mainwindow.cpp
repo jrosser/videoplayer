@@ -66,7 +66,7 @@ void MainWindow::createActions()
 	     connect(a, SIGNAL(triggered()), target, SLOT(fn())); \
 	} while(0);
 
-	ADDACT("Quit", "Q", this, quit);
+	ADDACT("Quit", "Q", qApp, quit);
 	ADDACT("Use user Matrix", "k", this, setUserMatrix);
 	ADDACT("Set HDTV Matrix", "h", this, setHDTVMatrix);
 	ADDACT("Set SDTV Matrix", "j", this, setSDTVMatrix);
@@ -195,16 +195,4 @@ void MainWindow::toggleMatrixScaling()
 {
 	//vr_params.matrix_scaling ^= 1;
 	vr_params.matrix_valid = false;
-}
-
-/* This slot is only connected if the user requests quitting at EOF */
-void MainWindow::endOfFile()
-{
-	quit();
-}
-
-void MainWindow::quit()
-{
-	glvideo_mt->stop();
-	qApp->quit();
 }
