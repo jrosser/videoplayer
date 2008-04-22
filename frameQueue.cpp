@@ -180,9 +180,7 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 
 void FrameQueue::wake()
 {
-	frameMutex.lock();
 	frameConsumed.wakeOne();
-	frameMutex.unlock();
 }
 
 VideoData *FrameQueue::allocateFrame(void)
@@ -298,7 +296,8 @@ void FrameQueue::run()
 
 		//wait for display thread to display a new frame
 		frameMutex.lock();
-		frameConsumed.wait(&frameMutex);
+		if(m_doReading)
+			frameConsumed.wait(&frameMutex);
 		frameMutex.unlock();
 
 	}
