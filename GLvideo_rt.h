@@ -40,6 +40,7 @@
 #include <QtGui>
 
 #include "GLvideo_renderer.h"
+#include "GLvideo_perf.h"
 
 class GLvideo_mt;
 class FTFont;
@@ -49,14 +50,15 @@ namespace GLVideoRenderer
 class GLVideoRenderer;
 }
 class GLvideo_params;
+class GLvideo_osd;
 
 class GLvideo_rt : public QThread {
 public:
 
 	GLvideo_rt(GLvideo_mt &glWidget, GLvideo_params& params);
+	~GLvideo_rt();
 	void resizeViewport(int w, int h);
 	void run();
-	void stop();
 
 private:
 	enum ShaderPrograms {
@@ -87,6 +89,8 @@ private:
 
 	QMutex mutex;
 
+	GLvideo_osd *osd;
+	GLvideo_perf perf;
 	GLVideoRenderer::GLVideoRenderer *renderer;
 	GLvideo_params& params;
 

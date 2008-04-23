@@ -19,6 +19,11 @@ SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp
 #DEFINES += HAVE_DIRAC
 DEFINES += WITH_OSD
 
+contains(DEFINES, WITH_OSD) {
+  SOURCES += GLvideo_osd.cpp
+  HEADER += GLvideo_osd.h
+}
+
 contains(DEFINES, HAVE_DIRAC) {
 	#andrea's wrapper library around the schro and dirac libraries
 	PARSER_PATH = /project/compression/jrosser/workspace/dirac1.0/branches/dg_demo
