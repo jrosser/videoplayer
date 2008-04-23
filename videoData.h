@@ -86,6 +86,8 @@ public:
 	unsigned char *Vdata;
 
 private:
+	VideoData(const VideoData&);
+	void operator= (const VideoData&);
 	void allocate(int w, int h, DataFmt f);
 };
 

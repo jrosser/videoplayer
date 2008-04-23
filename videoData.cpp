@@ -215,8 +215,10 @@ void VideoData::allocate(int w, int h, DataFmt f)
 
 VideoData::~VideoData()
 {
-	if (data)
+	if (data) {
 		free(data);
+		data = NULL;
+	}
 }
 ;
 
