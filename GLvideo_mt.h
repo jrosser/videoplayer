@@ -44,6 +44,7 @@ class GLvideo_mt : public QGLWidget
 
 public:
 	GLvideo_mt(QWidget *p, VideoTransport *vt, GLvideo_params& vr_params);
+	~GLvideo_mt();
 	void setFrameRepeats(int repeats);
 	void setFontFile(QString &fontFile);
 
@@ -51,7 +52,6 @@ public:
 	FrameQueue *fq;
 
 	void start();
-	void stop();
 
 	GLvideo_rt* renderThread;
 	GLvideo_params& vr_params;

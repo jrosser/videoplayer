@@ -40,9 +40,9 @@ GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, GLvideo_params& vr_pa
 	mouseHideTimer.setSingleShot(true);
 }
 
-void GLvideo_mt::stop()
+GLvideo_mt::~GLvideo_mt()
 {
-	renderThread->stop();
+	if(renderThread) delete renderThread;
 }
 
 void GLvideo_mt::start()
