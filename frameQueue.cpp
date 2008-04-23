@@ -44,11 +44,24 @@ FrameQueue::FrameQueue() :
 	direction=0;
 }
 
-void FrameQueue::stop()
+FrameQueue::~FrameQueue()
 {
 	m_doReading = false;
 	wake();
 	wait();
+
+	if (displayFrame)
+		delete displayFrame;
+	displayFrame = NULL;
+
+	while (!pastFrames.isEmpty())
+		delete pastFrames.takeFirst();
+
+	while (!futureFrames.isEmpty())
+		delete futureFrames.takeFirst();
+
+	while (!usedFrames.isEmpty())
+		delete usedFrames.takeFirst();
 }
 
 int FrameQueue::wantedFrameNum(bool future)

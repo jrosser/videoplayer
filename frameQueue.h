@@ -37,9 +37,9 @@ class ReaderInterface;
 class FrameQueue : public QThread {
 public:
 	FrameQueue();
+	~FrameQueue();
 
 	void run();
-	void stop();
 	void wake();
 
 	VideoData *allocateFrame(void);

@@ -355,7 +355,7 @@ int main(int argc, char **argv)
 
 	frameQueue->start();
 
-	MainWindow window(vr_params, qt_params, vt);
+	MainWindow* window = new MainWindow(vr_params, qt_params, vt);
 
 #ifdef Q_OS_LINUX
 	//shuttlePro jog dial - linux only native support at the moment
@@ -386,9 +386,9 @@ int main(int argc, char **argv)
 	//shuttlepro buttons
 	QObject::connect(shuttle, SIGNAL(key267Pressed()), vt, SLOT(transportPlayPause()));
 	QObject::connect(shuttle, SIGNAL(key265Pressed()), vt, SLOT(transportFwd1()));
-	QObject::connect(shuttle, SIGNAL(key259Pressed()), &window, SLOT(toggleFullScreen()));
-	QObject::connect(shuttle, SIGNAL(key256Pressed()), &window, SLOT(toggleOSD()));
-	QObject::connect(shuttle, SIGNAL(key257Pressed()), &window, SLOT(toggleAspectLock()));
+	QObject::connect(shuttle, SIGNAL(key259Pressed()), window, SLOT(toggleFullScreen()));
+	QObject::connect(shuttle, SIGNAL(key256Pressed()), window, SLOT(toggleOSD()));
+	QObject::connect(shuttle, SIGNAL(key257Pressed()), window, SLOT(toggleAspectLock()));
 
 	//this is what the IngexPlayer also does
 	//key 269, press=previous mark, hold=start of file
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
 	if (t_params.quit_at_end)
 		QObject::connect(vt, SIGNAL(endOfFile()), &app, SLOT(quit()));
 
-	window.show();
+	window->show();
 	/* app.exec will run until the mainwindow terminates */
 	app.exec();
 
@@ -412,7 +412,8 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	frameQueue->stop();
+	delete window;
+	delete frameQueue;
 
 	return 0;
 }
