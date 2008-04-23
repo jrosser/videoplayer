@@ -1,0 +1,200 @@
+Real Time Video Player for raw YUV files
+
+To build on Windows systems
+---------------------------
+
+These instructions decribe how i built the videoplayer application on the
+windows platform using either the Microsoft MSVC compiler, or the MinGw
+gcc toolchain.
+
+There are other methods, including cross-compiling for windows using the
+mingw cross compiler on a linux box. Addittionaly, qmake can generate a
+visual studio project file to compile the videplayer program within the
+MSVC gui if required. 
+
+You may change the path names described as you need to, but ensure that
+the videoplayer.pro file and FTGL makefile are updated to suit.
+
+Prerequisites: Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com
+               A c++ compiler, Microsoft Visual C++ (Express is ok) or the mingw/msys suite
+               The Boost libraries, www.boost.org
+               The GLEW library glew.sourceforge.net
+               
+Optionally for on-screen-display rendering:
+               The FreeType library freetype.sourceforge.net
+               The FTGL library ftgl.wiki.sourceforge.net
+               
+
+Building with the Microsoft Visual C++ tools
+--------------------------------------------
+
+Make a directory to build the dependancies in. I made c:\libs-msvc2008
+
+a) Boost
+
+	Download the Boost source code. I got boost_1_35_0.zip
+	Unpack the archive into c:\libs-msvc2008
+
+	Download a boost-jam precompiled binary from sourceforge, following the
+	instructions in the 'getting started' section of the Boost documentation.
+
+	Unzip the boost-jam package to place the bjam.exe in 
+	c:\libs-msvc2008\boost_1_35_0
+
+	Open a "Visual Studio 2008 Command Prompt" window from the MSVC entry
+	of the Start menu.
+
+	c:
+	cd c:\libs-msvc2008\boost_1_35_0
+	bjam --toolset=msvc stage link=static runtime-link=static variant=debug,release --with-program_options --layout=system
+
+	The compiled boost program_options library is now in 
+	c:\libs-msvc2008\boost_1_35_0\stage\lib
+
+b) GLEW
+
+	Download the GLEW source code. I got glew-1.5.0-src.zip
+	Unpack the archive into c:\libs-msvc2008
+
+	Open c:\libs-msvc2008\glew\build\vc6\glew.dsw with Visual Studio
+	Click 'Yes to All' when prompted to update the project file to the latest version
+
+	Build the debug and release version of glew_static using the MSVC gui
+
+	The compiled GLEW libraries will be in c:\libs-msvc2008\glew\lib
+
+c) FreeType
+
+	Download the freetype library. I got ft235.zip
+	Unpack the archive into c:\libs-msvc2008
+
+	Open c:\libs-msvc2008\freetype\builds\win32\visualc\freetype.vcproj
+
+	Build the debug and release version of freetype using the MSVC gui
+	
+
+d) FTGL
+
+	Download the FTGL library. I got ftgl-2.1.2.tgz
+	You can use winzip or another suitable tool to decompress the .tghz archive
+	Unpack the archive into c:\libs-msvc2008
+
+	Open c:\libs-msvc2008\FTGL\ftgl.dsw
+
+	
+	Right click 'ftgl_static_lib' in the Solution and select 'properties'
+	Select 'All Configurations' in the 'Configuration' drop down box
+
+	Select the C/C++ / General properties
+	Modify 'Additional include directories' to point to the previously compiled
+	freetype library, 'c:\libs-msvc2008\freetype-2.3.5\include' in my case.
+	Apply the configuration changes
+
+	Build the debug and release versions of FTGL using the MSVC gui
+
+
+	mkdir c:\libs-msvc2008\FTGL\FTGL
+	cp c:\libs-msvc2008\include\*.h c:\libs-mingw\FTGL
+
+e) Build videoplayer
+
+	cd path\to\videoplayer\source
+	qmake -spec win32-msvc2005
+	
+or build elsewhere, useful if you build for multiple platforms from the same source
+
+	cd \path\to\build\dir
+	qmake -spec win32-msvc2005 path\to\videoplayer\source\videoplayer.pro
+
+then
+
+	nmake release
+	or
+	nmake debug
+
+Building with the mingw/msys suite
+----------------------------------
+
+Make a directory to build the dependancies in. I made c:\libs-mingw.
+
+All of the commands were run in an MSYS window at the bash prompt, rather
+than a windows cmd.exe prompt.
+
+a) Boost
+
+	Download the Boost source code. I got boost_1_35_0.zip
+	Unpack the archive into c:\libs-mingw
+
+	Download a boost-jam precompiled binary from sourceforge, following the
+	instructions in the 'getting started' section of the Boost documentation.
+
+	Unzip the boost-jam package to place the bjam.exe in 
+	c:\libs-mingw\boost_1_35_0
+
+	Build boost program_options library only, rather than all of boost
+
+	./bjam.exe --toolset=gcc stage link=static runtime-link=static --with-program_options
+
+b) GLEW
+
+	Download the GLEW source code. I got glew-1.5.0-src.zip
+	Unpack the archive into /c/libs-mingw
+
+	Edit glew/config/Makefile.mingw
+	Replace GLEW_BUILD with GLEW_STATIC on the CFLAGS.SO line
+
+	make
+
+	The compiled glew library should now be in the /c/libs-mingw/glew/lib
+	directory
+	
+Optionally:-
+
+c) FreeType
+
+	Download the freetype library. I got ft235.zip
+	Unpack the archive into /c/libs-mingw
+	Configure, build and install the freetype library in the current directory
+
+	configure --prefix=`pwd`
+	make
+	make install
+
+	The compiled freetype library should now be in /c/libs-mingw/freetype-2.3.5/lib
+
+d) FTGL
+
+
+	Download the FTGL library. I got ftgl-2.1.2.tgz
+	Unpack the archive into /c/libs-mingw
+
+	The FTGL unix build system does not work under mingw, so a simple makefile based
+	approach can be used to build a static library.
+
+	Copy Makefile.ftgl to /c/libs-mingw/FTGL/src
+
+	cd src
+	make
+	
+	To make #include <FTGL/...> work, the FTGL headers must live in /c/libs-mingw/FTGL/FTGL/
+	
+	mkdir /c/libs-mingw/FTGL/FTGL
+	cp /c/libs-mingw/include/*.h /c/libs-mingw/FTGL
+
+e) Build videoplayer
+
+either build in the source directory
+
+	cd /path/to/videoplayer/source
+	qmake -spec win32-g++
+	
+or build elsewhere, useful if you build for multiple platforms from the same source
+
+	cd /path/to/build/dir
+	qmake -spec win32-g++ /path/to/videoplayer/source/videoplayer.pro
+
+then
+
+	mingw32-make release
+	or
+	mingw32-make debug
