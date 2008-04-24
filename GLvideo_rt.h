@@ -40,7 +40,6 @@
 #include <QtGui>
 
 #include "GLvideo_renderer.h"
-#include "GLvideo_perf.h"
 
 class GLvideo_mt;
 class FTFont;
@@ -90,7 +89,6 @@ private:
 	QMutex mutex;
 
 	GLvideo_osd *osd;
-	GLvideo_perf perf;
 	GLVideoRenderer::GLVideoRenderer *renderer;
 	GLvideo_params& params;
 

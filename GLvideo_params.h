@@ -6,8 +6,6 @@
 enum OSDmode {
 	OSD_NONE = 0,
 	OSD_FRAMENUM,
-	OSD_FPS,
-	OSD_INT,
 	OSD_CAPTION,
 	OSD_MAX,
 };

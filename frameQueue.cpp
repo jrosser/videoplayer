@@ -25,10 +25,12 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <QtGui>
+#include <sstream>
 
 #include "frameQueue.h"
 #include "videoTransport.h"
 #include "readerInterface.h"
+#include "stats.h"
 
 #define DEBUG 0
 #define LISTLEN 50
@@ -175,6 +177,21 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 		}
 	}
 
+	//stats
+	{
+		QMutexLocker listLocker(&listMutex);
+
+		Stats &stat = Stats::getInstance();
+		std::stringstream ss;
+		
+		ss << futureFrames.size();			
+		stat.addStat("FrameQueue", "QueueFuture", ss.str());
+		
+		ss.str("");
+		ss << pastFrames.size();
+		stat.addStat("FrameQueue", "QueuePast", ss.str());
+	}
+	
 	return displayFrame;
 }
 
@@ -207,7 +224,13 @@ void FrameQueue::run()
 
 	//set to play forward to avoid deleting the frame lists first time round
 	int lastSpeed = speed;
-
+	
+	//performance timer
+	QTime timer;
+	timer.restart();
+	int busytime=0;
+	int sleeptime=0;
+	
 	while (m_doReading) {
 
 		//------------------------------------------------------------------------------------------------
@@ -294,11 +317,30 @@ void FrameQueue::run()
 			}
 		}
 
-		//wait for display thread to display a new frame
+		//stats
+		{
+			busytime = timer.elapsed();
+			timer.restart();
+			
+			int totaltime = busytime + sleeptime;
+			
+			if(totaltime) {
+				int load = (busytime * 100) / (busytime + sleeptime);
+
+				Stats &stat = Stats::getInstance();
+				std::stringstream ss;			
+				ss << load << "%";			
+				stat.addStat("FrameQueue", "Load", ss.str());
+			}
+		}		
+
+		//wait for display thread to display a new frame		
 		frameMutex.lock();
 		if(m_doReading)
 			frameConsumed.wait(&frameMutex);
 		frameMutex.unlock();
-
+		
+		sleeptime = timer.elapsed();
+		timer.restart();
 	}
 }

@@ -25,6 +25,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <stdio.h>
+#include <sstream>
 
 #include <QtGui>
 #include "GLvideo_rt.h"
@@ -41,7 +42,7 @@
 #include "videoData.h"
 #include "videoTransport.h"
 #include "frameQueue.h"
-
+#include "stats.h"
 #include "util.h"
 
 #include "GLvideo_params.h"
@@ -159,6 +160,23 @@ void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
 	glUseProgramObjectARB(0);
 }
 
+void addStatPerfFloat(char *timer, double d)
+{
+	Stats &stat = Stats::getInstance();
+	std::stringstream ss;
+	ss << d;
+
+	stat.addStat("OpenGL", timer, ss.str());
+}
+
+void addStatPerfInt(char *timer, int time)
+{
+	Stats &stat = Stats::getInstance();
+	std::stringstream ss;
+	ss << time << " " << "ms";
+
+	stat.addStat("OpenGL", timer, ss.str());
+}
 
 void GLvideo_rt::run()
 {
@@ -236,12 +254,8 @@ void GLvideo_rt::run()
 		if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
 			videoData = glw.vt->getNextFrame();
 			direction = glw.vt->getDirection();
-			//perf.futureQueue = glw.fq->getFutureQueueLen();
-			//perf.pastQueue = glw.fq->getPastQueueLen();
-			//perf.IOLoad      = glw.fq->getIOLoad();
-			//perf.IOBandwidth = glw.fq->getIOBandwidth();
-			perf.readData = perfTimer.elapsed();
 		}
+		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
 		if (DEBUG)
 			printf("videoData=%p\n", videoData);
@@ -275,7 +289,7 @@ void GLvideo_rt::run()
 				//no conversion needed
 				break;
 			}
-			perf.convertFormat = perfTimer.elapsed();
+			addStatPerfInt("ReadData", perfTimer.elapsed());
 
 			//check for video dimensions changing
 			if ((lastsrcwidth != videoData->Ywidth)
@@ -318,7 +332,7 @@ void GLvideo_rt::run()
 			//update the uniform variables in the fragment shader
 			perfTimer.restart();
 			updateShaderVars(programs[currentShader], videoData, params, colour_matrix);
-			perf.updateVars = perfTimer.elapsed();
+			addStatPerfInt("UpdateVars", perfTimer.elapsed());
 
 			//if the size of the window has changed (doResize)
 			//or the shape of the video in the window has changed
@@ -408,16 +422,16 @@ void GLvideo_rt::run()
 			perfTimer.restart();
 			if ((params.interlaced_source == 0 || field == 0) && repeat == 0)
 				renderer->uploadTextures(videoData);
-			perf.upload = perfTimer.elapsed();
+			addStatPerfInt("Upload", perfTimer.elapsed());
 
 			perfTimer.restart();
 			renderer->renderVideo(videoData, programs[currentShader]);
-			perf.renderVideo = perfTimer.elapsed();
+			addStatPerfInt("RenderVid", perfTimer.elapsed());
 
 #ifdef WITH_OSD
 			perfTimer.restart();
-			if(osd) osd->render(videoData, params, perf);
-			perf.renderOSD = perfTimer.elapsed();
+			if(osd) osd->render(videoData, params);
+			addStatPerfInt("RenderOSD", perfTimer.elapsed());
 #endif
 
 
@@ -426,7 +440,7 @@ void GLvideo_rt::run()
 		glFlush();
 		perfTimer.restart();
 		glw.swapBuffers();
-		perf.swapBuffers = perfTimer.elapsed();
+		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
 
 		//move to the next field when the first has been repeated the required number of times
 		if (params.interlaced_source && (repeat == params.frame_repeats)) {
@@ -446,15 +460,14 @@ void GLvideo_rt::run()
 
 		if (repeat == 0) {
 			//measure overall frame period
-			perf.interval = frameIntervalTime.elapsed();
-			//if(DEBUG) printf("interval=%d\n", perf.interval);
+			addStatPerfInt("Interval", frameIntervalTime.elapsed());
 			frameIntervalTime.restart();
 
 			//calculate FPS
 			if (fpsAvgPeriod == 0) {
 				int fintvl = fpsIntervalTime.elapsed();
 				if (fintvl)
-					perf.renderRate = 10*1e3/fintvl;
+					addStatPerfFloat("RenderRate", 10*1e3/fintvl);
 				fpsIntervalTime.start();
 			}
 			fpsAvgPeriod = (fpsAvgPeriod + 1) %10;

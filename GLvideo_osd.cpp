@@ -67,7 +67,7 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 	float tx=0.05 * videoData->Ywidth;
 	float ty=0.05 * videoData->Yheight;
 
-	if (params.osd_bot==4) {
+	if (params.osd_bot==OSD_CAPTION) {
 		//put the caption in the middle of the screen
 		tx = videoData->Ywidth - ((cx2 - cx1) * params.osd_scale);
 		tx/=2;
