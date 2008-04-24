@@ -1,7 +1,7 @@
 #include "GLvideo_osd.h"
 #include "GLvideo_params.h"
-#include "GLvideo_perf.h"
 #include "videoData.h"
+#include "stats.h"
 
 #define DEBUG 0
 
@@ -11,7 +11,7 @@ GLvideo_osd::~GLvideo_osd()
 		delete font;
 }
 
-void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params, GLvideo_perf &perf)
+void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params)
 {
 	if (!params.osd_valid) {
 		if (DEBUG)
@@ -34,14 +34,14 @@ void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params, GLvideo_p
 	if(font) {
 
 		if(params.osd_bot != OSD_NONE)
-		renderOSD(videoData, params, perf);
+		renderOSD(videoData, params);
 
 		if(params.osd_perf)
-			renderPerf(videoData, perf);
+			renderStats(videoData);
 	}
 }
 
-void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params, GLvideo_perf &perf)
+void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 {
 	//bounding box of text
 	float cx1, cy1, cz1, cx2, cy2, cz2;
@@ -52,18 +52,6 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params, GLvide
 	case OSD_FRAMENUM:
 		sprintf(str, "%06ld", videoData->frameNum);
 		font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2);
-		break;
-
-	case OSD_FPS:
-		sprintf(str, "%06ld, fps:%3.2f", videoData->frameNum, perf.renderRate);
-		font->BBox("000000, fps:000.00", cx1, cy1, cz1, cx2, cy2, cz2);
-		break;
-
-	case OSD_INT:
-		sprintf(str, "%06ld, %s:%s", videoData->frameNum,
-		        params.interlaced_source ? "Int" : "Prog",
-		        params.deinterlace ? "On" : "Off");
-		font->BBox("000000, Prog:Off", cx1, cy1, cz1, cx2, cy2, cz2);
 		break;
 
 	case OSD_CAPTION:
@@ -99,6 +87,7 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params, GLvide
 	glScalef(params.osd_scale, params.osd_scale, 0); //scale the on screen display
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
 	glColor4f(0.0, 0.0, 0.0, params.osd_back_alpha);
 
 	glBegin(GL_QUADS);
@@ -111,23 +100,22 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params, GLvide
 	//text
 	glColor4f(1.0, 1.0, 1.0, params.osd_text_alpha);
 	glEnable(GL_POLYGON_SMOOTH);
+	glEnable(GL_BLEND);
 	font->Render(str);
 	glDisable(GL_POLYGON_SMOOTH);
+	glDisable(GL_BLEND);
 	glPopMatrix();
 }
 
-void GLvideo_osd::drawText(char *str)
+void GLvideo_osd::drawText(const char *str)
 {
-	glEnable(GL_POLYGON_SMOOTH);
 	glPushMatrix();
 	font->Render(str);
 	glPopMatrix();
-	glDisable(GL_POLYGON_SMOOTH);
 }
 
 void GLvideo_osd::draw2Text(const char *str1, const char *str2, float h_spacing)
 {
-	glEnable(GL_POLYGON_SMOOTH);
 	glPushMatrix();
 
 	glPushMatrix();
@@ -141,7 +129,6 @@ void GLvideo_osd::draw2Text(const char *str1, const char *str2, float h_spacing)
 	glPopMatrix();
 
 	glPopMatrix();
-	glDisable(GL_POLYGON_SMOOTH);
 }
 
 void GLvideo_osd::drawPerfTimer(const char *str, int num, const char *units, float h_spacing)
@@ -151,24 +138,28 @@ void GLvideo_osd::drawPerfTimer(const char *str, int num, const char *units, flo
 	draw2Text(str, str2, h_spacing);
 }
 
-void GLvideo_osd::renderPerf(VideoData *videoData, GLvideo_perf &perf)
+void GLvideo_osd::renderStats(VideoData *videoData)
 {
+	//position of the stats relative to the video
 	float tx = 0.05 * videoData->Ywidth;
 	float ty = 0.95 * videoData->Yheight;
-	char str[255];
+
+	//determine approx character size
 	float cx1, cy1, cz1, cx2, cy2, cz2;
 
 	font->BBox("0", cx1, cy1, cz1, cx2, cy2, cz2);
 	float spacing = (cy2-cy1) * 1.5;
 	float width = cx2 - cx1;
+	float gap = width * 17;
 
 	//black box that text is rendered onto, larger than the text by 'border'
 	float border = 10;
 	float bx1, by1, bx2, by2;
+	static int n_lines;	//remember how many lines of stats there were last time
 	bx1 = -border;
 	by1 = spacing;
 	bx2 = width * 25;
-	by2 = (spacing * -15) - border*2;
+	by2 = (spacing * n_lines * -1) - border*2;
 
 	glPushMatrix();
 	glTranslated(tx, ty, 0); //near the top left corner
@@ -176,6 +167,8 @@ void GLvideo_osd::renderPerf(VideoData *videoData, GLvideo_perf &perf)
 
 	//box beind text
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glEnable(GL_POLYGON_SMOOTH);
 	glColor4f(0.0, 0.0, 0.0, 0.7);
 
 	glBegin(GL_QUADS);
@@ -184,63 +177,33 @@ void GLvideo_osd::renderPerf(VideoData *videoData, GLvideo_perf &perf)
 	glVertex2f(bx2, by2);
 	glVertex2f(bx2, by1);
 	glEnd();
-
-	glColor4f(0.0, 1.0, 0.0, 0.5);
-
-	sprintf(str, "Rendering");
-	drawText(str);
-
-	glColor4f(1.0, 1.0, 1.0, 0.5);
-
-	int gap = width * 17;
 	
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("ReadData", perf.readData, "ms", gap);
+	//render the stats text
+	Stats &s = Stats::getInstance();
+	Stats::section_t::const_iterator it = s.get_section_begin();
+	n_lines = 0;
+	while(it != s.get_section_end())
+	{
+		glColor4f(0.0, 1.0, 0.0, 0.5);
+		drawText((*it).first.c_str());
+		glTranslated(0, -spacing, 0);
+		glColor4f(1.0, 1.0, 1.0, 0.5);
+		n_lines++;
 
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("ConvertFormat", perf.convertFormat, "ms", gap);
+		Stats::inner_t::const_iterator it2 = (*it).second->begin();
 
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("UpdateVars", perf.updateVars, "ms", gap);
+		while(it2 != (*it).second->end()) {
 
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("RepeatWait", perf.repeatWait, "ms", gap);
+			draw2Text((*it2).first.c_str(), (*it2).second.c_str(), gap);
+			glTranslated(0, -spacing, 0);
+			n_lines++;
+			it2++;
+		}
 
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("Upload", perf.upload, "ms", gap);
+		it++;
+	}
 
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("RenderVideo", perf.renderVideo, "ms", gap);
-
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("RenderOSD", perf.renderOSD, "ms", gap);
-
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("SwapBuffers", perf.swapBuffers, "ms", gap);
-
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("Interval", perf.interval, "ms", gap);
-
-	glColor4f(0.0, 1.0, 0.0, 0.5);
-
-	glTranslated(0, -spacing, 0);
-	glTranslated(0, -spacing, 0);
-	sprintf(str, "I/O");
-	drawText(str);
-
-	glColor4f(1.0, 1.0, 1.0, 0.5);
-
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("Future Queue", perf.futureQueue, "", gap);
-
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("Past Queue", perf.pastQueue, "", gap);
-
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("I/O Thread Load", perf.IOLoad, "%", gap);
-
-	glTranslated(0, -spacing, 0);
-	drawPerfTimer("ReadRate", perf.IOBandwidth, "MB/s", gap);
-
+	glDisable(GL_BLEND);
+	glDisable(GL_POLYGON_SMOOTH);
 	glPopMatrix();
 }

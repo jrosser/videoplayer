@@ -5,7 +5,10 @@ CONFIG += thread console debug_and_release
 
 # source files
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h config.h
+HEADERS += stats.h
+
 SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp util.cpp
+SOURCES += stats.cpp
 
 # openGL video widget source files
 HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_renderer.h GLvideo_repeater.h shaders.h

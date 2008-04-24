@@ -35,22 +35,20 @@
 class FTFont;
 class VideoData;
 class GLvideo_params;
-class GLvideo_perf;
 
 class GLvideo_osd {
 public:
 
-	void render(VideoData *videoData, GLvideo_params &params, GLvideo_perf &perf);
+	void render(VideoData *videoData, GLvideo_params &params);
 	~GLvideo_osd();
 	
 private:
 
-	void renderOSD(VideoData *videoData, GLvideo_params &params, GLvideo_perf &perf);
-	void drawText(char *str);
+	void renderOSD(VideoData *videoData, GLvideo_params &params);
+	void drawText(const char *str);
 	void draw2Text(const char *str1, const char *str2, float h_spacing);
 	void drawPerfTimer(const char *str, int num, const char *units, float h_spacing);
-	void renderPerf(VideoData *videoData, GLvideo_perf &perf);
-
+	void renderStats(VideoData *);
 	FTFont *font;
 };
 
