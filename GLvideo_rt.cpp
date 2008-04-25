@@ -238,8 +238,6 @@ void GLvideo_rt::run()
 	glLoadIdentity();
 	glViewport(0, 0, displayheight, displaywidth);
 	glClearColor(0, 0, 0, 0);
-	glEnable(GL_BLEND);
-	glClear(GL_COLOR_BUFFER_BIT);
 
 	compileFragmentShaders();
 
@@ -363,6 +361,8 @@ void GLvideo_rt::run()
 				}
 				doResize = false;
 				params.view_valid = true;
+
+				glClear(GL_COLOR_BUFFER_BIT);
 			}
 
 			//	//upload the texture for the frame to the GPU. This contains both fields for interlaced
