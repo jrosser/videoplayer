@@ -160,7 +160,7 @@ void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
 	glUseProgramObjectARB(0);
 }
 
-void addStatPerfFloat(char *timer, double d)
+void addStatPerfFloat(const char *timer, double d)
 {
 	Stats &stat = Stats::getInstance();
 	std::stringstream ss;
@@ -169,7 +169,7 @@ void addStatPerfFloat(char *timer, double d)
 	stat.addStat("OpenGL", timer, ss.str());
 }
 
-void addStatPerfInt(char *timer, int time)
+void addStatPerfInt(const char *timer, int time)
 {
 	Stats &stat = Stats::getInstance();
 	std::stringstream ss;
