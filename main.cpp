@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 
 	struct GLvideo_params vr_params;
 	/* some defaults in the abscence of any settings */
-	vr_params.frame_repeats = 0;
+	vr_params.frame_repeats = 1;
 	vr_params.caption = "hello world";
 	vr_params.osd_scale = 1.;
 	vr_params.osd_back_alpha = 0.7;

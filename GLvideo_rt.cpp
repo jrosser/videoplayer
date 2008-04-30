@@ -443,7 +443,7 @@ void GLvideo_rt::run()
 		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
 
 		//move to the next field when the first has been repeated the required number of times
-		if (params.interlaced_source && (repeat == params.frame_repeats)) {
+		if (params.interlaced_source && (repeat == params.frame_repeats - 1)) {
 			//move to the next field
 			field++;
 			if (field > 1)
@@ -451,7 +451,7 @@ void GLvideo_rt::run()
 		}
 
 		//repeat the frame the required number of times
-		if (repeat < params.frame_repeats) {
+		if (repeat < params.frame_repeats && field == 0) {
 			repeat++;
 			if (repeat == params.frame_repeats) {
 				repeat = 0;
