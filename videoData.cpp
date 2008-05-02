@@ -189,7 +189,6 @@ void VideoData::allocate(int w, int h, DataFmt f)
 		glInternalFormat = GL_RGBA;
 		glFormat = GL_RGBA;
 		glType = GL_UNSIGNED_BYTE;
-		glMinMaxFilter = GL_NEAREST;
 		break;
 
 	case V210: //gets converted to UYVY
@@ -197,7 +196,6 @@ void VideoData::allocate(int w, int h, DataFmt f)
 		glInternalFormat = GL_RGBA;
 		glFormat = GL_RGBA;
 		glType = GL_UNSIGNED_BYTE;
-		glMinMaxFilter = GL_NEAREST;
 		break;
 
 	case V216:
