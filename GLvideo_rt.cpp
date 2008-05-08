@@ -410,9 +410,9 @@ void GLvideo_rt::run()
 
 				/* swap the field order when playing interlaced pictures backwards */
 				if (direction >= 0)
-					glUniform1iARB(i, field);
+					glUniform1fARB(i, (float)field);
 				else
-					glUniform1iARB(i, 1 - field);
+					glUniform1fARB(i, 1.0 - (float)field);
 
 				glUseProgramObjectARB(0);
 			}
