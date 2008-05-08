@@ -51,6 +51,10 @@ namespace po = boost::program_options;
 #include "QShuttlePro.h"
 #endif
 
+#ifdef Q_OS_UNIX
+#include "QConsoleInput.h"
+#endif
+
 #include "GLvideo_params.h"
 
 #include "config.h"
@@ -395,6 +399,10 @@ int main(int argc, char **argv)
 	//key 270, press=next mark, hold=end of file
 	//key 257, cycle displayed timecode type
 	//key 258, press=lock controls, hold=unlock controls
+#endif
+
+#ifdef Q_OS_UNIX
+	QConsoleInput tty(window);
 #endif
 
 	vt->setLooping(t_params.looping);

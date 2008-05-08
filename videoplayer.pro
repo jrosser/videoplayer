@@ -27,6 +27,11 @@ contains(DEFINES, WITH_OSD) {
   HEADER += GLvideo_osd.h
 }
 
+unix {
+  SOURCES += QConsoleInput.cpp
+  HEADERS += QConsoleInput.h
+}
+
 contains(DEFINES, HAVE_DIRAC) {
 	#andrea's wrapper library around the schro and dirac libraries
 	PARSER_PATH = /project/compression/jrosser/workspace/dirac1.0/branches/dg_demo
