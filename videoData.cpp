@@ -53,6 +53,10 @@ void VideoData::resize(int w, int h, DataFmt f)
 		allocate(w, h, f);
 	}
 
+	/* Some type conversions don't need to reallocate but
+	 * do change the render format, so there is diskformat
+	 * space avaliable but only renderformat used. */
+	renderFormat = f;
 }
 
 void VideoData::allocate(int w, int h, DataFmt f)
