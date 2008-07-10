@@ -61,8 +61,9 @@ private slots:
 	void toggleLuminance();
 	void toggleChrominance();
 	void toggleDeinterlace();
-	void toggleMatrixScaling();
-
+	void setUserMatrixScaling();
+	void setVideoMatrixScaling();
+	void setCgrMatrixScaling();
 private:
 	void createActions(void);
 

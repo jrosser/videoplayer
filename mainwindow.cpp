@@ -70,7 +70,9 @@ void MainWindow::createActions()
 	ADDACT("Use user Matrix", "k", this, setUserMatrix);
 	ADDACT("Set HDTV Matrix", "h", this, setHDTVMatrix);
 	ADDACT("Set SDTV Matrix", "j", this, setSDTVMatrix);
-	ADDACT("Toggle colour matrix scaling", "m", this, toggleMatrixScaling);
+	ADDACT("Use user matrix scaling",  "m", this, setUserMatrixScaling);
+	ADDACT("Use computer graphics matrix scaling", "b", this, setCgrMatrixScaling);
+	ADDACT("Use video levels matrix scaling", "n", this, setVideoMatrixScaling);
 	ADDACT("Toggle deinterlacing", "i", this, toggleDeinterlace);
 	ADDACT("Toggle OSD", "o", this, toggleOSD);
 	ADDACT("Toggle performance", "?", this, togglePerf);
@@ -142,6 +144,27 @@ void MainWindow::setUserMatrix()
 	vr_params.matrix_valid = false;
 }
 
+void MainWindow::setUserMatrixScaling()
+{
+	vr_params.output_range = vr_params_orig.output_range;
+	vr_params.output_blacklevel = vr_params_orig.output_blacklevel;
+	vr_params.matrix_valid = false;
+}
+
+void MainWindow::setVideoMatrixScaling()
+{
+	vr_params.output_range = 220;
+	vr_params.output_blacklevel = 16;
+	vr_params.matrix_valid = false;
+}
+
+void MainWindow::setCgrMatrixScaling()
+{
+	vr_params.output_range = 256;
+	vr_params.output_blacklevel = 0;
+	vr_params.matrix_valid = false;
+}
+
 void MainWindow::togglePerf()
 {
 	vr_params.osd_perf ^= 1;
@@ -191,8 +214,3 @@ void MainWindow::toggleDeinterlace()
 	vr_params.deinterlace ^= 1;
 }
 
-void MainWindow::toggleMatrixScaling()
-{
-	//vr_params.matrix_scaling ^= 1;
-	vr_params.matrix_valid = false;
-}

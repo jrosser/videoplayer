@@ -95,7 +95,9 @@ usage()
 	printf("\n========               ======");
 	printf("\no                      Toggle OSD state");
 	printf("\nf                      Toggle full screen mode");
-	printf("\nm                      Toggle colour matrix scaling");
+	printf("\nm                      Switch to output levels from user flags out-range and out-black");
+	printf("\nn                      Switch to video output levels, out-range=240 out-black=16");
+	printf("\nb                      Switch to computer output levels, out-range=256, out-black=0");
 	printf("\nEsc                    Return from full screen mode to windowed");
 	printf("\na                      Toggle aspect ratio lock");
 	printf("\nd                      Toggle deinterlacing of an interlaced source");
