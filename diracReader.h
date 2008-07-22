@@ -27,13 +27,13 @@
 #ifndef DIRACREADER_H_
 #define DIRACREADER_H_
 
-#include <QtGui>
+#include <QtCore>
 
-#include <decoder/IWriter.hpp>
 #include "readerInterface.h"
 #include "videoData.h"
 
-class SomeWriter;
+struct _SchroVideoFormat;
+struct _SchroFrame;
 
 class DiracReader : public ReaderInterface, public QThread {
 public:
@@ -42,10 +42,13 @@ public:
 	virtual void pullFrame(int wantedFrame, VideoData*& dst);
 
 public:
-	//specific to yuvReader
 	void setFileName(const QString &fn);
 	void run();
 	void stop();
+
+private:
+	_SchroFrame* allocFrame();
+	void queueFrame(VideoData*);
 
 private:
 	QString fileName;
@@ -54,13 +57,12 @@ private:
 	//frame
 	QList<VideoData *> frameList;
 	QMutex frameMutex;
-	unsigned char *frameData;
 
 	//condition variable
 	QWaitCondition bufferNotEmpty;
 	QWaitCondition bufferNotFull;
 
-	friend class SomeWriter;
+	_SchroVideoFormat* vidfmt;
 };
 
 #endif

@@ -252,6 +252,10 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 						printf("Please specify file format with the -t flag\n");
 						allParsed = false;
 					}
+					else {
+						//the file type has not been forced, and it is an allowed file type
+						tp.fileType = fi.suffix().toLower();
+					}
 				}
 			}
 			else {

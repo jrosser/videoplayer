@@ -33,22 +33,12 @@ unix {
 }
 
 contains(DEFINES, HAVE_DIRAC) {
-	#andrea's wrapper library around the schro and dirac libraries
-	PARSER_PATH = /project/compression/jrosser/workspace/dirac1.0/branches/dg_demo
-	INCLUDEPATH += $$PARSER_PATH/include/dirac1.0
-	INCLUDEPATH += $$PARSER_PATH/src/
-	LIBPATH += $$PARSER_PATH/lib
-	LIBS += -ldirac1.0_parser -ldirac1.0_decoder
-	DEFINES += DIRAC_COMPILER_IS_GNUC DIRAC_64BIT_SUPPORT
-	HEADERS += diracReader.h
+	HEADERS += diracReader.h schro_parse.c
 	SOURCES += diracReader.cpp
 
 	#schroedinger library
-	SCHRO_INSTALL_PATH = /usr/local
-	#SCHRO_INSTALL_PATH = /Users/andrea/build/schroedinger-Darwin-i386
-	INCLUDEPATH += $$SCHRO_INSTALL_PATH/include/schroedinger-1.0
-	LIBPATH += $$SCHRO_INSTALL_PATH/lib
-	LIBS += -lschroedinger-1.0
+	CONFIG += link_pkgconfig
+	PKGCONFIG += schroedinger-1.0
 }
 
 linux-g++ {

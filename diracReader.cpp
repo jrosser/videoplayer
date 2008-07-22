@@ -24,235 +24,222 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <common/dirac.h>
+#include <cassert>
+#include <sstream>
 
-#include <parser/Parser.hpp>
-#include <parser/AccessUnit.hpp>
-#include <parser/IInput.hpp>
-#include <parser/StreamReader.hpp>
-
-#include <decoder/Schrodec.hpp>
-
-#include <decoder/FileReader.hpp>
-#include <decoder/IWriter.hpp>
-
-#include <decoder/DefaultFrameMemoryManager.hpp>
-#include <decoder/FrameManagerMaker.hpp>
-#include <decoder/IFrameManager.hpp>
-
-#include <schroedinger/schroframe.h>
+#include <schroedinger/schro.h>
 
 #include "diracReader.h"
+#include "stats.h"
 
-#include <iostream>
-using namespace ::dirac::parser_project;
-using namespace ::dirac::decoder;
+#include "schro_parse.c"
 
 #define DEBUG 0
 
-//-----------------------------------------------------------------------
-class SomeWriter : public IWriter<VideoData> {
-public:
-	SomeWriter(DiracReader& dr) :
-		dr(&dr)
-	{
-	}
-private:
-	//from IWriter
-	virtual bool output(const_pointer begin, size_type count, VideoData* vid);
-	virtual bool available() const
-	{
-		return true;
-	} //WTF???
-
-private:
-	DiracReader *dr;
-};
-
-//for IWriter (the producer)
-#define MAX 10
-bool SomeWriter::output(const_pointer begin, size_type count, VideoData* video)
+/* Read a chunk of data from file @fd@, using the sync state to hint
+ * at the size of the chunk required */
+SchroBuffer*
+readChunk(FILE* fd, SchroSyncState* s)
 {
-	count=count;
-	if (DEBUG)
-		printf("(SomeWriter) pushed frame %p\n", video);
+	unsigned char pi[13];
+	int next_du_size = 512;
+	int tmp_len = 0; /* either 0 or 13 (if we've tried to read a PI) */
+
+	if (SYNCED == s->state) {
+		/* If synced, there is a possibility that we are stream aligned,
+		 * so try and read an aligned PI and work out the DU length; */
+		tmp_len = fread(pi, 13, 1, fd);
+		if (tmp_len && pi[0] == 'B' && pi[1] == 'B' && pi[2] == 'C' && pi[3] == 'D')
+			next_du_size = pi[5] << 24 | pi[6] << 16 | pi[7] << 8 | pi[8];
+		tmp_len *= 13;
+	}
+	if (SYNCED_INCOMPLETEDU == s->state) {
+		/* We are synced and not stream aligned (haven't read enough data
+		 * to finish this DU), read enough data to finish this DU */
+		next_du_size = s->offset - schro_buflist_length(s->bufs);
+	}
+	SchroBuffer* b = schro_buffer_new_and_alloc(next_du_size);
+	memcpy(b->data, pi, tmp_len);
+	b->length = fread(b->data + tmp_len, 1, next_du_size - tmp_len, fd) + tmp_len;
+	if (!b->length) {
+		schro_buffer_unref(b);
+		return 0;
+	}
+	return b;
+}
+
+/* Allocate storage for a frame of data (using the framequeue to
+ * allocate suitably aligned data */
+SchroFrame*
+DiracReader::allocFrame()
+{
+	SchroFrame *f = NULL;
+	VideoData* v = frameQueue.allocateFrame();
+	assert(v);
+	assert(vidfmt);
+
+	static const VideoData::DataFmt chromafmt_to_datafmt[] = {
+		VideoData::V8P4,
+		VideoData::V8P2,
+		VideoData::V8P0,
+	};
+
+	typedef SchroFrame* (*SchroFrameNewFromData_t)(void*,int,int);
+	static const SchroFrameNewFromData_t schro_frame_new_from_data[] = {
+		schro_frame_new_from_data_u8_planar444,
+		schro_frame_new_from_data_u8_planar422,
+		schro_frame_new_from_data_I420,
+	};
+
+	v->resize(vidfmt->width, vidfmt->height
+	         ,chromafmt_to_datafmt[vidfmt->chroma_format]);
+
+	f = schro_frame_new_from_data[vidfmt->chroma_format](v->data, vidfmt->width, vidfmt->height);
+
+	assert(f);
+	f->priv = v;
+	return f;
+}
+
+/* Add frame @video@ to the output queue.
+ * Attempting to add a frame to a full queue blocks this function
+ * (and thus regulates the speed of decoding) */
+#define MAX_QUEUE_LEN 10
+void
+DiracReader::queueFrame(VideoData* video)
+{
+	Stats &stat = Stats::getInstance();
+	std::stringstream ss;
 
 	//wait for space in the list
-	dr->frameMutex.lock();
-	int size = dr->frameList.size();
-	if (size == MAX) {
-		if (DEBUG)
-			printf("(SomeWriter) list is full - waiting...\n");
-		dr->bufferNotFull.wait(&dr->frameMutex);
+	frameMutex.lock();
+	int size = frameList.size();
+	ss.str("");
+	ss << size << "/" << MAX_QUEUE_LEN;
+	//stat.addStat("DiracReader", "OutQueueLen", ss.str());
+
+	if (size == MAX_QUEUE_LEN) {
+		bufferNotFull.wait(&frameMutex);
 	}
 
-	//add to list
-	size=dr->frameList.size();
-
-	if (DEBUG)
-		printf("(SomeWriter) adding frame %p, %dx%d, listSize=%d\n", video,
-		       video->Ywidth, video->Yheight, size);
-	dr->frameList.prepend(video);
-	dr->bufferNotEmpty.wakeAll();
-	dr->frameMutex.unlock();
-
-	if (DEBUG)
-		printf("(SomeWriter) Done\n");
-
-	return true;
+	frameList.prepend(video);
+	bufferNotEmpty.wakeAll();
+	frameMutex.unlock();
 }
 
-class SomeFrameMemoryManager : public IFrameMemoryManager<VideoData> {
-public:
-	SomeFrameMemoryManager(FrameQueue& frameQ) :
-		frameQueue(frameQ), decoder( 0)
-	{
-	}
-	virtual ~SomeFrameMemoryManager()
-	{
-	}
-
-public:
-	void setDecoder(IDecoder* dec)
-	{
-		decoder = dec;
-	}
-
-private:
-	SomeFrameMemoryManager(SomeFrameMemoryManager const&);
-	SomeFrameMemoryManager& operator=(SomeFrameMemoryManager const&);
-
-private:
-	virtual unsigned char* allocateFrame(size_t bufferSize, VideoData*& v);
-	virtual void releaseFrame(unsigned char*, VideoData* v)
-	{
-	}
-
-private:
-	FrameQueue& frameQueue;
-	IDecoder* decoder;
-};
-
-VideoData::DataFmt translateChromaFormat(ChromaFormat c)
+/* called from the transport controller to get frame data for display
+ * frame number is bogus, as the dirac wrapper cannot seek by frame number */
+void
+DiracReader::pullFrame(int /*frameNumber*/, VideoData*& dst)
 {
-	return VideoData::V8P0;
-}
-
-unsigned char* SomeFrameMemoryManager::allocateFrame(size_t dummy, VideoData*& v)
-{
-	VideoData* vid = frameQueue.allocateFrame();
-	assert(vid);
-	vid->resize(decoder->frameWidth(), decoder->frameHeight() ,
-	            translateChromaFormat(decoder->chromaFormat() ) );
-
-	if (DEBUG)
-		printf("Allocate frame %p, %dx%d\n", vid, vid->Ywidth, vid->Yheight);
-	v = vid;
-	return v->data;
-}
-
-//called from the transport controller to get frame data for display
-//frame number is bogus, as the dirac wrapper cannot seek by frame number
-void DiracReader::pullFrame(int frameNumber /*ignored*/, VideoData*& dst)
-{
-	if (DEBUG)
-		printf("(DiracReader) request for frame number %d\n", frameNumber);
-
 	//see if there is a frame on the list
 	frameMutex.lock();
 	if (frameList.empty()) {
-		if (DEBUG)
-			printf("(DiracReader) frame list is empty - waiting...\n");
 		bufferNotEmpty.wait(&frameMutex);
 	}
 
 	dst = frameList.takeLast();
-	dst->frameNum = frameNumber;
-
-	int size = frameList.size();
-	if (DEBUG)
-		printf("(DiracReader) taken frame %p from list, listSize=%d\n", dst,
-		       size);
+	//dst->frameNum = frameNumber;
 
 	bufferNotFull.wakeAll();
 	frameMutex.unlock();
-
-	if (DEBUG)
-		printf("(DiracReader) Done\n");
 }
 
 DiracReader::DiracReader(FrameQueue& frameQ) :
-	ReaderInterface(frameQ)
+	ReaderInterface(frameQ),
+	vidfmt(0)
 {
 	randomAccess = false;
-	frameData = NULL;
-	go = true;
 }
 
-void DiracReader::setFileName(const QString &fn)
+void
+DiracReader::setFileName(const QString &fn)
 {
 	fileName = fn;
 }
 
-void DiracReader::stop()
+void
+DiracReader::stop()
 {
 	go=false;
 	wait();
 }
 
-void DiracReader::run()
+void
+DiracReader::run()
 {
-	try {
-		std::auto_ptr<IInput> input ( new FileReader ( std::string((const char *)fileName.toAscii()) ) );
-		std::auto_ptr<StreamReader> reader ( new StreamReader ( input, 50 ) );
-		std::auto_ptr<Parser> parser ( new Parser ( reader ) );
-		std::auto_ptr<IWriter<VideoData> > writer ( new SomeWriter(*this) );
-		IFrameMemoryManager<VideoData>* tmp = new SomeFrameMemoryManager ( frameQueue );
-		std::auto_ptr<IFrameMemoryManager<VideoData> > frameMemMgr ( tmp );
-		std::auto_ptr<IFrameManager> manager ( makeFrameManager (writer, frameMemMgr ) );
-		std::auto_ptr<IDecoder> decoder ( new Schrodec ( parser, manager ) );
-		static_cast<SomeFrameMemoryManager*> ( tmp )->setDecoder ( decoder.get() ); // I know it's dodgy, FIXME!!
+	Stats &stat = Stats::getInstance();
 
-		if ( !decoder.get() ) {
-			std::cout << "Programming error: failed to create decoder object" << std::endl;
+	schro_init();
+	SchroDecoder* schro = schro_decoder_new();
+	SchroSyncState sync_state = {NOT_SYNCED, 0, -1, };
+
+	stat.addStat("DiracReader", "SchroState", "STARTED");
+
+	go = true;
+	while (fileName.isEmpty()) sleep(1);
+
+	FILE* fd = NULL;
+	fd = fopen(fileName.toAscii().constData(), "rb");
+
+	static const char* decoderstate_to_str[] = {
+		"SCHRO_DECODER_OK", "SCHRO_DECODER_ERROR", "SCHRO_DECODER_EOS",
+		"SCHRO_DECODER_FIRST_ACCESS_UNIT", "SCHRO_DECODER_NEED_BITS",
+		"SCHRO_DECODER_NEED_FRAME", "SCHRO_DECODER_WAIT",
+		"SCHRO_DECODER_STALLED",
+	};
+
+	do {
+		if (feof(fd))
+			/* just in case the file didn't have an end of stream */
+			schro_decoder_push_end_of_stream(schro);
+
+		int state = schro_decoder_wait(schro);
+
+		//stat.addStat("DiracReader", "SchroState", decoderstate_to_str[state]);
+		//stat.addStat("DiracReader", "SyncState", syncstate_to_str[sync_state.state]);
+
+		switch (state) {
+		case SCHRO_DECODER_NEED_BITS: {
+			SchroBuffer *b = readChunk(fd, &sync_state);
+			b = schro_parse_getnextdu(&sync_state, b);
+			if (!b) break;
+			state = schro_decoder_push(schro, b);
+			if (state == SCHRO_DECODER_FIRST_ACCESS_UNIT) {
+				if (vidfmt)
+					free(vidfmt);
+				vidfmt = schro_decoder_get_video_format(schro);
+			}
+			break;
+		}
+		case SCHRO_DECODER_NEED_FRAME: {
+			SchroFrame *f = allocFrame();
+			schro_decoder_add_output_picture(schro, f);
+			break;
+		}
+		case SCHRO_DECODER_OK: {
+			int pnum = schro_decoder_get_picture_number(schro);
+			SchroFrame *f = schro_decoder_pull(schro);
+			((VideoData*)f->priv)->frameNum = pnum;
+			queueFrame((VideoData*)f->priv);
+			f->priv = NULL;
+			schro_frame_unref(f);
+			break;
+		}
+		case SCHRO_DECODER_EOS:
+			if(feof(fd))
+				rewind(fd);
+			schro_decoder_reset(schro);
+			break;
+		case SCHRO_DECODER_ERROR:
+			fprintf(stderr, "some error\n");
 			return;
 		}
+	} while(go);
 
-		// If we don't need to interrupt the decoding process we can just invoke
-		// decoder->decode();
-		std::auto_ptr<IDecoderState> decoderState;
-		do {
+	stat.addStat("DiracReader", "SchroState", "-ETERM");
 
-			//decode frames in sequence
-			do {
-				std::auto_ptr<IDecoderState> tmp ( decoder->getState() );
-				decoderState = tmp; // the previous DecoderState gets deleted here
-
-				if(DEBUG) printf("Decoder Iterate...\n");
-
-				decoderState->doNextAction();
-			}while(!decoderState->isEndOfSequence() && go == true);
-
-			//loop back to the start of the sequence when we get to the end
-			if(go == true)
-			{
-				printf("Got End of Sequence\n");
-				std::auto_ptr<Parser> parser = decoder->releaseParser();
-				parser->rewind();
-				decoder->reacquireParser(parser);
-			}
-
-		}while (go == true);
-		//frameCount = decoder->numberOfDecodedFrames();
-	}
-	catch ( std::runtime_error& exc ) {
-		//std::cout << "Error while decoding " << fileName;
-		std::cout << std::endl;
-		std::cout << exc.what() << std::endl;
-		return;
-	}
-	catch (...) {
-		std::cout << "Unexpected exception" << std::endl;
-		return;
-	}
+	schro_decoder_free(schro);
+	if (vidfmt)
+		free(vidfmt);
 }
