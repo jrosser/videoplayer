@@ -133,15 +133,15 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		desc.add_options()
 		    ("width,w",       po::value(&tp.videoWidth),         "int    1920    Width of video luma component")
 		    ("height,h",      po::value(&tp.videoHeight),        "int    1080    Height of video luma component")
-		    ("repeats,r",     po::value(&vp.frame_repeats),       "int    0       Frame is repeated r extra times")
-		    ("loop,l",        po::value(&tp.looping),            "bool   1       Video file is played repeatedly")
-		    ("quit,q",        po::value(&tp.quit_at_end),     "bool    0      Exit at end of video file")
-		    ("interlace,i",   po::value(&vp.interlaced_source),   "bool   false   Interlaced source [1], progressive[0]")
-		    ("deinterlace,d", po::value(&vp.deinterlace),        "bool   false   Deinterlace on [1], off [0]")
+		    ("repeats,r",     po::value(&vp.frame_repeats),      "int    0       Frame is repeated r extra times")
+		    ("loop,l",        po::value(&tp.looping),            "int    1       Number of times to loop video (1=inf)")
+		    ("quit,q",        po::bool_switch(&tp.quit_at_end),  "int    0       Exit at end of video file (implies loop=0)")
+		    ("interlace,i",   po::bool_switch(&vp.interlaced_source),   "               Source is interlaced")
+		    ("deinterlace,d", po::bool_switch(&vp.deinterlace),  "               Enable Deinterlacer (requires -i)")
 		    ("yrange",        po::value(&vp.input_luma_range),   "int    220     Range of input luma (white-black+1)")
 		    ("yblack",        po::value(&vp.input_luma_blacklevel),   "int    16      Blacklevel of input luma")
 		    ("cblack",        po::value(&vp.input_chroma_blacklevel),   "int    16      Blacklevel of input chroma")
-		    ("out-range",     po::value(&vp.output_range),   "int    220     Range of R'G'B' output (white-black+1)")
+		    ("out-range",     po::value(&vp.output_range),       "int    220     Range of R'G'B' output (white-black+1)")
 		    ("out-black",     po::value(&vp.output_blacklevel),   "int    16      Blacklevel of R'G'B' output")
 		    ("ymult",         po::value(&vp.luminance_mul),       "float  1.0     User luma multipler")
 		    ("cmult",         po::value(&vp.chrominance_mul),     "float  1.0     User chroma multiplier")
@@ -163,8 +163,8 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 #endif
 		    ("filetype,t",    po::value<string>(),            "string         Force file type\n"
 		                                                      "               [i420|yv12|uyvy|v210|v216]")
-		    ("full,f",        po::value(&qt.start_fullscreen),"               Start in full screen mode")
-		    ("hidemouse",     po::value(&qt.hidemouse),       "               Never show the mouse pointer")
+		    ("full,f",        po::bool_switch(&qt.start_fullscreen),"               Start in full screen mode")
+		    ("hidemouse",     po::bool_switch(&qt.hidemouse), "               Never show the mouse pointer")
 		    ("video",                                         "               Video file to play")
 		    ("help",                                          "               Show usage information");
 
@@ -411,9 +411,11 @@ int main(int argc, char **argv)
 	QConsoleInput tty(window);
 #endif
 
-	vt->setLooping(t_params.looping);
-	if (t_params.quit_at_end)
+	if (t_params.quit_at_end) {
 		QObject::connect(vt, SIGNAL(endOfFile()), &app, SLOT(quit()));
+		t_params.looping = false;
+	}
+	vt->setLooping(t_params.looping);
 
 	window->show();
 	/* app.exec will run until the mainwindow terminates */
