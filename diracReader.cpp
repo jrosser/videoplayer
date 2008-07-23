@@ -139,6 +139,8 @@ DiracReader::pullFrame(int /*frameNumber*/, VideoData*& dst)
 	}
 
 	dst = frameList.takeLast();
+	//dst->isLastFrame = 0;
+	dst->isFirstFrame = 0;
 	//dst->frameNum = frameNumber;
 
 	bufferNotFull.wakeAll();
@@ -181,6 +183,7 @@ DiracReader::run()
 
 	FILE* fd = NULL;
 	fd = fopen(fileName.toAscii().constData(), "rb");
+	bool last_frame = 0;
 
 	static const char* decoderstate_to_str[] = {
 		"SCHRO_DECODER_OK", "SCHRO_DECODER_ERROR", "SCHRO_DECODER_EOS",
@@ -221,14 +224,18 @@ DiracReader::run()
 			int pnum = schro_decoder_get_picture_number(schro);
 			SchroFrame *f = schro_decoder_pull(schro);
 			((VideoData*)f->priv)->frameNum = pnum;
+			((VideoData*)f->priv)->isLastFrame = last_frame;
+			last_frame = 0;
 			queueFrame((VideoData*)f->priv);
 			f->priv = NULL;
 			schro_frame_unref(f);
 			break;
 		}
 		case SCHRO_DECODER_EOS:
-			if(feof(fd))
+			if(feof(fd)) {
 				rewind(fd);
+				last_frame = 1;
+			}
 			schro_decoder_reset(schro);
 			break;
 		case SCHRO_DECODER_ERROR:
