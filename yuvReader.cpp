@@ -164,15 +164,15 @@ void YUVReader::setFileName(const QString &fn)
 		lastFrameNum = info.size() / ((videoWidth * videoHeight * 2 * 4) / 3);
 		lastFrameNum--;
 	}
-	
+
 	{
 		Stats &stat = Stats::getInstance();
 		std::stringstream ss;
-				
+
 		ss.str("");
 		ss << videoWidth;
 		stat.addStat("YUVReader", "VideoWidth", ss.str());
-		
+
 		ss.str("");
 		ss << videoHeight;
 		stat.addStat("YUVReader", "VideoHeight", ss.str());
@@ -184,10 +184,9 @@ void YUVReader::setFileName(const QString &fn)
 		ss.str("");
 		ss << lastFrameNum;
 		stat.addStat("YUVReader", "LastFrame", ss.str());
-		
-		stat.addStat("YUVReader", "VideoFormat", type.toLatin1().data());		
+
+		stat.addStat("YUVReader", "VideoFormat", type.toLatin1().data());
 	}
-	
 }
 
 //called from the frame queue controller to get frame data for display
@@ -215,7 +214,6 @@ void YUVReader::pullFrame(int frameNumber, VideoData*& dst)
 	frame->isLastFrame = (frameNumber == lastFrameNum);
 	dst = frame;
 
-	
 	//seek
 	off64_t offset = (off_t)dst->dataSize * (off_t)frameNumber; //seek to the wanted frame
 	off64_t sret = lseek64(fd, offset, SEEK_SET);
@@ -224,18 +222,17 @@ void YUVReader::pullFrame(int frameNumber, VideoData*& dst)
 
 	QTime timer;
 	timer.restart();
-	
-	//read
+
 	int rret = read(fd, dst->data, dst->dataSize);
 	if (!rret)
 		perror("READ");
-	
+
 	int readtime = timer.elapsed();
-	
+
 	{
 		Stats &stat = Stats::getInstance();
 		std::stringstream ss;
-				
+
 		ss.str("");
 		ss << readtime << "ms";
 		stat.addStat("YUVReader", "Read", ss.str());
