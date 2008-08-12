@@ -30,6 +30,10 @@ contains(DEFINES, WITH_OSD) {
 unix {
   SOURCES += QConsoleInput.cpp
   HEADERS += QConsoleInput.h
+
+  # mmap gives a performance increase when reading
+  HEADERS += yuvReaderMmap.h
+  SOURCES += yuvReaderMmap.cpp
 }
 
 contains(DEFINES, HAVE_DIRAC) {

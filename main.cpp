@@ -41,6 +41,7 @@ namespace po = boost::program_options;
 
 #include "readerInterface.h"
 #include "yuvReader.h"
+#include "yuvReaderMmap.h"
 #ifdef HAVE_DIRAC
 #include "diracReader.h"
 #endif
@@ -346,8 +347,11 @@ int main(int argc, char **argv)
 
 	//default to YUV reader
 	if (reader == NULL) {
+#ifdef Q_OS_LINUX
+		YUVReaderMmap *r = new YUVReaderMmap( *frameQueue );
+#else
 		YUVReader *r = new YUVReader( *frameQueue );
-
+#endif
 		//YUV reader parameters
 		r->setVideoWidth(t_params.videoWidth);
 		r->setVideoHeight(t_params.videoHeight);
