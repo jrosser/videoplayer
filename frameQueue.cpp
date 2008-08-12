@@ -99,7 +99,7 @@ int FrameQueue::wantedFrameNum(bool future)
 
 void FrameQueue::addFrames(bool future)
 {
-	QList<VideoData *> *list = (future == true) ? &futureFrames : &pastFrames;
+	QLinkedList<VideoData *> *list = (future == true) ? &futureFrames : &pastFrames;
 	int stop= MAXREADS;
 
 	QMutexLocker listLocker(&listMutex);
@@ -121,18 +121,6 @@ void FrameQueue::addFrames(bool future)
 	}
 }
 
-int FrameQueue::getFutureQueueLen()
-{
-	QMutexLocker listLocker(&listMutex);
-	return futureFrames.size();
-}
-
-int FrameQueue::getPastQueueLen()
-{
-	QMutexLocker listLocker(&listMutex);
-	return pastFrames.size();
-}
-
 //called from the transport controller to get frame data for display
 VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 {
@@ -142,7 +130,7 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 	//stopped or paused with no frame displayed, or forwards
 	if ((direction == 0 && displayFrame == NULL) || direction == 1) {
 
-		if (futureFrames.size() == 0) {
+		if (futureFrames.isEmpty()) {
 			//printf("Dropped frame - no future frame available\n");
 		}
 		else {
@@ -161,7 +149,7 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 	//backwards
 	if (direction == -1) {
 
-		if (pastFrames.size() == 0) {
+		if (pastFrames.isEmpty()) {
 			//printf("Dropped frame - no past frame available\n");
 		}
 		else {
@@ -183,15 +171,15 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 
 		Stats &stat = Stats::getInstance();
 		std::stringstream ss;
-		
-		ss << futureFrames.size();			
+
+		ss << futureFrames.size();
 		stat.addStat("FrameQueue", "QueueFuture", ss.str());
-		
+
 		ss.str("");
 		ss << pastFrames.size();
 		stat.addStat("FrameQueue", "QueuePast", ss.str());
 	}
-	
+
 	return displayFrame;
 }
 
@@ -224,13 +212,14 @@ void FrameQueue::run()
 
 	//set to play forward to avoid deleting the frame lists first time round
 	int lastSpeed = speed;
-	
+
 	//performance timer
 	QTime timer;
 	timer.restart();
-	int busytime=0;
+	int addtime=0;
+	int prunetime=0;
 	int sleeptime=0;
-	
+
 	while (m_doReading) {
 
 		//------------------------------------------------------------------------------------------------
@@ -285,6 +274,8 @@ void FrameQueue::run()
 
 		}
 
+		addtime = timer.restart();
+
 		//------------------------------------------------------------------------------------------------
 		//make sure the lists are not too long
 		//remove excess frames from the future list, which accumulate when playing backwards
@@ -317,29 +308,39 @@ void FrameQueue::run()
 			}
 		}
 
+		prunetime = timer.restart();
+
 		//stats
 		{
-			busytime = timer.elapsed();
+			int busytime = addtime + prunetime;
 			timer.restart();
-			
+
 			int totaltime = busytime + sleeptime;
-			
+
 			if(totaltime) {
-				int load = (busytime * 100) / (busytime + sleeptime);
+				int load = (busytime * 100) / totaltime;
 
 				Stats &stat = Stats::getInstance();
-				std::stringstream ss;			
-				ss << load << "%";			
+				std::stringstream ss;
+				ss << load << "%";
 				stat.addStat("FrameQueue", "Load", ss.str());
-			}
-		}		
 
-		//wait for display thread to display a new frame		
+				ss.str("");
+				ss << addtime << " ms";
+				stat.addStat("FrameQueue", "AddTime", ss.str());
+
+				ss.str("");
+				ss << prunetime << "ms";
+				stat.addStat("FrameQueue", "RemTime", ss.str());
+			}
+		}
+
+		//wait for display thread to display a new frame
 		frameMutex.lock();
 		if(m_doReading)
 			frameConsumed.wait(&frameMutex);
 		frameMutex.unlock();
-		
+
 		sleeptime = timer.elapsed();
 		timer.restart();
 	}

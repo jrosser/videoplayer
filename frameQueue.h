@@ -56,10 +56,6 @@ public:
 	}
 
 	VideoData *getNextFrame(int speed, int direction);
-	int getFutureQueueLen(void);
-	int getPastQueueLen(void);
-	int getIOLoad(void);
-	int getIOBandwidth(void);
 
 private:
 	int wantedFrameNum(bool future);
@@ -71,8 +67,8 @@ private:
 	ReaderInterface *reader;
 
 	//lists of pointers to frames
-	QList<VideoData *> pastFrames;
-	QList<VideoData *> futureFrames;
+	QLinkedList<VideoData *> pastFrames;
+	QLinkedList<VideoData *> futureFrames;
 	QMutex listMutex; //protect the lists of frames
 
 	//what is currently on the screen
@@ -84,7 +80,7 @@ private:
 	int speed;
 
 	//a list of used frames for recycling, so that we don't need to re-allocate storage
-	QList<VideoData *> usedFrames;
+	QLinkedList<VideoData *> usedFrames;
 
 	//wait condition that is released each time the a frame is consumed for display
 	QWaitCondition frameConsumed; //condition variable to pause/wake reading thread, synchronising display rate and data reading thread
