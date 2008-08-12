@@ -43,9 +43,7 @@ void VideoTransport::setLooping(bool l)
 
 int VideoTransport::getSpeed()
 {
-	QMutexLocker transportLocker(&transportMutex);
 	TransportControls ts = transportStatus;
-	transportLocker.unlock();
 
 	int speed = 1;
 
@@ -90,9 +88,7 @@ int VideoTransport::getSpeed()
 
 int VideoTransport::getDirection()
 {
-	QMutexLocker transportLocker(&transportMutex);
 	TransportControls ts = transportStatus;
-	transportLocker.unlock();
 
 	//stopped or paused
 	int direction = 0;
@@ -115,9 +111,7 @@ VideoData *VideoTransport::getNextFrame()
 	int currentSpeed = getSpeed();
 	int currentDirection = getDirection();
 
-	QMutexLocker transportLocker(&transportMutex);
 	TransportControls ts = transportStatus;
-	transportLocker.unlock();
 
 	VideoData *frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
 
@@ -222,9 +216,7 @@ void VideoTransport::transportController(TransportControls in)
 	TransportControls newStatus = Unknown;
 	TransportControls currentStatus;
 
-	transportMutex.lock();
 	currentStatus = transportStatus;
-	transportMutex.unlock();
 
 	switch (in) {
 	case Stop:
@@ -312,9 +304,7 @@ void VideoTransport::transportController(TransportControls in)
 
 	//if we have determined a new transport status, set it
 	if (newStatus != Unknown) {
-		transportMutex.lock();
 		transportStatus = newStatus;
-		transportMutex.unlock();
 		if (DEBUG)
 			printf("Changed transport state to %d\n", (int)transportStatus);
 	}

@@ -105,7 +105,6 @@ private:
 
 	TransportControls transportStatus; //what we are doing now - shared with readThread
 	TransportControls lastTransportStatus; //what we were doing last
-	QMutex transportMutex; //protect the transport status
 };
 
 #endif
