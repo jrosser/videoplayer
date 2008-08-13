@@ -197,6 +197,7 @@ void GLvideo_rt::run()
 	int lastsrcwidth = 0;
 	int lastsrcheight = 0;
 	bool lastisplanar = false;
+	unsigned long lastframenum = 1;
 
 	//declare shadow variables for the thread worker and initialise them
 	doRendering = true;
@@ -259,11 +260,6 @@ void GLvideo_rt::run()
 			//get the new frame
 			videoData = glw.vt->getNextFrame();
 			direction = glw.vt->getDirection();
-
-			//rotate the renderers for upload and display
-			rendererB = renderer[render_idx];
-			render_idx = (render_idx) ? 0 : 1;
-			rendererA = renderer[render_idx];
 		}
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
@@ -400,8 +396,22 @@ void GLvideo_rt::run()
 			//upload the texture data for each new frame, or for before we render the first field
 			//of interlaced material
 			perfTimer.restart();
-			if ((params.interlaced_source == 0 || field == 0) && repeat == 0)
-				rendererA->uploadTextures(videoData);
+			if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
+
+				//only upload new frames if they are different
+				if(lastframenum != videoData->frameNum) {
+
+					if(rendererA)
+						rendererA->uploadTextures(videoData);
+
+					//rotate the renderers for upload and display
+					rendererB = renderer[render_idx];
+					render_idx = (render_idx) ? 0 : 1;
+					rendererA = renderer[render_idx];
+
+					lastframenum = videoData->frameNum;
+				}
+			}
 			addStatPerfInt("Upload", perfTimer.elapsed());
 
 #ifdef WITH_OSD
