@@ -89,7 +89,7 @@ private:
 	QMutex mutex;
 
 	GLvideo_osd *osd;
-	GLVideoRenderer::GLVideoRenderer *renderer;
+	GLVideoRenderer::GLVideoRenderer *renderer[2];
 	GLvideo_params& params;
 
 	bool doResize;

@@ -58,7 +58,8 @@
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, GLvideo_params& params) :
 	QThread(), glw(gl), params(params)
 {
-	renderer = new GLVideoRenderer::TradTex();
+	renderer[0] = new GLVideoRenderer::PboTex();
+	renderer[1] = new GLVideoRenderer::PboTex();
 	//renderer = new GLVideoRenderer::PboTex();
 
 #ifdef WITH_OSD
@@ -73,7 +74,8 @@ GLvideo_rt::~GLvideo_rt()
 	doRendering = false;
 	wait();
 	
-	if(renderer) delete renderer;
+	if(renderer[0]) delete renderer[0];
+	if(renderer[1]) delete renderer[1];
 	if(osd) delete osd;
 }
 
@@ -214,6 +216,10 @@ void GLvideo_rt::run()
 		context = glw.context();
 	}
 
+	GLVideoRenderer::GLVideoRenderer *rendererA = NULL;
+	GLVideoRenderer::GLVideoRenderer *rendererB = NULL;
+	int render_idx = 0;
+
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 		qWarning() << "failed to init glew\n";
@@ -250,8 +256,14 @@ void GLvideo_rt::run()
 		//read frame data, one frame at a time, or after we have displayed the second field
 		perfTimer.restart();
 		if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
+			//get the new frame
 			videoData = glw.vt->getNextFrame();
 			direction = glw.vt->getDirection();
+
+			//rotate the renderers for upload and display
+			rendererB = renderer[render_idx];
+			render_idx = (render_idx) ? 0 : 1;
+			rendererA = renderer[render_idx];
 		}
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
@@ -319,7 +331,8 @@ void GLvideo_rt::run()
 			if (createGLTextures) {
 				if (DEBUG)
 					printf("Creating GL textures\n");
-				renderer->createTextures(videoData);
+				renderer[0]->createTextures(videoData);
+				renderer[1]->createTextures(videoData);
 			}
 
 			if (params.matrix_valid == false) {
@@ -365,44 +378,6 @@ void GLvideo_rt::run()
 				glClear(GL_COLOR_BUFFER_BIT);
 			}
 
-			//	//upload the texture for the frame to the GPU. This contains both fields for interlaced
-			//  renderer->uploadTextures(videoData);
-			//
-			//	//both fields, if interlaced
-			//	for(int i=0; i<=interlacedSource; i++) {
-			//
-			//		//load the field and direction variables into the YUV->RGB shader
-			//		int i = glGetUniformLocationARB(programs[currentShader], "field");
-			//		if (direction >= 0)
-			//			glUniform1iARB(i, field);
-			//		else
-			//			glUniform1iARB(i, 1 - field);
-			//
-			//		//the frame repeater renders to an intermediate framebuffer object
-			//		repeater->setupRGBdestination();
-			//
-			//		//render the YUV texture to the framebuffer object
-			//		renderer->renderVideo(videoData, programs[currentShader]);
-			//
-			//		//repeatedly render from the framebuffer object to the screen
-			//		repeater->setupScreenDestination();
-			//
-			//		for(int r=0; r<frameRepeats;) {
-			//
-			//			//render the video from the framebuffer object to the screen
-			//			repeater.renderVideo(videoData);
-			//
-			//			glFlush();
-			//			glw.swapBuffers();
-			//
-			//			//the frame repeater returns the number of times it managed to repeat the frame
-			//			//this may be more than once, depending on the platform
-			//			r += repeater->repeat(frameRepeats);
-			//		}
-			//	}
-			//
-			//
-
 			if (params.deinterlace) {
 				glUseProgramObjectARB(programs[currentShader]);
 				int i = glGetUniformLocationARB(programs[currentShader],
@@ -417,16 +392,17 @@ void GLvideo_rt::run()
 				glUseProgramObjectARB(0);
 			}
 
+			perfTimer.restart();
+			if (rendererB)
+				rendererB->renderVideo(videoData, programs[currentShader]);
+			addStatPerfInt("RenderVid", perfTimer.elapsed());
+
 			//upload the texture data for each new frame, or for before we render the first field
 			//of interlaced material
 			perfTimer.restart();
 			if ((params.interlaced_source == 0 || field == 0) && repeat == 0)
-				renderer->uploadTextures(videoData);
+				rendererA->uploadTextures(videoData);
 			addStatPerfInt("Upload", perfTimer.elapsed());
-
-			perfTimer.restart();
-			renderer->renderVideo(videoData, programs[currentShader]);
-			addStatPerfInt("RenderVid", perfTimer.elapsed());
 
 #ifdef WITH_OSD
 			perfTimer.restart();
@@ -437,7 +413,6 @@ void GLvideo_rt::run()
 
 		}
 
-		glFlush();
 		perfTimer.restart();
 		glw.swapBuffers();
 		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
@@ -479,6 +454,7 @@ void GLvideo_rt::run()
 			errStr = gluErrorString(error);
 			fprintf(stderr, "OpenGL Error: %s\n", errStr);
 		}
+
 
 	}
 }
