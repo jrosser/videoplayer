@@ -45,6 +45,8 @@ videoplayer_SOURCES = \
 	src/videoTransport.h \
 	src/videoTransportQT.h \
 	src/readerInterface.h \
+	src/playlistReader.cpp \
+	src/playlistReader.h \
 	src/yuvReader.cpp \
 	src/yuvReader.h \
 	src/yuvReaderMmap.h \

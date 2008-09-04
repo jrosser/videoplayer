@@ -45,6 +45,7 @@ using namespace std;
 #include "readerInterface.h"
 #include "yuvReader.h"
 #include "yuvReaderMmap.h"
+#include "playlistReader.h"
 
 #include "videoTransportQT.h"
 #ifdef Q_OS_LINUX
@@ -239,7 +240,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 	}
 #endif
 
-	QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0");
+	QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0 plst");
 
 	if (!tp.fileType.isEmpty()) {
 		if(known_extensions.contains(tp.fileType.toLower(), Qt::CaseInsensitive))
@@ -361,6 +362,12 @@ int main(int argc, char **argv)
 	//object that generates frames to be inserted into the frame queue
 	list<ReaderInterface*> readers;
 	for (list<QString>::iterator it = t_params.file_names.begin(); it != t_params.file_names.end(); it++) {
+		if(t_params.fileType.toLower() == "plst") {
+			PlayListReader *r = new PlayListReader();
+			r->setFileName(*it);
+			readers.push_back(r);
+			continue;
+		}
 #if 0
 		YUVReaderMmap *r = new YUVReaderMmap();
 #else
@@ -377,6 +384,7 @@ int main(int argc, char **argv)
 
 		readers.push_back(r);
 	}
+
 
 	//object controlling the video playback 'transport'
 	VideoTransportQT* vt = new VideoTransportQT(readers, t_params.read_ahead, t_params.lru_cache);
