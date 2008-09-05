@@ -40,6 +40,7 @@
 #ifdef Q_OS_MAC
 #define lseek64 lseek
 #define off64_t off_t
+#define mmap64 mmap
 #endif
 
 #include "yuvReaderMmap.h"
