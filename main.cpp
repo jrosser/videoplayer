@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 
 	//default to YUV reader
 	if (reader == NULL) {
-#ifdef Q_OS_LINUX
+#if 0
 		YUVReaderMmap *r = new YUVReaderMmap( *frameQueue );
 #else
 		YUVReader *r = new YUVReader( *frameQueue );
