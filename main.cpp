@@ -37,7 +37,8 @@ using namespace std;
 
 #include <iostream>
 #include <boost/program_options.hpp>
-namespace po = boost::program_options;
+#include "df_boost_prog_opts.hpp"
+//namespace po = boost::program_options;
 
 #include "readerInterface.h"
 #include "yuvReader.h"
@@ -139,6 +140,9 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		cols = atoi(getenv("COLUMNS"));
 
 	try {
+		//using namespace fixes;
+		//namespace po = boost::program_options;
+		namespace po = fixes::program_options;
 		// Declare the supported options.
 		po::options_description desc("Allowed options            type   default  description\n"
 		                             "===============            ====   =======  ===========", cols);
