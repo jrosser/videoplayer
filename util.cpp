@@ -7,6 +7,7 @@
 
 static const float identity4[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
+#if 0
 /* Prettyprint a 4x4 matrix @m@ */
 static void
 matrix_dump4(float m[4][4])
@@ -20,6 +21,7 @@ matrix_dump4(float m[4][4])
 		printf("\n");
 	}
 }
+#endif
 
 /* Perform 4x4 matrix multiplication:
  *  - @dst@ = @a@ * @b@
@@ -28,7 +30,7 @@ matrix_dump4(float m[4][4])
 static void
 matrix_mul4(float dst[4][4], const float a[4][4], const float b[4][4])
 {
-	float tmp[4][4] = {0};
+	float tmp[4][4] = {{0},{0},{0},{0}};
 
 	for (int i = 0; i < 4; i++) {
 		for (int j = 0; j < 4; j++) {

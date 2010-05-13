@@ -141,8 +141,7 @@ void GLvideo_rt::compileFragmentShader(int n, const char *src)
 }
 
 
-void GLvideo_rt::updateShaderVars(int program, VideoData *videoData,
-                                  GLvideo_params &params, float colour_matrix[4][4])
+void GLvideo_rt::updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])
 {
 	if (DEBUG)
 		printf("Updating fragment shader variables\n");
@@ -338,7 +337,7 @@ void GLvideo_rt::run()
 
 			//update the uniform variables in the fragment shader
 			perfTimer.restart();
-			updateShaderVars(programs[currentShader], videoData, params, colour_matrix);
+			updateShaderVars(programs[currentShader], videoData, colour_matrix);
 			addStatPerfInt("UpdateVars", perfTimer.elapsed());
 
 			//if the size of the window has changed (doResize)

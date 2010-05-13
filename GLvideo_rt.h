@@ -71,7 +71,7 @@ private:
 
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
-	void updateShaderVars(int program, VideoData *videoData, GLvideo_params& params, float colourMatrix[4][4]);
+	void updateShaderVars(int program, VideoData *videoData, float colourMatrix[4][4]);
 #ifdef WITH_OSD
 	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd,
 		float osdScale);
