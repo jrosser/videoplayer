@@ -18,7 +18,8 @@ void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params)
 			printf("Changing font\n");
 		if (font)
 			delete font;
-			font = new FTGLPolygonFont(params.font_file.toLatin1().constData());
+
+		font = new FTGLPolygonFont(params.font_file.toLatin1().constData());
 		if (!font->Error()) {
 			font->FaceSize(72);
 			font->CharMap(ft_encoding_unicode);
@@ -34,7 +35,7 @@ void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params)
 	if(font) {
 
 		if(params.osd_bot != OSD_NONE)
-		renderOSD(videoData, params);
+			renderOSD(videoData, params);
 
 		if(params.osd_perf)
 			renderStats(videoData);
