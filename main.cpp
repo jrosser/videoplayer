@@ -105,13 +105,14 @@ usage()
 	printf("\nKeypress               Action");
 	printf("\n========               ======");
 	printf("\no                      Toggle OSD state");
+	printf("\n?                      Toggle display of statistics on/off");
 	printf("\nf                      Toggle full screen mode");
 	printf("\nm                      Switch to output levels from user flags out-range and out-black");
-	printf("\nn                      Switch to video output levels, out-range=240 out-black=16");
+	printf("\nn                      Switch to video output levels, out-range=220 out-black=16");
 	printf("\nb                      Switch to computer output levels, out-range=256, out-black=0");
 	printf("\nEsc                    Return from full screen mode to windowed");
 	printf("\na                      Toggle aspect ratio lock");
-	printf("\nd                      Toggle deinterlacing of an interlaced source");
+	printf("\ni                      Toggle deinterlacing of an interlaced source");
 	printf("\nSpace                  Play/Pause");
 	printf("\ns                      Stop");
 	printf("\n1,2,3,4,5,6,7          Play forward at 1,2,5,10,20,50,100x");
