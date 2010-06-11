@@ -101,32 +101,27 @@ win32 {
 		INCLUDEPATH += $$WINLIBS\glew\include
 
 		#----------------------------------------------------
-		# boost
-
-		#for auto-linking
-		LIBS += -L$$WINLIBS\boost_1_35_0\stage\lib
-		INCLUDEPATH += $$WINLIBS\boost_1_35_0\
+		# boost (program_options only)
+		BOOST_LIB = $$WINLIBS\boost_1_35_0\stage\lib\boost_program_options
+		CONFIG(debug, debug|release):BOOST_LIB = $$join(BOOST_LIB,,, _D.lib)
+		else:BOOST_LIB = $$join(BOOST_LIB,,, .lib)
+		LIBS += $$BOOST_LIB
+		INCLUDEPATH += $$WINLIBS\boost_1_35_0
 
 		contains(DEFINES, WITH_OSD) {
 			#----------------------------------------------------
 			# freetype
 			FT_LIB = $$WINLIBS\freetype-2.3.5\objs\freetype235
-			CONFIG(debug, debug|release) {
-				FT_LIB = $$join(FT_LIB,,, _D.lib)
-			} else {
-				FT_LIB = $$join(FT_LIB,,, .lib)
-			}
+			CONFIG(debug, debug|release):FT_LIB = $$join(FT_LIB,,, MT_D.lib)
+			else:FT_LIB = $$join(FT_LIB,,, MT.lib)
 			LIBS += $$FT_LIB
 			INCLUDEPATH += $$WINLIBS\freetype-2.3.5\include
 
 			#----------------------------------------------------
 			# ftgl
 			FTGL_LIB += $$WINLIBS\FTGL\win32_vcpp\build\ftgl_static
-			CONFIG(debug, debug|release) {
-				FTGL_LIB = $$join(FTGL_LIB,,, _MT_d.lib)
-			} else {
-				FTGL_LIB = $$join(FTGL_LIB,,, _MT.lib)
-			}
+			CONFIG(debug, debug|release):FTGL_LIB = $$join(FTGL_LIB,,, _d.lib)
+			else:FTGL_LIB = $$join(FTGL_LIB,,, .lib)
 			LIBS += $$FTGL_LIB
 			INCLUDEPATH += $$WINLIBS\ftgl
 			DEFINES += FTGL_LIBRARY_STATIC

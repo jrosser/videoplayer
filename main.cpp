@@ -36,6 +36,8 @@
 using namespace std;
 
 #include <iostream>
+
+#define BOOST_AUTO_LINK_NOMANGLE
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
