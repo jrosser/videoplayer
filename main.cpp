@@ -61,6 +61,7 @@ using namespace std;
 
 #include "version.h"
 #include "config.h"
+#include "fileDialog.h"
 
 struct Transport_params {
 	bool looping;
@@ -260,11 +261,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 
 		}
 
-		if (vm.count("video") == 0) {
-			printf("No file to play!\n");
-			allParsed = false;
-		}
-		else {
+		if (vm.count("video")) {
 			string tmp = vm["video"].as<string>();
 			tp.fileName = tmp.data();
 
@@ -352,6 +349,23 @@ int main(int argc, char **argv)
 	//override settings with command line
 	if (parseCommandLine(argc, argv, vr_params, t_params, qt_params) == false) {
 		return -1;
+	}
+
+	if (t_params.fileName.isEmpty()) {
+		/* user did not provide a file to play.  Prompt the user with an
+		 * OpenFile fialog for a more interactive choice */
+		VideoFileDialog dlg(0);
+
+		if (dlg.exec(t_params.fileName,
+		             t_params.fileType,
+		             t_params.videoWidth,
+		             t_params.videoHeight,
+		             t_params.interlaced_source) != QDialog::Accepted)
+		{
+			return -1; //cancelled dialog: exit program
+		}
+
+		t_params.forceFileType = 1;
 	}
 
 	//object containing a seperate thread that manages the lists of frames to be displayed
