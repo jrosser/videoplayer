@@ -25,7 +25,6 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <stdio.h>
-#include <sstream>
 
 #include <GL/glew.h>
 
@@ -55,6 +54,8 @@
 
 #include "shaders.h"
 
+#define addStatPerfFloat(name, val) addStat("OpenGL", name, val)
+#define addStatPerfInt(name, val) addStatUnit("OpenGL", name, val, "ms")
 
 #define DEBUG 0
 
@@ -117,24 +118,6 @@ updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])
 	glUniformMatrix4fvARB(i, 1, true, (float*) colour_matrix);
 
 	glUseProgramObjectARB(0);
-}
-
-void addStatPerfFloat(const char *timer, double d)
-{
-	Stats &stat = Stats::getInstance();
-	std::stringstream ss;
-	ss << d;
-
-	stat.addStat("OpenGL", timer, ss.str());
-}
-
-void addStatPerfInt(const char *timer, int time)
-{
-	Stats &stat = Stats::getInstance();
-	std::stringstream ss;
-	ss << time << " " << "ms";
-
-	stat.addStat("OpenGL", timer, ss.str());
 }
 
 void GLvideo_rt::run()

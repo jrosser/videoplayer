@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <sstream>
 
 class Stats {
 public:
@@ -35,5 +36,23 @@ private:
 	
 	section_t sections;
 };
+
+template<typename T>
+void addStat(const std::string &section, const std::string &name, T d)
+{
+	std::stringstream ss;
+	ss << d;
+
+	Stats::getInstance().addStat(section, name, ss.str());
+}
+
+template<typename T>
+void addStatUnit(const std::string &section, const std::string &name, T d, const std::string &unit)
+{
+	std::stringstream ss;
+	ss << d << " " << unit;
+
+	Stats::getInstance().addStat(section, name, ss.str());
+}
 
 #endif /*STATS_H_*/
