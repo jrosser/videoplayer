@@ -45,10 +45,6 @@
 #include "GLvideo_pbotex.h"
 #include "GLvideo_osd.h"
 
-#ifdef Q_WS_X11
-#include "GLvideo_x11rep.h"
-#endif
-
 #include "videoData.h"
 #include "videoTransport.h"
 #include "stats.h"

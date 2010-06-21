@@ -11,7 +11,7 @@ SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp vid
 SOURCES += stats.cpp version.c
 
 # openGL video widget source files
-HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_renderer.h GLvideo_repeater.h shaders.h
+HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_renderer.h shaders.h
 SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp
 
 # video texture transfer engines
@@ -46,10 +46,6 @@ contains(DEFINES, HAVE_DIRAC) {
 }
 
 linux-g++ {
-  # video frame repeating engines
-  HEADERS += GLvideo_x11rep.h
-  SOURCES += GLvideo_x11rep.cpp
-
   SOURCES += QShuttlePro.cpp
   HEADERS += QShuttlePro.h
 
