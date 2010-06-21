@@ -59,15 +59,11 @@ private:
 		shaderMax};
 
 	void compileFragmentShaders();
-	void compileFragmentShader(int n, const char *src);
 	void updateShaderVars(int program, VideoData *videoData, float colourMatrix[4][4]);
 
 	bool doRendering;
 
 	GLuint programs[shaderMax]; //handles for the shaders and programs
-	GLuint shaders[shaderMax];
-	GLint compiled[shaderMax];
-	GLint linked[shaderMax]; //flags for success
 	GLvideo_mt &glw; //parent widget
 
 	GLvideo_osd *osd;

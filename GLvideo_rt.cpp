@@ -57,6 +57,8 @@
 
 #define DEBUG 0
 
+static GLuint compileFragmentShader(const char *src);
+
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, GLvideo_params& params) :
 	QThread(), glw(gl), params(params)
 {
@@ -90,58 +92,57 @@ void GLvideo_rt::resizeViewport(int width, int height)
 
 void GLvideo_rt::compileFragmentShaders()
 {
-	compileFragmentShader(shaderPlanar | Progressive , shaderPlanarProSrc);
-	compileFragmentShader(shaderPlanar | Deinterlace , shaderPlanarDeintSrc);
-	compileFragmentShader(shaderUYVY | Progressive, shaderUYVYProSrc);
-	compileFragmentShader(shaderUYVY | Deinterlace, shaderUYVYDeintSrc);
+	programs[shaderPlanar | Progressive] = compileFragmentShader(shaderPlanarProSrc);
+	programs[shaderPlanar | Deinterlace] = compileFragmentShader(shaderPlanarDeintSrc);
+	programs[shaderUYVY | Progressive] = compileFragmentShader(shaderUYVYProSrc);
+	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
 }
 
-void GLvideo_rt::compileFragmentShader(int n, const char *src)
+/* compile the fragment shader specified by @src@.
+ * Returns the allocated program object name.
+ * Aborts whole program on failure .*/
+static GLuint compileFragmentShader(const char *src)
 {
-	GLint length = 0; //log length
+	/* Compile shader source */
+	GLuint shader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+	glShaderSourceARB(shader, 1, (const GLcharARB**)&src, NULL);
+	glCompileShaderARB(shader);
 
-	shaders[n] = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
-
-	if (DEBUG)
-		printf("Shader program is %s\n", src);
-
-	glShaderSourceARB(shaders[n], 1, (const GLcharARB**)&src, NULL);
-	glCompileShaderARB(shaders[n]);
-
-	glGetObjectParameterivARB(shaders[n], GL_OBJECT_COMPILE_STATUS_ARB,
-	                           &compiled[n]);
-	glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB,
-	                           &length);
-	char *s=(char *)malloc(length);
-	glGetInfoLogARB(shaders[n], length, &length, s);
-	if (DEBUG)
-		printf("Compile Status %d, Log: (%d) %s\n", (int)compiled[n], (int)length,
-		       (int)length ? s : NULL);
-	if (compiled[n] <= 0) {
+	GLint compiled;
+	glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
+	if (compiled <= 0) {
+		GLint length;
+		glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+		char *s = (char *)malloc(length);
+		glGetInfoLogARB(shader, length, &length, s);
 		printf("Compile Failed: %s\n", s);
-		throw /* */;
-	}
-	free(s);
-
-	/* Set up program objects. */
-	programs[n]=glCreateProgramObjectARB();
-	glAttachObjectARB(programs[n], shaders[n]);
-	glLinkProgramARB(programs[n]);
-
-	/* And print the link log. */
-	if (compiled[n]) {
-		glGetObjectParameterivARB(programs[n], GL_OBJECT_LINK_STATUS_ARB,
-		                           &linked[n]);
-		glGetObjectParameterivARB(shaders[n], GL_OBJECT_INFO_LOG_LENGTH_ARB,
-		                           &length);
-		s=(char *)malloc(length);
-		glGetInfoLogARB(shaders[n], length, &length, s);
-		if (DEBUG)
-			printf("Link Status %d, Log: (%d) %s\n", (int)linked[n], (int)length, s);
 		free(s);
+		abort();
 	}
-}
 
+	/* Create a program by linking the compiled shader  */
+	GLuint program = glCreateProgramObjectARB();
+	glAttachObjectARB(program, shader);
+	glLinkProgramARB(program);
+
+	GLint linked;
+	glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linked);
+	if (linked <= 0) {
+		GLint length;
+		glGetObjectParameterivARB(program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
+		char *s = (char *)malloc(length);
+		glGetInfoLogARB(program, length, &length, s);
+		printf("Link Failed: %s\n", s);
+		free(s);
+		abort();
+	}
+
+	/* the shader object is not required, unreference it (deletion will
+	 * occur when the program object is deleted) */
+	glDeleteObjectARB(shader);
+
+	return program;
+}
 
 void GLvideo_rt::updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])
 {
