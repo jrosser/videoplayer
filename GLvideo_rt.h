@@ -70,8 +70,6 @@ private:
 	GLint linked[shaderMax]; //flags for success
 	GLvideo_mt &glw; //parent widget
 
-	QMutex mutex;
-
 	GLvideo_osd *osd;
 	GLVideoRenderer::GLVideoRenderer *renderer[2];
 	GLvideo_params& params;
