@@ -30,7 +30,7 @@
 #define DEBUG 0
 
 VideoTransport::VideoTransport(FrameQueue *fq) :
-	frameQueue(fq)
+	frameQueue(fq), current_frame(0)
 {
 	lastTransportStatus = Fwd1;
 	looping=true;
@@ -107,23 +107,23 @@ int VideoTransport::getDirection()
 	return direction;
 }
 
-VideoData *VideoTransport::getNextFrame()
+void VideoTransport::advance()
 {
 	int currentSpeed = getSpeed();
 	int currentDirection = getDirection();
 
 	TransportControls ts = transportStatus;
 
-	VideoData *frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
+	current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
 
 	//stop after each jog
 	if (ts == JogFwd || ts == JogRev)
 		transportStop();
 
 	//stop at first or last frame if there is no looping - will break at speeds other than 1x
-	if (frame) {
-		if ((looping == false) && (frame->isLastFrame == true
-		        || frame->isFirstFrame == true)) {
+	if (current_frame) {
+		if ((looping == false) && (current_frame->isLastFrame == true
+		        || current_frame->isFirstFrame == true)) {
 			transportStop();
 			emit(endOfFile());
 		}
@@ -131,8 +131,11 @@ VideoData *VideoTransport::getNextFrame()
 
 	//wake the reader thread - done each time as jogging will move the frame number
 	frameQueue->wake();
+}
 
-	return frame;
+VideoData *VideoTransport::getFrame()
+{
+	return current_frame;
 }
 
 void VideoTransport::transportFwd100()

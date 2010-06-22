@@ -200,7 +200,8 @@ void GLvideo_rt::run()
 		perfTimer.restart();
 		if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
 			//get the new frame
-			videoData = vt->getNextFrame();
+			vt->advance();
+			videoData = vt->getFrame();
 			direction = vt->getDirection();
 		}
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
