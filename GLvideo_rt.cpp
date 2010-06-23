@@ -242,8 +242,8 @@ void GLvideo_rt::run()
 	my_aglSwapInterval(1);
 #endif
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
+	/* startup: clear the buffers to stop rubbish being presented
+	 * before first video frame is presented */
 	glViewport(0, 0, displayheight, displaywidth);
 	glClearColor(0, 0, 0, 0);
 
@@ -305,7 +305,10 @@ void GLvideo_rt::run()
 				if (DEBUG)
 					printf("Changing video dimensions to %dx%d\n",
 					       videoData->Ywidth, videoData->Yheight);
+				glMatrixMode(GL_PROJECTION);
+				glLoadIdentity();
 				glOrtho(0, videoData->Ywidth, 0, videoData->Yheight, -1, 1);
+				glMatrixMode(GL_MODELVIEW);
 
 				doResize = true;
 				createGLTextures = true;
