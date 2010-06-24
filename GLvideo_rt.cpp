@@ -44,6 +44,7 @@
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
 #include "GLvideo_osd.h"
+#include "GLutil.h"
 
 #include "videoData.h"
 #include "videoTransport.h"
@@ -57,7 +58,6 @@
 
 #define DEBUG 0
 
-static GLuint compileFragmentShader(const char *src);
 
 GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, GLvideo_params& params) :
 	QThread(), glw(gl), params(params)
@@ -96,52 +96,6 @@ void GLvideo_rt::compileFragmentShaders()
 	programs[shaderPlanar | Deinterlace] = compileFragmentShader(shaderPlanarDeintSrc);
 	programs[shaderUYVY | Progressive] = compileFragmentShader(shaderUYVYProSrc);
 	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
-}
-
-/* compile the fragment shader specified by @src@.
- * Returns the allocated program object name.
- * Aborts whole program on failure .*/
-static GLuint compileFragmentShader(const char *src)
-{
-	/* Compile shader source */
-	GLuint shader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
-	glShaderSourceARB(shader, 1, (const GLcharARB**)&src, NULL);
-	glCompileShaderARB(shader);
-
-	GLint compiled;
-	glGetObjectParameterivARB(shader, GL_OBJECT_COMPILE_STATUS_ARB, &compiled);
-	if (compiled <= 0) {
-		GLint length;
-		glGetObjectParameterivARB(shader, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
-		char *s = (char *)malloc(length);
-		glGetInfoLogARB(shader, length, &length, s);
-		printf("Compile Failed: %s\n", s);
-		free(s);
-		abort();
-	}
-
-	/* Create a program by linking the compiled shader  */
-	GLuint program = glCreateProgramObjectARB();
-	glAttachObjectARB(program, shader);
-	glLinkProgramARB(program);
-
-	GLint linked;
-	glGetObjectParameterivARB(program, GL_OBJECT_LINK_STATUS_ARB, &linked);
-	if (linked <= 0) {
-		GLint length;
-		glGetObjectParameterivARB(program, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
-		char *s = (char *)malloc(length);
-		glGetInfoLogARB(program, length, &length, s);
-		printf("Link Failed: %s\n", s);
-		free(s);
-		abort();
-	}
-
-	/* the shader object is not required, unreference it (deletion will
-	 * occur when the program object is deleted) */
-	glDeleteObjectARB(shader);
-
-	return program;
 }
 
 void GLvideo_rt::updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])

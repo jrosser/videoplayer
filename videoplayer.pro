@@ -15,8 +15,8 @@ HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_renderer.h shaders
 SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp
 
 # GL utility functions
-HEADERS += colourMatrix.h
-SOURCES += colourMatrix.cpp
+HEADERS += GLutil.h colourMatrix.h
+SOURCES += GLutil.cpp colourMatrix.cpp
 
 # video texture transfer engines
 HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
