@@ -63,7 +63,7 @@ public:
 
 	VideoTransport(FrameQueue *fq);
 	void setLooping(bool l);
-	void setRepeats(unsigned) {}
+	void setRepeats(unsigned r) { repeats = r; }
 
 	VideoData* getFrame(); //the frame that is currently being displayed
 	void advance(); //advance to the next frame (in the correct directon @ speed).
@@ -104,9 +104,15 @@ public slots:
 private:
 	void transportController(TransportControls c);
 	FrameQueue *frameQueue;
-	VideoData *current_frame;
-	bool looping;
 
+	VideoData *current_frame;
+	unsigned current_repeats_todo; //< the number of times that current_frame should be displayed.
+	unsigned current_frame_field_num; //< when interlaced, the field number of current frame
+	unsigned repeats; //< the number of times advance is called before moving to the next frame period.
+	unsigned repeats_rem; //< when interlaced, number of leftover repeats after previous field
+
+
+	bool looping;
 	TransportControls transportStatus; //what we are doing now - shared with readThread
 	TransportControls lastTransportStatus; //what we were doing last
 };

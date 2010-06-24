@@ -53,6 +53,7 @@ public:
 	void convertPlanar16();
 
 	unsigned long frameNum;
+	bool fieldNum; //< the current field number (only valid if isInterlaced)
 	bool isInterlaced; //< this frame is formed of two fields
 	bool isLastFrame; //mark the first and last frames in a sequence
 	bool isFirstFrame;

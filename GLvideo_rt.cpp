@@ -136,13 +136,10 @@ void GLvideo_rt::run()
 	int lastsrcwidth = 0;
 	int lastsrcheight = 0;
 	bool lastisplanar = false;
-	unsigned long lastframenum = 1;
+	unsigned long lastframenum = ULONG_MAX;
 
 	//declare shadow variables for the thread worker and initialise them
 	doRendering = true;
-	int repeat = 0;
-	int field = 0;
-	int direction = 0;
 	int currentShader = 0;
 	float colour_matrix[4][4];
 
@@ -196,20 +193,22 @@ void GLvideo_rt::run()
 
 		perfTimer.start();
 
-		//read frame data, one frame at a time, or after we have displayed the second field
 		perfTimer.restart();
-		if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
-			//get the new frame
-			vt->advance();
-			videoData = vt->getFrame();
-			direction = vt->getDirection();
-		}
+		/* request the next frame.  videoData might not change if using repeats
+		 * or displaying fields */
+		vt->advance();
+		videoData = vt->getFrame();
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
 		if (DEBUG)
 			printf("videoData=%p\n", videoData);
 
+		bool videoData_is_new_frame = false;
 		if (videoData) {
+			if (lastframenum != videoData->frameNum) {
+				videoData_is_new_frame = true;
+				lastframenum = videoData->frameNum;
+			}
 
 			//perform any format conversions
 			perfTimer.restart();
@@ -288,34 +287,20 @@ void GLvideo_rt::run()
 				glUseProgramObjectARB(programs[currentShader]);
 				int i = glGetUniformLocationARB(programs[currentShader],
 				                                "field");
-
-				/* swap the field order when playing interlaced pictures backwards */
-				if (direction >= 0)
-					glUniform1fARB(i, (float)field);
-				else
-					glUniform1fARB(i, 1.0 - (float)field);
-
+				glUniform1fARB(i, (float)videoData->fieldNum);
 				glUseProgramObjectARB(0);
 			}
 
-			//upload the texture data for each new frame, or for before we render the first field
-			//of interlaced material
 			perfTimer.restart();
-			if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
+			/* only upload new frames (old ones stay in the GL) */
+			if(videoData_is_new_frame) {
+				if(rendererA)
+					rendererA->uploadTextures(videoData);
 
-				//only upload new frames if they are different
-				if(lastframenum != videoData->frameNum) {
-
-					if(rendererA)
-						rendererA->uploadTextures(videoData);
-
-					//rotate the renderers for upload and display
-					rendererB = renderer[render_idx];
-					render_idx = (render_idx) ? 0 : 1;
-					rendererA = renderer[render_idx];
-
-					lastframenum = videoData->frameNum;
-				}
+				//rotate the renderers for upload and display
+				rendererB = renderer[render_idx];
+				render_idx = (render_idx) ? 0 : 1;
+				rendererA = renderer[render_idx];
 			}
 			addStatPerfInt("Upload", perfTimer.elapsed());
 		}
@@ -337,23 +322,7 @@ void GLvideo_rt::run()
 #endif
 		}
 
-		//move to the next field when the first has been repeated the required number of times
-		if (params.interlaced_source && (repeat == params.frame_repeats - 1)) {
-			//move to the next field
-			field++;
-			if (field > 1)
-				field = 0;
-		}
-
-		//repeat the frame the required number of times
-		if (repeat < params.frame_repeats && field == 0) {
-			repeat++;
-			if (repeat == params.frame_repeats) {
-				repeat = 0;
-			}
-		}
-
-		if (repeat == 0) {
+		if (videoData_is_new_frame) {
 			//measure overall frame period
 			addStatPerfInt("Interval", frameIntervalTime.elapsed());
 			frameIntervalTime.restart();

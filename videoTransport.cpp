@@ -35,6 +35,11 @@ VideoTransport::VideoTransport(FrameQueue *fq) :
 	lastTransportStatus = Fwd1;
 	looping=true;
 	transportFwd1();
+
+	current_repeats_todo = 0;
+	current_frame_field_num = 0;
+	repeats = 1;
+	repeats_rem = 0;
 }
 
 void VideoTransport::setLooping(bool l)
@@ -112,11 +117,59 @@ void VideoTransport::advance()
 	int currentSpeed = getSpeed();
 	int currentDirection = getDirection();
 
-	TransportControls ts = transportStatus;
+	if (!current_frame) {
+		/* getting a first frame is more important than waiting for nothing */
+		current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
+		if (!current_frame)
+			return;
+	} else {
+		/* soak up any repeats */
+		if (current_repeats_todo > 1) {
+			current_repeats_todo--;
+			return;
+		}
 
-	current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
+		/* if there are insufficient repeats to do interlace, don't do it */
+		bool do_interlace = repeats > 1;
+
+		/* advance by speed, counting in fields/frames */
+		int field_delta = current_frame_field_num + currentSpeed*currentDirection;
+		int frame_delta = field_delta >> (do_interlace & current_frame->isInterlaced);
+		/* if we wanted to have a notional target frame number, it would be:
+		 *    frame_num += frame_delta;
+		 */
+		if (frame_delta)
+			current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
+
+		/* recalculate field position taking into account that any nextframe
+		 * may be interlaced differently to the previous */
+		current_frame_field_num =
+		current_frame->fieldNum = field_delta
+		                        & (int) (do_interlace & current_frame->isInterlaced);
+	}
+
+	/* update the number of times to repeat this new frame/field */
+	if (repeats_rem) {
+		/* use any repeats left over from the previous iteration (field) */
+		current_repeats_todo = repeats_rem;
+		repeats_rem = 0;
+	}
+	else if (current_frame->isInterlaced) {
+		/* this is a new frame period with an interlaced frame
+		 * share the number of repeats for this frame period
+		 * between two field periods */
+		/* interlaced handling is done by effectively stealing
+		 * a factor of 2 from repeats, and using it to display two fields */
+		current_repeats_todo = repeats / 2;
+		repeats_rem = repeats - current_repeats_todo;
+	}
+	else {
+		/* this is a new frame period with a progressive frame */
+		current_repeats_todo = repeats;
+	}
 
 	//stop after each jog
+	TransportControls ts = transportStatus;
 	if (ts == JogFwd || ts == JogRev)
 		transportStop();
 
