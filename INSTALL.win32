@@ -35,21 +35,28 @@ a) Boost
 	Download the Boost source code. I got boost_1_35_0.zip
 	Unpack the archive into c:\libs-msvc2008
 
-	Download a boost-jam precompiled binary from sourceforge, following the
-	instructions in the 'getting started' section of the Boost documentation.
+	Only the program_options library of the Boost collection is required, so the
+	simplest method to build this is:
 
-	Unzip the boost-jam package to place the bjam.exe in 
-	c:\libs-msvc2008\boost_1_35_0
+		- Create a new VisualC++ project called "boost_program_options" of
+		  type Win32 static library.
 
-	Open a "Visual Studio 2008 Command Prompt" window from the MSVC entry
-	of the Start menu.
+		- Add to this project all the CPP source files located at
+			C:\libs-msvc2008\boost_1_35_0\libs\program_options\src\
 
-	c:
-	cd c:\libs-msvc2008\boost_1_35_0
-	bjam --toolset=msvc stage link=static runtime-link=static variant=debug,release --with-program_options --layout=system
+		- Set project properties/C++/Code Generation/Runtime Library to be
+			Debug configuration:    Multi-threaded Debug (/MTd)
+			Release configuration:  Multi-threaded (/MT)
 
-	The compiled boost program_options library is now in 
-	c:\libs-msvc2008\boost_1_35_0\stage\lib
+		- Set project properties/C++/General/Additional Include Directories to
+			C:\libs-msvc2008\boost_1_35_0\
+		  for all configurations
+
+		- Build the Debug and Release configurations of the project.
+
+	copy <your_project>\Release\*.lib  c:\libs-msvc2008\boost_1_35_0\stage\lib
+	copy <your_project>\Debug\*.lib  c:\libs-msvc2008\boost_1_35_0\stage\lib\boost_program_options_D.lib
+
 
 b) GLEW
 
@@ -75,12 +82,11 @@ c) FreeType
 
 d) FTGL
 
-	Download the FTGL library. I got ftgl-2.1.2.tgz
-	You can use winzip or another suitable tool to decompress the .tghz archive
+	Download the FTGL library. I got ftgl-2.1.3~rc5.tar.gz
+	You can use winzip or another suitable tool to decompress the .tar.gh archive
 	Unpack the archive into c:\libs-msvc2008
 
-	Open c:\libs-msvc2008\FTGL\ftgl.dsw
-
+	Open  C:\libs-msvc2008\ftgl-2.1.3~rc5\msvc\vc8\ftgl_static.vcproj
 	
 	Right click 'ftgl_static_lib' in the Solution and select 'properties'
 	Select 'All Configurations' in the 'Configuration' drop down box
@@ -92,25 +98,36 @@ d) FTGL
 
 	Build the debug and release versions of FTGL using the MSVC gui
 
-
 	mkdir c:\libs-msvc2008\FTGL\FTGL
-	cp c:\libs-msvc2008\include\*.h c:\libs-mingw\FTGL
+	copy c:\libs-msvc2008\ftgl-2.1.3~rc5\src\FTGL\*.h  c:\libs-msvc2008\FTGL\FTGL
+
+	mkdir c:\libs-msvc2008\FTGL\win32_vcpp\build
+	copy c:\libs-msvc2008\ftgl-2.1.3~rc5\msvc\build\*.lib  c:\libs-msvc2008\FTGL\win32_vcpp\build
+
 
 e) Build videoplayer
 
 	cd path\to\videoplayer\source
-	qmake -spec win32-msvc2005
+	qmake -tp vc
 	
-or build elsewhere, useful if you build for multiple platforms from the same source
+This produces a videoplayer.dsp file. Open this with VisualC++ and when prompted, say yes to
+convert the .dsp file to the newer .vcproj format.
 
-	cd \path\to\build\dir
-	qmake -spec win32-msvc2005 path\to\videoplayer\source\videoplayer.pro
+	- Add to project properties/C++/General/Additional Include Directories:
+			C:\libs-msvc2008\boost_1_35_0
+	  for all configurations
 
-then
+	- Set project properties/C++/Code Generation/Runtime Library to be
+		Debug configuration:    Multi-threaded Debug (/MTd)
+		Release configuration:  Multi-threaded (/MT)
 
-	nmake release
-	or
-	nmake debug
+	- Add to project properties/Linker/General/Additional Library Directories:
+			C:\libs-msvc2008\boost_1_35_0\stage\lib
+	  for all configurations
+
+Build the Debug and/or Release versions of videoplayer using the MSVC gui. These will
+be placed in the \debug and \release directories.
+
 
 Building with the mingw/msys suite
 ----------------------------------
