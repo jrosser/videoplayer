@@ -32,7 +32,6 @@
 
 
 class GLvideo_mt;
-class FTFont;
 class VideoData;
 namespace GLVideoRenderer
 {
@@ -62,11 +61,6 @@ private:
 	void compileFragmentShaders();
 	void compileFragmentShader(int n, const char *src);
 	void updateShaderVars(int program, VideoData *videoData, float colourMatrix[4][4]);
-#ifdef WITH_OSD
-	void renderOSD(VideoData *videoData, FTFont *font, float fps, int osd,
-		float osdScale);
-	void renderPerf(VideoData *videoData, FTFont *font);
-#endif
 
 	bool doRendering;
 
