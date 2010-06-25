@@ -37,8 +37,8 @@
 #endif
 
 #include <QtGui>
+#include <QGLWidget>
 #include "GLvideo_rt.h"
-#include "GLvideo_mt.h"
 #include "GLvideo_renderer.h"
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
@@ -60,7 +60,7 @@
 #define DEBUG 0
 
 
-GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, VideoTransport *vt, GLvideo_params& params) :
+GLvideo_rt::GLvideo_rt(QGLWidget &gl, VideoTransport *vt, GLvideo_params& params) :
 	QThread(), glw(gl), vt(vt), params(params)
 {
 	renderer[0] = new GLVideoRenderer::PboTex();

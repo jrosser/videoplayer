@@ -31,7 +31,7 @@
 #include <QtGui>
 
 
-class GLvideo_mt;
+class QGLWidget;
 class VideoTransport;
 namespace GLVideoRenderer
 {
@@ -43,7 +43,7 @@ class GLvideo_osd;
 class GLvideo_rt : public QThread {
 public:
 
-	GLvideo_rt(GLvideo_mt &glWidget, VideoTransport *vt, GLvideo_params& params);
+	GLvideo_rt(QGLWidget &glWidget, VideoTransport *vt, GLvideo_params& params);
 	~GLvideo_rt();
 	void resizeViewport(int w, int h);
 	void run();
@@ -63,7 +63,7 @@ private:
 	bool doRendering;
 
 	GLuint programs[shaderMax]; //handles for the shaders and programs
-	GLvideo_mt &glw; //parent widget
+	QGLWidget &glw; /* widget/interface providing a GL context */
 
 	VideoTransport *vt;
 
