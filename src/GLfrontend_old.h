@@ -2,7 +2,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2008 BBC Research
+ * Copyright (c) 2008-2010 BBC Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,38 +24,51 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GLVIDEO_RT_H_
-#define GLVIDEO_RT_H_
+#ifndef GLFRONTEND_OLD_H
+#define GLFRONTEND_OLD_H
 
-#include <QThread>
-
-class GLvideo_rtAdaptor;
+namespace GLVideoRenderer
+{
+class GLVideoRenderer;
+};
 class VideoTransport;
 struct GLvideo_params;
-class GLvideo_osd;
-class GLfrontend_old;
 
-class GLvideo_rt : public QThread {
+class GLfrontend_old
+{
 public:
+	GLfrontend_old(GLvideo_params&, VideoTransport *);
+	~GLfrontend_old();
 
-	GLvideo_rt(GLvideo_rtAdaptor* gl, VideoTransport *vt, GLvideo_params& params);
-	~GLvideo_rt();
+	void render();
 	void resizeViewport(int w, int h);
-	void run();
 
 private:
-	bool doRendering;
-	int viewport_width;
-	int viewport_height;
-
-	GLvideo_rtAdaptor *gl; /* widget/interface providing a GL context */
+	void init();
+	bool init_done;
 
 	VideoTransport *vt;
 
-	GLfrontend_old *frontend;
-
-	GLvideo_osd *osd;
 	GLvideo_params& params;
+	bool doResize;
+	int displaywidth;
+	int displayheight;
+
+	/* cached values to detect if textures need to be recreated/uploaded */
+	int lastsrcwidth;
+	int lastsrcheight;
+	bool lastisplanar;
+	unsigned long lastframenum;
+
+	int currentShader;
+	/* Y'CbCr->RGB matrix */
+	float colour_matrix[4][4];
+
+	/* shader programs */
+	unsigned int programs[4];
+
+	/* Old style uploader & renderer */
+	GLVideoRenderer::GLVideoRenderer *renderer;
 };
 
-#endif /*GLVIDEO_RT_H_*/
+#endif

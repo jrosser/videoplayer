@@ -29,10 +29,13 @@
 
 #include <GL/glew.h>
 
-#include "GLvideo_rt.h"
+#include "GLfrontend_old.h"
 #include "GLvideo_renderer.h"
+#include "GLvideo_tradtex.h"
+#include "GLvideo_pbotex.h"
 #include "GLvideo_params.h"
 #include "GLutil.h"
+#include "shaders.h"
 
 #include "colourMatrix.h"
 
@@ -47,10 +50,60 @@
 
 static void updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4]);
 
-void GLvideo_rt::render()
-{
-	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
+enum ShaderPrograms {
+	Progressive = 0x0,
+	Deinterlace = 0x1,
+	shaderUYVY = 0,
+	shaderPlanar = 2,
+	/* Increment in steps of 2 */
+	shaderBogus,
+	shaderMax
+};
 
+GLfrontend_old::GLfrontend_old(GLvideo_params& params, VideoTransport* vt)
+	: init_done(0)
+	, vt(vt)
+	, params(params)
+	, doResize(0)
+{
+	return;
+}
+
+GLfrontend_old::~GLfrontend_old() {
+	if (renderer) delete renderer;
+}
+
+void GLfrontend_old::init() {
+	programs[shaderPlanar | Progressive] = compileFragmentShader(shaderPlanarProSrc);
+	programs[shaderPlanar | Deinterlace] = compileFragmentShader(shaderPlanarDeintSrc);
+	programs[shaderUYVY | Progressive] = compileFragmentShader(shaderUYVYProSrc);
+	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
+
+	renderer = new GLVideoRenderer::PboTex();
+
+	lastsrcwidth = 0;
+	lastsrcheight = 0;
+	lastisplanar = false;
+	lastframenum = ULONG_MAX;
+	currentShader = 0;
+}
+
+void GLfrontend_old::resizeViewport(int width, int height)
+{
+	displaywidth = width;
+	displayheight = height;
+	doResize = true;
+}
+
+void GLfrontend_old::render()
+{
+	if (!init_done) {
+		/* this must be called in a thread with the GL context */
+		init();
+		init_done = true;
+	}
+
+	/* obtain the current frame.  NB, this may be the same frame as last time */
 	VideoData* videoData = vt->getFrame();
 	if (!videoData) {
 		return;
@@ -62,8 +115,9 @@ void GLvideo_rt::render()
 		lastframenum = videoData->frameNum;
 	}
 
-	//perform any format conversions
+	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
 	perfTimer.start();
+	//perform any format conversions
 	switch (videoData->renderFormat) {
 
 	case VideoData::V210:

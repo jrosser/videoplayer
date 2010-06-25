@@ -29,6 +29,7 @@ HEADERS += GLutil.h colourMatrix.h
 SOURCES += GLutil.cpp colourMatrix.cpp
 
 # openGL frontends (for video presentation)
+HEADERS += GLfrontend_old.h
 SOURCES += GLfrontend_old.cpp
 
 # video texture transfer engines

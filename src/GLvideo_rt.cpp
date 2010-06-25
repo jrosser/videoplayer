@@ -43,18 +43,14 @@
 #include "GLvideo_rtAdaptor.h"
 
 #include "GLvideo_rt.h"
-#include "GLvideo_tradtex.h"
-#include "GLvideo_pbotex.h"
 #include "GLvideo_osd.h"
-#include "GLutil.h"
+#include "GLfrontend_old.h"
 
 #include "videoData.h"
 #include "videoTransport.h"
 #include "stats.h"
 
 #include "GLvideo_params.h"
-
-#include "shaders.h"
 
 #define addStatPerfFloat(name, val) addStat("OpenGL", name, val)
 #define addStatPerfInt(name, val) addStatUnit("OpenGL", name, val, "ms")
@@ -63,31 +59,19 @@
 
 
 GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params& params) :
-	QThread(), gl(gl), vt(vt), params(params)
+	QThread(), gl(gl), vt(vt), frontend(0), params(params)
 {
-	renderer = new GLVideoRenderer::PboTex();
-
 #ifdef WITH_OSD
 	osd = new GLvideo_osd();
 #else
 	osd = NULL;
 #endif
-
-	/* clear state of fake frontend */
-	lastsrcwidth = 0;
-	lastsrcheight = 0;
-	lastisplanar = false;
-	lastframenum = ULONG_MAX;
-	currentShader = 0;
-	render_idx = 0;
 }
 
 GLvideo_rt::~GLvideo_rt()
 {
 	doRendering = false;
 	wait();
-
-	if(renderer) delete renderer;
 #ifdef WITH_OSD
 	if(osd) delete osd;
 #endif
@@ -95,16 +79,12 @@ GLvideo_rt::~GLvideo_rt()
 
 void GLvideo_rt::resizeViewport(int width, int height)
 {
-	displaywidth = width;
-	displayheight = height;
-}
-
-void GLvideo_rt::compileFragmentShaders()
-{
-	programs[shaderPlanar | Progressive] = compileFragmentShader(shaderPlanarProSrc);
-	programs[shaderPlanar | Deinterlace] = compileFragmentShader(shaderPlanarDeintSrc);
-	programs[shaderUYVY | Progressive] = compileFragmentShader(shaderUYVYProSrc);
-	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
+	viewport_width = width;
+	viewport_height = height;
+	/* pass call on to the frontend (which manages the viewport) */
+	if (frontend) {
+		frontend->resizeViewport(width, height);
+	}
 }
 
 void GLvideo_rt::run()
@@ -115,13 +95,17 @@ void GLvideo_rt::run()
 	/* initialize the gl windowing adaptor */
 	gl->init();
 
+	/* create a frontend */
+	/* todo: this should happen outside of this class */
+	frontend = new GLfrontend_old(params, vt);
+	frontend->resizeViewport(viewport_width, viewport_height);
+
 	//monitoring
 	QTime fpsIntervalTime; //measures FPS, averaged over several frames
 	QTime frameIntervalTime; //measured the total period of each frame
 	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
 	int fpsAvgPeriod=1;
 
-	//declare shadow variables for the thread worker and initialise them
 	doRendering = true;
 
 	GLenum err = glewInit();
@@ -152,23 +136,19 @@ void GLvideo_rt::run()
 	glDrawBuffer(GL_BACK);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	compileFragmentShaders();
-
 	while (doRendering) {
 
 		perfTimer.start();
 		/* request the next frame.  videoData might not change if using repeats
 		 * or displaying fields */
+		/* advance the video transport to the next frame.
+		 * frames will be uploaded by GLactions called by the frontend */
 		bool is_new_frame_period = vt->advance();
 		VideoData* videoData = vt->getFrame();
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
-		if (DEBUG)
-			printf("videoData=%p\n", videoData);
-
-		/* xxx: this will become GLfrontend::render() */
 		perfTimer.restart();
-		render();
+		frontend->render();
 		addStatPerfInt("Frontend", perfTimer.elapsed());
 
 #ifdef WITH_OSD
@@ -202,8 +182,6 @@ void GLvideo_rt::run()
 			errStr = gluErrorString(error);
 			fprintf(stderr, "OpenGL Error: %s\n", errStr);
 		}
-
-
 	}
 }
 

@@ -91,6 +91,7 @@ libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \
 	src/GLvideo_pbotex.cpp \
 	src/GLvideo_tradtex.cpp \
 	src/GLfrontend_old.cpp \
+	src/GLfrontend_old.h \
 	src/colourMatrix.cpp \
 	src/stats.cpp \
 	src/videoData.cpp \
