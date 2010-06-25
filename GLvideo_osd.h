@@ -29,9 +29,6 @@
 
 #include <GL/glew.h>
 
-#include "GLvideo_renderer.h"
-#include <FTGL/ftgl.h>
-
 class FTFont;
 class VideoData;
 struct GLvideo_params;

@@ -25,6 +25,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include "videoTransport.h"
+#include "frameQueue.h"
 
 #define DEBUG 0
 

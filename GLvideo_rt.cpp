@@ -27,10 +27,20 @@
 #include <stdio.h>
 #include <sstream>
 
+#include <GL/glew.h>
+
+#ifdef Q_OS_WIN32
+# include <GL/wglew.h>
+#endif
+
+#ifdef Q_OS_MACX
+# include "agl_getproc.h"
+#endif
+
 #include <QtGui>
 #include "GLvideo_rt.h"
 #include "GLvideo_mt.h"
-#include "GLvideo_rt.h"
+#include "GLvideo_renderer.h"
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
 #include "GLvideo_osd.h"
@@ -41,7 +51,6 @@
 
 #include "videoData.h"
 #include "videoTransport.h"
-#include "frameQueue.h"
 #include "stats.h"
 #include "util.h"
 
@@ -49,9 +58,6 @@
 
 #include "shaders.h"
 
-#ifdef Q_OS_MACX
-#include "agl_getproc.h"
-#endif
 
 #define DEBUG 0
 

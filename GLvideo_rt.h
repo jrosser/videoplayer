@@ -28,18 +28,8 @@
 #define GLVIDEO_RT_H_
 
 #include <GL/glew.h>
-
-#ifdef Q_OS_WIN32
-#include <GL/wglew.h>
-#endif
-
-#ifdef Q_WS_X11
-#include <GL/glxew.h>
-#endif
-
 #include <QtGui>
 
-#include "GLvideo_renderer.h"
 
 class GLvideo_mt;
 class FTFont;

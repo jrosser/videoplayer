@@ -1,3 +1,7 @@
+
+#include <GL/glew.h>
+#include <FTGL/ftgl.h>
+
 #include "GLvideo_osd.h"
 #include "GLvideo_params.h"
 #include "videoData.h"

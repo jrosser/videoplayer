@@ -29,8 +29,9 @@
 
 #include <QtGui>
 
-#include "frameQueue.h"
 #include "videoData.h"
+
+class FrameQueue;
 
 class VideoTransport : public QObject
 {

@@ -27,15 +27,13 @@
 #ifndef GLVIDEO_MT_H
 #define GLVIDEO_MT_H
 
-#include "GLvideo_rt.h"
-
 #include <QtGui>
+/* glew.h must be included before gl.h, which QGLWidget includes */
+#include <GL/glew.h>
 #include <QGLWidget>
 
 class GLvideo_rt;
-class MainWindow;
 class VideoTransport;
-class FrameQueue;
 struct GLvideo_params;
 
 class GLvideo_mt : public QGLWidget
@@ -49,7 +47,6 @@ public:
 	void setFontFile(QString &fontFile);
 
 	VideoTransport *vt;
-	FrameQueue *fq;
 
 	void start();
 
