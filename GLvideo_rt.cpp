@@ -196,7 +196,7 @@ void GLvideo_rt::run()
 		perfTimer.restart();
 		/* request the next frame.  videoData might not change if using repeats
 		 * or displaying fields */
-		vt->advance();
+		bool is_new_frame_period = vt->advance();
 		videoData = vt->getFrame();
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
@@ -322,7 +322,7 @@ void GLvideo_rt::run()
 #endif
 		}
 
-		if (videoData_is_new_frame) {
+		if (is_new_frame_period) {
 			//measure overall frame period
 			addStatPerfInt("Interval", frameIntervalTime.elapsed());
 			frameIntervalTime.restart();
