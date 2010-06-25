@@ -98,7 +98,8 @@ void GLvideo_rt::compileFragmentShaders()
 	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
 }
 
-void GLvideo_rt::updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])
+static void
+updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])
 {
 	if (DEBUG)
 		printf("Updating fragment shader variables\n");

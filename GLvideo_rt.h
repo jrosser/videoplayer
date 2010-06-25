@@ -32,7 +32,6 @@
 
 
 class GLvideo_mt;
-class VideoData;
 namespace GLVideoRenderer
 {
 class GLVideoRenderer;
@@ -59,7 +58,6 @@ private:
 		shaderMax};
 
 	void compileFragmentShaders();
-	void updateShaderVars(int program, VideoData *videoData, float colourMatrix[4][4]);
 
 	bool doRendering;
 
