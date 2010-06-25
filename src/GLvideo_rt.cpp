@@ -43,7 +43,6 @@
 #include "GLvideo_rtAdaptor.h"
 
 #include "GLvideo_rt.h"
-#include "GLvideo_renderer.h"
 #include "GLvideo_tradtex.h"
 #include "GLvideo_pbotex.h"
 #include "GLvideo_osd.h"
@@ -52,7 +51,6 @@
 #include "videoData.h"
 #include "videoTransport.h"
 #include "stats.h"
-#include "colourMatrix.h"
 
 #include "GLvideo_params.h"
 
@@ -74,6 +72,14 @@ GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params
 #else
 	osd = NULL;
 #endif
+
+	/* clear state of fake frontend */
+	lastsrcwidth = 0;
+	lastsrcheight = 0;
+	lastisplanar = false;
+	lastframenum = ULONG_MAX;
+	currentShader = 0;
+	render_idx = 0;
 }
 
 GLvideo_rt::~GLvideo_rt()
@@ -101,27 +107,6 @@ void GLvideo_rt::compileFragmentShaders()
 	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
 }
 
-static void
-updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])
-{
-	if (DEBUG)
-		printf("Updating fragment shader variables\n");
-
-	glUseProgramObjectARB(program);
-	//data about the input file to the shader
-	int i;
-	i = glGetUniformLocationARB(program, "CHsubsample");
-	glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
-
-	i = glGetUniformLocationARB(program, "CVsubsample");
-	glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
-
-	i = glGetUniformLocationARB(program, "colour_matrix");
-	glUniformMatrix4fvARB(i, 1, true, (float*) colour_matrix);
-
-	glUseProgramObjectARB(0);
-}
-
 void GLvideo_rt::run()
 {
 	if (DEBUG)
@@ -130,24 +115,14 @@ void GLvideo_rt::run()
 	/* initialize the gl windowing adaptor */
 	gl->init();
 
-	VideoData *videoData = NULL;
-
 	//monitoring
 	QTime fpsIntervalTime; //measures FPS, averaged over several frames
 	QTime frameIntervalTime; //measured the total period of each frame
 	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
 	int fpsAvgPeriod=1;
 
-	//flags and status
-	int lastsrcwidth = 0;
-	int lastsrcheight = 0;
-	bool lastisplanar = false;
-	unsigned long lastframenum = ULONG_MAX;
-
 	//declare shadow variables for the thread worker and initialise them
 	doRendering = true;
-	int currentShader = 0;
-	float colour_matrix[4][4];
 
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -181,124 +156,26 @@ void GLvideo_rt::run()
 
 	while (doRendering) {
 
-		bool createGLTextures = false;
-
 		perfTimer.start();
-
-		perfTimer.restart();
 		/* request the next frame.  videoData might not change if using repeats
 		 * or displaying fields */
 		bool is_new_frame_period = vt->advance();
-		videoData = vt->getFrame();
+		VideoData* videoData = vt->getFrame();
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
 		if (DEBUG)
 			printf("videoData=%p\n", videoData);
 
-		bool videoData_is_new_frame = false;
-		if (videoData) {
-			if (lastframenum != videoData->frameNum) {
-				videoData_is_new_frame = true;
-				lastframenum = videoData->frameNum;
-			}
-
-			//perform any format conversions
-			perfTimer.restart();
-			switch (videoData->renderFormat) {
-
-			case VideoData::V210:
-				//check for v210 data - it's very difficult to write a shader for this
-				//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
-				if (DEBUG)
-					printf("Converting V210 frame\n");
-				videoData->convertV210();
-				break;
-
-			case VideoData::V16P4:
-			case VideoData::V16P2:
-			case VideoData::V16P0:
-				//convert 16 bit data to 8bit
-				//this avoids endian-ness issues between the host and the GPU
-				//and reduces the bandwidth to the GPU
-				if (DEBUG)
-					printf("Converting 16 bit frame\n");
-				videoData->convertPlanar16();
-				break;
-
-			default:
-				//no conversion needed
-				break;
-			}
-			addStatPerfInt("ReadData", perfTimer.elapsed());
-
-			//check for video dimensions changing
-			if ((lastsrcwidth != videoData->Ywidth)
-			    || (lastsrcheight != videoData->Yheight)
-			    || (lastisplanar != videoData->isPlanar)) {
-				if (DEBUG)
-					printf("Changing video dimensions to %dx%d\n",
-					       videoData->Ywidth, videoData->Yheight);
-				createGLTextures = true;
-
-				lastsrcwidth = videoData->Ywidth;
-				lastsrcheight = videoData->Yheight;
-				lastisplanar = videoData->isPlanar;
-			}
-
-			if (videoData->isPlanar)
-				currentShader = shaderPlanar;
-			else
-				currentShader = shaderUYVY;
-
-			if (params.deinterlace)
-				currentShader |= Deinterlace;
-			else
-				currentShader &= ~Deinterlace;
-
-			if (createGLTextures) {
-				if (DEBUG)
-					printf("Creating GL textures\n");
-				renderer->createTextures(videoData);
-			}
-
-			if (params.matrix_valid == false) {
-				buildColourMatrix(colour_matrix, params);
-				params.matrix_valid = true;
-			}
-
-			//update the uniform variables in the fragment shader
-			perfTimer.restart();
-			updateShaderVars(programs[currentShader], videoData, colour_matrix);
-			addStatPerfInt("UpdateVars", perfTimer.elapsed());
-
-			/* setup viewport for rendering (letter/pillarbox) */
-			aspectBox(videoData, displaywidth, displayheight, !params.aspect_ratio_lock);
-
-			if (params.deinterlace) {
-				glUseProgramObjectARB(programs[currentShader]);
-				int i = glGetUniformLocationARB(programs[currentShader],
-				                                "field");
-				glUniform1fARB(i, (float)videoData->fieldNum);
-				glUseProgramObjectARB(0);
-			}
-
-			perfTimer.restart();
-			/* only upload new frames (old ones stay in the GL) */
-			if(videoData_is_new_frame) {
-				renderer->uploadTextures(videoData);
-			}
-			addStatPerfInt("Upload", perfTimer.elapsed());
-
-			perfTimer.restart();
-			renderer->renderVideo(videoData, programs[currentShader]);
-			addStatPerfInt("RenderVid", perfTimer.elapsed());
+		/* xxx: this will become GLfrontend::render() */
+		perfTimer.restart();
+		render();
+		addStatPerfInt("Frontend", perfTimer.elapsed());
 
 #ifdef WITH_OSD
-			perfTimer.restart();
-			if(osd) osd->render(videoData, params);
-			addStatPerfInt("RenderOSD", perfTimer.elapsed());
+		perfTimer.restart();
+		if(osd && videoData) osd->render(videoData, params);
+		addStatPerfInt("RenderOSD", perfTimer.elapsed());
 #endif
-		}
 
 		perfTimer.restart();
 		gl->swapBuffers();

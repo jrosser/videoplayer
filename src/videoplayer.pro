@@ -28,6 +28,9 @@ SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLvideo_rtAdaptor.cpp
 HEADERS += GLutil.h colourMatrix.h
 SOURCES += GLutil.cpp colourMatrix.cpp
 
+# openGL frontends (for video presentation)
+SOURCES += GLfrontend_old.cpp
+
 # video texture transfer engines
 HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
 SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp

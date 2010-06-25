@@ -71,6 +71,18 @@ private:
 
 	int displaywidth;
 	int displayheight;
+
+	/* fake frontend */
+	void render();
+
+	/* xxx: state for frontend */
+	int lastsrcwidth;
+	int lastsrcheight;
+	bool lastisplanar;
+	unsigned long lastframenum;
+	int currentShader;
+	float colour_matrix[4][4];
+	int render_idx;
 };
 
 #endif /*GLVIDEO_RT_H_*/
