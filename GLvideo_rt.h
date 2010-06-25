@@ -32,6 +32,7 @@
 
 
 class GLvideo_mt;
+class VideoTransport;
 namespace GLVideoRenderer
 {
 class GLVideoRenderer;
@@ -42,7 +43,7 @@ class GLvideo_osd;
 class GLvideo_rt : public QThread {
 public:
 
-	GLvideo_rt(GLvideo_mt &glWidget, GLvideo_params& params);
+	GLvideo_rt(GLvideo_mt &glWidget, VideoTransport *vt, GLvideo_params& params);
 	~GLvideo_rt();
 	void resizeViewport(int w, int h);
 	void run();
@@ -63,6 +64,8 @@ private:
 
 	GLuint programs[shaderMax]; //handles for the shaders and programs
 	GLvideo_mt &glw; //parent widget
+
+	VideoTransport *vt;
 
 	GLvideo_osd *osd;
 	GLVideoRenderer::GLVideoRenderer *renderer[2];

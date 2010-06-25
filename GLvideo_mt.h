@@ -46,8 +46,6 @@ public:
 	void setFrameRepeats(int repeats);
 	void setFontFile(QString &fontFile);
 
-	VideoTransport *vt;
-
 	void start();
 
 	GLvideo_rt* renderThread;

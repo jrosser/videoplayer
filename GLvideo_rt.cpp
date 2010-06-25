@@ -60,8 +60,8 @@
 #define DEBUG 0
 
 
-GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, GLvideo_params& params) :
-	QThread(), glw(gl), params(params)
+GLvideo_rt::GLvideo_rt(GLvideo_mt &gl, VideoTransport *vt, GLvideo_params& params) :
+	QThread(), glw(gl), vt(vt), params(params)
 {
 	renderer[0] = new GLVideoRenderer::PboTex();
 	renderer[1] = new GLVideoRenderer::PboTex();
@@ -200,8 +200,8 @@ void GLvideo_rt::run()
 		perfTimer.restart();
 		if ((params.interlaced_source == 0 || field == 0) && repeat == 0) {
 			//get the new frame
-			videoData = glw.vt->getNextFrame();
-			direction = glw.vt->getDirection();
+			videoData = vt->getNextFrame();
+			direction = vt->getDirection();
 		}
 		addStatPerfInt("GetFrame", perfTimer.elapsed());
 

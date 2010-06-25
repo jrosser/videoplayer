@@ -31,7 +31,7 @@
 #include "GLvideo_params.h"
 
 GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, GLvideo_params& vr_params) :
-	QGLWidget(parent), vt(v), renderThread(new GLvideo_rt(*this, vr_params)), vr_params(vr_params)
+	QGLWidget(parent), renderThread(new GLvideo_rt(*this, v, vr_params)), vr_params(vr_params)
 {
 	alwaysHideMouse = false;
 	setMouseTracking(true);
