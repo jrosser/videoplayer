@@ -66,7 +66,7 @@ public:
 	void setRepeats(unsigned r) { repeats = r; }
 
 	VideoData* getFrame(); //the frame that is currently being displayed
-	void advance(); //advance to the next frame (in the correct directon @ speed).
+	bool advance(); //advance to the next frame (in the correct directon @ speed).
 	int getDirection(); //return the current transport direction -1 reverse, 0 stopped/paused, 1 forward.
 	int getSpeed();
 

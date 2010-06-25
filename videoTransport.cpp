@@ -112,7 +112,9 @@ int VideoTransport::getDirection()
 	return direction;
 }
 
-void VideoTransport::advance()
+/* advance the transport.  This may or maynot move to a new frame period.
+ * Returns true if moving to a new frame period */
+bool VideoTransport::advance()
 {
 	int currentSpeed = getSpeed();
 	int currentDirection = getDirection();
@@ -121,12 +123,12 @@ void VideoTransport::advance()
 		/* getting a first frame is more important than waiting for nothing */
 		current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
 		if (!current_frame)
-			return;
+			return false;
 	} else {
 		/* soak up any repeats */
 		if (current_repeats_todo > 1) {
 			current_repeats_todo--;
-			return;
+			return false;
 		}
 
 		/* if there are insufficient repeats to do interlace, don't do it */
@@ -148,11 +150,15 @@ void VideoTransport::advance()
 		                        & (int) (do_interlace & current_frame->isInterlaced);
 	}
 
+	bool is_new_frame_period = true;
+
 	/* update the number of times to repeat this new frame/field */
 	if (repeats_rem) {
 		/* use any repeats left over from the previous iteration (field) */
 		current_repeats_todo = repeats_rem;
 		repeats_rem = 0;
+		/* this is the second filed in the frame period */
+		is_new_frame_period = false;
 	}
 	else if (current_frame->isInterlaced) {
 		/* this is a new frame period with an interlaced frame
@@ -184,6 +190,8 @@ void VideoTransport::advance()
 
 	//wake the reader thread - done each time as jogging will move the frame number
 	frameQueue->wake();
+
+	return is_new_frame_period;
 }
 
 VideoData *VideoTransport::getFrame()
