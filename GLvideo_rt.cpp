@@ -245,6 +245,10 @@ void GLvideo_rt::run()
 	/* startup: clear the buffers to stop rubbish being presented
 	 * before first video frame is presented */
 	glClearColor(0, 0, 0, 0);
+	glDrawBuffer(GL_FRONT);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glDrawBuffer(GL_BACK);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	compileFragmentShaders();
 
