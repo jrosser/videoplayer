@@ -244,7 +244,6 @@ void GLvideo_rt::run()
 
 	/* startup: clear the buffers to stop rubbish being presented
 	 * before first video frame is presented */
-	glViewport(0, 0, displayheight, displaywidth);
 	glClearColor(0, 0, 0, 0);
 
 	compileFragmentShaders();
