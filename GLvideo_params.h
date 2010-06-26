@@ -57,10 +57,7 @@ struct GLvideo_params {
 	float matrix_Kg;
 	float matrix_Kb;
 
-	/* @interlaced_source@ modifies behaviour when repeating
-	 * frames (paused) and playing backwards (field reversal)
-	 * @deinterlace@ causes a .5 .5 deinterlacer to be used */
-	bool interlaced_source;
+	/* @deinterlace@ causes a .5 .5 deinterlacer to be used */
 	bool deinterlace;
 
 	/* @aspect_ratio_lock@ forces the assumption that

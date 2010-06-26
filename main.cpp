@@ -71,6 +71,9 @@ struct Transport_params {
 	int videoWidth;
 	int videoHeight;
 	int frame_repeats;
+	/* @interlaced_source@ modifies behaviour when repeating
+	 * frames (paused) and playing backwards (field reversal) */
+	bool interlaced_source;
 };
 
 static void
@@ -153,7 +156,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		    ("repeats,r",     po::value(&tp.frame_repeats),      "int    0       Frame is repeated r extra times")
 		    ("loop,l",        po::value(&tp.looping),            "int    1       Number of times to loop video (1=inf)")
 		    ("quit,q",        po::bool_switch(&tp.quit_at_end),  "int    0       Exit at end of video file (implies loop=0)")
-		    ("interlace,i",   po::bool_switch(&vp.interlaced_source),   "               Source is interlaced")
+		    ("interlace,i",   po::bool_switch(&tp.interlaced_source),   "               Source is interlaced")
 		    ("deinterlace,d", po::bool_switch(&vp.deinterlace),  "               Enable Deinterlacer (requires -i)")
 		    ("yrange",        po::value(&vp.input_luma_range),   "int    220     Range of input luma (white-black+1)")
 		    ("yblack",        po::value(&vp.input_luma_blacklevel),   "int    16      Blacklevel of input luma")
@@ -322,7 +325,6 @@ int main(int argc, char **argv)
 	vr_params.chrominance_mul = 1.;
 	vr_params.luminance_offset2 = 0.;
 	vr_params.chrominance_offset2 = 0.;
-	vr_params.interlaced_source = false;
 	vr_params.deinterlace = false;
 	vr_params.matrix_valid = false;
 	SetLumaCoeffsRec709(vr_params);
@@ -336,6 +338,7 @@ int main(int argc, char **argv)
 	t_params.forceFileType = false;
 	t_params.videoWidth = 1920;
 	t_params.videoHeight = 1080;
+	t_params.interlaced_source = false;
 	t_params.frame_repeats = 1;
 
 	struct Qt_params qt_params;
@@ -380,7 +383,7 @@ int main(int argc, char **argv)
 		r->setForceFileType(t_params.forceFileType);
 		r->setFileType(t_params.fileType);
 		r->setFileName(t_params.fileName);
-		r->setInterlacedSource(vr_params.interlaced_source);
+		r->setInterlacedSource(t_params.interlaced_source);
 
 		reader = r;
 	}
