@@ -89,9 +89,7 @@ int FrameQueue::wantedFrameNum(bool future)
 	}
 
 	//frame offset from the last one
-	int offset = speed;
-	if (direction == -1)
-		offset = offset * -1;
+	int offset = future ? speed : -speed;
 	wantedFrame = lastFrame + offset;
 
 	return wantedFrame;
