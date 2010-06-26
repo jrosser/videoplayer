@@ -73,12 +73,20 @@ struct Transport_params {
 	int videoHeight;
 };
 
-void
-usage()
+static void
+version()
 {
 	printf("\nOpenGL accelerated YUV video player.");
 	printf("\n  Version: %s", BUILD_VERSION);
+	printf("\nCopyright (c) 2007-2010 BBC Research & Development.");
+	printf("\nCopyright (c) The Authors.");
 	printf("\n");
+}
+
+void
+usage()
+{
+	version();
 	printf("\nUsage: progname -<flag1> [<flag1_val>] ... <input>");
 	printf("\n");
 	printf("\nSupported file formats:");
@@ -171,7 +179,8 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		    ("full,f",        po::bool_switch(&qt.start_fullscreen),"               Start in full screen mode")
 		    ("hidemouse",     po::bool_switch(&qt.hidemouse), "               Never show the mouse pointer")
 		    ("video",                                         "               Video file to play")
-		    ("help",                                          "               Show usage information");
+		    ("help",                                          "               Show usage information")
+		    ("version,V",                                     "               Show version information");
 
 		//file filename is a 'positional option' that we give the name 'video' to
 		po::positional_options_description p;
@@ -184,6 +193,11 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		if (vm.count("help")) {
 			usage();
 			std::cout << desc << std::endl;
+			exit(0);
+		}
+
+		if (vm.count("version")) {
+			version();
 			exit(0);
 		}
 
