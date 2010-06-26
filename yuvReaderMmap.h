@@ -43,6 +43,7 @@ public:
 	void setVideoWidth(int w) { videoWidth = w; }
 	void setVideoHeight(int h) { videoHeight = h; }
 	void setFileName(const QString &fn);
+	void setInterlacedSource(bool x) { interlacedSource = x; }
 
 private:
 
@@ -51,6 +52,7 @@ private:
 	QString fileType;
 	QString fileName;
 	bool forceFileType;
+	bool interlacedSource;
 	int videoWidth;
 	int videoHeight;
 

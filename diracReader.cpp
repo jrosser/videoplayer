@@ -141,6 +141,7 @@ DiracReader::pullFrame(int /*frameNumber*/, VideoData*& dst)
 	dst = frameList.takeLast();
 	//dst->isLastFrame = 0;
 	dst->isFirstFrame = 0;
+	fst->isInterlaced = vidfmt->interlaced;
 	//dst->frameNum = frameNumber;
 
 	bufferNotFull.wakeAll();

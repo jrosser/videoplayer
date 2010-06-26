@@ -58,6 +58,7 @@ YUVReader::YUVReader(FrameQueue& frameQ) :
 	ReaderInterface(frameQ)
 {
 	randomAccess = true;
+	interlacedSource = false;
 }
 
 void YUVReader::setFileName(const QString &fn)
@@ -192,6 +193,7 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	frame->frameNum = frameNumber;
 	frame->isFirstFrame = (frameNumber == firstFrameNum);
 	frame->isLastFrame = (frameNumber == lastFrameNum);
+	frame->isInterlaced = interlacedSource;
 	VideoData *dst = frame;
 
 	//seek

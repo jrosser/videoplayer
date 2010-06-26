@@ -52,6 +52,7 @@ YUVReaderMmap::YUVReaderMmap(FrameQueue& frameQ) :
 	ReaderInterface(frameQ)
 {
 	randomAccess = true;
+	interlacedSource = false;
 }
 
 void YUVReaderMmap::setFileName(const QString &fn)
@@ -188,6 +189,7 @@ VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 	frame->frameNum = frameNumber;
 	frame->isFirstFrame = (frameNumber == firstFrameNum);
 	frame->isLastFrame = (frameNumber == lastFrameNum);
+	frame->isInterlaced = interlacedSource;
 	VideoData *dst = frame;
 
 	//calculate offset
