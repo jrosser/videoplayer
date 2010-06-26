@@ -55,8 +55,13 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 	char str[255];
 	switch (params.osd_bot) {
 	case OSD_FRAMENUM:
-		sprintf(str, "%06ld", videoData->frameNum);
-		font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2);
+		if (!videoData->isInterlaced) {
+			sprintf(str, "%06ld", videoData->frameNum);
+			font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2);
+		} else {
+			sprintf(str, "%06ld.%1d", videoData->frameNum, videoData->fieldNum);
+			font->BBox("000000.0", cx1, cy1, cz1, cx2, cy2, cz2);
+		}
 		break;
 
 	case OSD_CAPTION:
