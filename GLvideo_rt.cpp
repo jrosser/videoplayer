@@ -218,7 +218,7 @@ void GLvideo_rt::run()
 		context = glw.context();
 	}
 
-	GLVideoRenderer::GLVideoRenderer *rendererA = NULL;
+	GLVideoRenderer::GLVideoRenderer *rendererA = renderer[0];
 	GLVideoRenderer::GLVideoRenderer *rendererB = NULL;
 	int render_idx = 0;
 
