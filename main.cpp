@@ -60,6 +60,7 @@ namespace po = boost::program_options;
 
 #include "GLvideo_params.h"
 
+#include "version.h"
 #include "config.h"
 
 struct Transport_params {
@@ -76,6 +77,7 @@ void
 usage()
 {
 	printf("\nOpenGL accelerated YUV video player.");
+	printf("\n  Version: %s", BUILD_VERSION);
 	printf("\n");
 	printf("\nUsage: progname -<flag1> [<flag1_val>] ... <input>");
 	printf("\n");
