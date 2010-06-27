@@ -166,7 +166,7 @@ void YUVReaderMmap::setFileName(const QString &fn)
 }
 
 //called from the frame queue controller to get frame data for display
-void YUVReaderMmap::pullFrame(int frameNumber, VideoData*& dst)
+VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 {
 	VideoData* frame = frameQueue.allocateFrame();
 	frame->resize(videoWidth, videoHeight, videoFormat);
@@ -188,7 +188,7 @@ void YUVReaderMmap::pullFrame(int frameNumber, VideoData*& dst)
 	frame->frameNum = frameNumber;
 	frame->isFirstFrame = (frameNumber == firstFrameNum);
 	frame->isLastFrame = (frameNumber == lastFrameNum);
-	dst = frame;
+	VideoData *dst = frame;
 
 	//calculate offset
 	off64_t offset = (off_t)dst->dataSize * (off_t)frameNumber; //seek to the wanted frame
@@ -218,4 +218,6 @@ void YUVReaderMmap::pullFrame(int frameNumber, VideoData*& dst)
 		ss << avgrate << "MB/s";
 		stat.addStat("YUVReader (mmap)", "Avg Rate", ss.str());
 	}
+
+	return frame;
 }

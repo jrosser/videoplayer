@@ -170,7 +170,7 @@ void YUVReader::setFileName(const QString &fn)
 }
 
 //called from the frame queue controller to get frame data for display
-void YUVReader::pullFrame(int frameNumber, VideoData*& dst)
+VideoData* YUVReader::pullFrame(int frameNumber)
 {
 	VideoData* frame = frameQueue.allocateFrame();
 	frame->resize(videoWidth, videoHeight, videoFormat);
@@ -192,7 +192,7 @@ void YUVReader::pullFrame(int frameNumber, VideoData*& dst)
 	frame->frameNum = frameNumber;
 	frame->isFirstFrame = (frameNumber == firstFrameNum);
 	frame->isLastFrame = (frameNumber == lastFrameNum);
-	dst = frame;
+	VideoData *dst = frame;
 
 	//seek
 	off64_t offset = (off_t)dst->dataSize * (off_t)frameNumber; //seek to the wanted frame
@@ -217,4 +217,6 @@ void YUVReader::pullFrame(int frameNumber, VideoData*& dst)
 		ss << readtime << "ms";
 		stat.addStat("YUVReader", "Read", ss.str());
 	}
+
+	return dst;
 }

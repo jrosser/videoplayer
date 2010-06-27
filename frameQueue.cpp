@@ -112,8 +112,7 @@ void FrameQueue::addFrames(bool future)
 
 		int wantedFrame = wantedFrameNum(future);
 
-		VideoData *v;
-		reader->pullFrame(wantedFrame, v);
+		VideoData *v = reader->pullFrame(wantedFrame);
 
 		listLocker.relock();
 		list->append(v);

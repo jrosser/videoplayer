@@ -40,7 +40,7 @@ public:
 	{
 	}
 
-	virtual void pullFrame(int wantedFrame, VideoData*& dst) =0;
+	virtual VideoData* pullFrame(int wantedFrame) = 0;
 
 	bool randomAccess;
 
