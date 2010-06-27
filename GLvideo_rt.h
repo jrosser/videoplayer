@@ -68,7 +68,6 @@ private:
 	GLVideoRenderer::GLVideoRenderer *renderer[2];
 	GLvideo_params& params;
 
-	bool doResize;
 	int displaywidth;
 	int displayheight;
 };

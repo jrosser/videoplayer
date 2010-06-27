@@ -88,7 +88,6 @@ void GLvideo_rt::resizeViewport(int width, int height)
 {
 	displaywidth = width;
 	displayheight = height;
-	doResize = true;
 }
 
 void GLvideo_rt::compileFragmentShaders()
@@ -247,12 +246,6 @@ void GLvideo_rt::run()
 				if (DEBUG)
 					printf("Changing video dimensions to %dx%d\n",
 					       videoData->Ywidth, videoData->Yheight);
-				glMatrixMode(GL_PROJECTION);
-				glLoadIdentity();
-				glOrtho(0, videoData->Ywidth, 0, videoData->Yheight, -1, 1);
-				glMatrixMode(GL_MODELVIEW);
-
-				doResize = true;
 				createGLTextures = true;
 
 				lastsrcwidth = videoData->Ywidth;
@@ -287,16 +280,8 @@ void GLvideo_rt::run()
 			updateShaderVars(programs[currentShader], videoData, colour_matrix);
 			addStatPerfInt("UpdateVars", perfTimer.elapsed());
 
-			//if the size of the window has changed (doResize)
-			//or the shape of the video in the window has changed
-			if (doResize || (params.view_valid == false)) {
-				/* setup viewport for rendering */
-				aspectBox(videoData, displaywidth, displayheight, !params.aspect_ratio_lock);
-
-				doResize = false;
-				params.view_valid = true;
-				glClear(GL_COLOR_BUFFER_BIT);
-			}
+			/* setup viewport for rendering (letter/pillarbox) */
+			aspectBox(videoData, displaywidth, displayheight, !params.aspect_ratio_lock);
 
 			if (params.deinterlace) {
 				glUseProgramObjectARB(programs[currentShader]);

@@ -126,8 +126,6 @@ void PboTex::uploadTextures(VideoData *video_data)
 
 void PboTex::renderVideo(VideoData *video_data, GLuint shader_prog)
 {
-	glClear(GL_COLOR_BUFFER_BIT);
-
 	glUseProgramObjectARB(shader_prog);
 	int i;
 	if (video_data->isPlanar) {

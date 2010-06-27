@@ -79,6 +79,20 @@ GLuint compileFragmentShader(const char *src)
 }
 
 /**
+ * setCoordSystem:
+ *
+ * set the co-ordinate system to match the integer coordinates of
+ * video_data's geometry.
+ */
+static void setCoordSystem(VideoData* video_data)
+{
+	glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, video_data->Ywidth, 0, video_data->Yheight, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+}
+
+/**
  * aspectBox:
  *
  * Letter-/Pillar- box the viewport to retain displaying videoData in
@@ -96,20 +110,57 @@ aspectBox(VideoData* video_data
 	float source_aspect = (float)video_data->Ywidth / video_data->Yheight;
 	float display_aspect = (float)display_width / display_height;
 
+	/* set full viewport for drawing of black bars */
+	glViewport(0, 0, display_width, display_height);
+
+	glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
+		glOrtho(0, display_width, 0, display_height, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+
 	if (source_aspect == display_aspect || force_display_aspect) {
-		glViewport(0, 0, display_width, display_height);
+		setCoordSystem(video_data);
 		return;
 	}
 
+	int viewport_x = 0;
+	int viewport_y = 0;
+	unsigned viewport_w = display_width;
+	unsigned viewport_h = display_height;
+
+	unsigned w_or_x;
+	unsigned y_or_h;
+
 	if (display_aspect > source_aspect) {
-		//window is wider than image should be
-		int width = (int)(display_height * source_aspect);
-		int offset = (display_width - width) / 2;
-		glViewport(offset, 0, width, display_height);
+		/* pillar boxing required */
+		viewport_w = (int)(display_height * source_aspect);
+		viewport_x = (display_width - viewport_w) / 2;
+		w_or_x = viewport_x;
+		y_or_h = viewport_h;
 	}
 	else {
-		int height = (int)(display_width / source_aspect);
-		int offset = (display_height - height) / 2;
-		glViewport(0, offset, display_width, height);
+		/* letter boxing required */
+		viewport_h = (int)(display_width / source_aspect);
+		viewport_y = (display_height - viewport_h) / 2;
+		w_or_x = viewport_w;
+		y_or_h = viewport_y;
 	}
+	/* draw letter/pillar boxes */
+	glBegin(GL_QUADS);
+		glColor3f(0.f, 0.f, 0.f);
+		/* bottom / left */
+		glVertex2i(0, 0);
+		glVertex2i(w_or_x, 0);
+		glVertex2i(w_or_x, y_or_h);
+		glVertex2i(0, y_or_h);
+		/* top / right */
+		glVertex2i(display_width, display_height);
+		glVertex2i(display_width - w_or_x, display_height);
+		glVertex2i(display_width - w_or_x, display_height - y_or_h);
+		glVertex2i(display_width, display_height - y_or_h);
+	glEnd();
+	/* set viewport to required area for video rendering */
+	glViewport(viewport_x, viewport_y, viewport_w, viewport_h);
+
+	setCoordSystem(video_data);
 }

@@ -178,7 +178,6 @@ void MainWindow::toggleOSD()
 void MainWindow::toggleAspectLock()
 {
 	vr_params.aspect_ratio_lock ^= 1;
-	vr_params.view_valid = false;
 }
 
 void MainWindow::toggleLuminance()

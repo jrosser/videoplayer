@@ -67,7 +67,6 @@ struct GLvideo_params {
 
 	/* @aspect_ratio_lock@ forces the assumption that
 	 * the video PAR is the same as the device PAR */
-	bool view_valid;
 	bool aspect_ratio_lock;
 };
 
