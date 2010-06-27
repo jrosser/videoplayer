@@ -43,15 +43,13 @@
 #define mmap64 mmap
 #endif
 
-#include "frameQueue.h"
 #include "videoData.h"
 #include "yuvReaderMmap.h"
 #include "stats.h"
 
 #define DEBUG 0
 
-YUVReaderMmap::YUVReaderMmap(FrameQueue& frameQ) :
-	ReaderInterface(frameQ)
+YUVReaderMmap::YUVReaderMmap()
 {
 	randomAccess = true;
 	interlacedSource = false;
@@ -171,7 +169,7 @@ void YUVReaderMmap::setFileName(const QString &fn)
 //called from the frame queue controller to get frame data for display
 VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 {
-	VideoData* frame = frameQueue.allocateFrame();
+	VideoData* frame = new VideoData();
 	frame->resize(videoWidth, videoHeight, videoFormat);
 
 	if (DEBUG)

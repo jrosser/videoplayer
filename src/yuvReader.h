@@ -35,7 +35,7 @@
 class YUVReader : public ReaderInterface {
 public:
 	//from ReaderInterface
-	YUVReader(FrameQueue& frameQ);
+	YUVReader();
 	virtual VideoData* pullFrame(int wantedFrame);
 
 public:

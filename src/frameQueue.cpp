@@ -63,9 +63,6 @@ FrameQueue::~FrameQueue()
 
 	while (!futureFrames.isEmpty())
 		delete futureFrames.takeFirst();
-
-	while (!usedFrames.isEmpty())
-		delete usedFrames.takeFirst();
 }
 
 int FrameQueue::wantedFrameNum(bool future)
@@ -193,13 +190,7 @@ void FrameQueue::wake()
 
 VideoData *FrameQueue::allocateFrame(void)
 {
-	if (usedFrames.empty()) {
-		return new VideoData;
-	}
-	else {
-		QMutexLocker listlocker(&listMutex);
-		return usedFrames.takeLast();
-	}
+	return new VideoData();
 }
 
 void FrameQueue::run()
@@ -231,13 +222,11 @@ void FrameQueue::run()
 			QMutexLocker listLocker(&listMutex);
 
 			while (futureFrames.size()) {
-				VideoData *frame = futureFrames.takeLast();
-				usedFrames.prepend(frame);
+				delete futureFrames.takeLast();
 			}
 
 			while (pastFrames.size()) {
-				VideoData *frame = pastFrames.takeLast();
-				usedFrames.prepend(frame);
+				delete pastFrames.takeLast();
 			}
 		}
 
@@ -284,7 +273,7 @@ void FrameQueue::run()
 			VideoData *oldFrame = futureFrames.takeLast();
 			if (DEBUG)
 				printf("Retiring future frame %ld\n", oldFrame->frameNum);
-			usedFrames.prepend(oldFrame);
+			delete oldFrame;
 		}
 
 		//remove excess past frames
@@ -295,7 +284,7 @@ void FrameQueue::run()
 			VideoData *oldFrame = pastFrames.takeLast();
 			if (DEBUG)
 				printf("Retiring past frame %ld\n", oldFrame->frameNum);
-			usedFrames.prepend(oldFrame);
+			delete oldFrame;
 		}
 
 		prunetime = timer.restart();

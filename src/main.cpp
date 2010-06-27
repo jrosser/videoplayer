@@ -350,9 +350,9 @@ int main(int argc, char **argv)
 	//default to YUV reader
 	if (reader == NULL) {
 #if 0
-		YUVReaderMmap *r = new YUVReaderMmap( *frameQueue );
+		YUVReaderMmap *r = new YUVReaderMmap();
 #else
-		YUVReader *r = new YUVReader( *frameQueue );
+		YUVReader *r = new YUVReader();
 #endif
 		//YUV reader parameters
 		r->setVideoWidth(t_params.videoWidth);

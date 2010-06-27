@@ -28,14 +28,10 @@
 #define READERINTERFACE_H_
 
 class VideoData;
-class FrameQueue;
 
 class ReaderInterface {
 public:
-	ReaderInterface(FrameQueue& frameQ) :
-		frameQueue(frameQ)
-	{
-	}
+	ReaderInterface() {}
 	virtual ~ReaderInterface()
 	{
 	}
@@ -43,9 +39,6 @@ public:
 	virtual VideoData* pullFrame(int wantedFrame) = 0;
 
 	bool randomAccess;
-
-protected:
-	FrameQueue& frameQueue;
 
 private:
 	ReaderInterface(ReaderInterface const&);

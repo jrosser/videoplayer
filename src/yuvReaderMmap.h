@@ -36,7 +36,7 @@
 class YUVReaderMmap : public ReaderInterface {
 public:
 	//from ReaderInterface
-	YUVReaderMmap(FrameQueue& frameQ);
+	YUVReaderMmap();
 	virtual VideoData* pullFrame(int wantedFrame);
 
 public:

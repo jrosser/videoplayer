@@ -71,9 +71,6 @@ private:
 	int direction;
 	int speed;
 
-	//a list of used frames for recycling, so that we don't need to re-allocate storage
-	QLinkedList<VideoData *> usedFrames;
-
 	//wait condition that is released each time the a frame is consumed for display
 	QWaitCondition frameConsumed; //condition variable to pause/wake reading thread, synchronising display rate and data reading thread
 	QMutex frameMutex;

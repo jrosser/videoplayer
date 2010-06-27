@@ -52,15 +52,13 @@
 #include <errno.h>
 #include <string.h>
 
-#include "frameQueue.h"
 #include "videoData.h"
 #include "yuvReader.h"
 #include "stats.h"
 
 #define DEBUG 0
 
-YUVReader::YUVReader(FrameQueue& frameQ) :
-	ReaderInterface(frameQ)
+YUVReader::YUVReader()
 {
 	randomAccess = true;
 	interlacedSource = false;
@@ -175,7 +173,7 @@ void YUVReader::setFileName(const QString &fn)
 //called from the frame queue controller to get frame data for display
 VideoData* YUVReader::pullFrame(int frameNumber)
 {
-	VideoData* frame = frameQueue.allocateFrame();
+	VideoData* frame = new VideoData();
 	frame->resize(videoWidth, videoHeight, videoFormat);
 
 	if (DEBUG)
