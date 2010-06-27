@@ -3,16 +3,16 @@
 
 #include <GL/glew.h>
 
-class VideoData;
+class VideoDataOld;
 
 namespace GLVideoRenderer
 {
 class GLVideoRenderer {
 public:
-	virtual void createTextures(VideoData *video_data) = 0;
+	virtual void createTextures(VideoDataOld *video_data) = 0;
 	virtual void deleteTextures() = 0;
-	virtual void uploadTextures(VideoData *video_data) = 0;
-	virtual void renderVideo(VideoData *video_data, GLuint shader) = 0;
+	virtual void uploadTextures(VideoDataOld *video_data) = 0;
+	virtual void renderVideo(VideoDataOld *video_data, GLuint shader) = 0;
 	virtual ~GLVideoRenderer() {};
 };
 }

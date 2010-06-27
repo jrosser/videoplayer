@@ -2,7 +2,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2008 BBC Research
+ * Copyright (c) 2010 BBC Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,31 +24,13 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef READERINTERFACE_H_
-#define READERINTERFACE_H_
+#ifndef UTIL_H_
+#define UTIL_H_
 
-struct VideoData;
+#include "fourcc.h"
 
-class ReaderInterface {
-public:
-	ReaderInterface() {}
-	virtual ~ReaderInterface()
-	{
-	}
+class QString;
 
-	virtual VideoData* pullFrame(int wantedFrame) = 0;
-
-	virtual void setFPS(double x) { fps = x; }
-	virtual double getFPS(int) { return fps; }
-
-	bool randomAccess;
-
-private:
-	ReaderInterface(ReaderInterface const&);
-	ReaderInterface& operator=(ReaderInterface const&);
-
-private:
-	double fps;
-};
+FourCC qstringToFourCC(QString& s);
 
 #endif

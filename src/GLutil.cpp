@@ -86,9 +86,12 @@ unsigned compileFragmentShader(const char *src)
  */
 static void setCoordSystem(VideoData* video_data)
 {
+	unsigned video_data_width = video_data->data.plane[0].width;
+	unsigned video_data_height = video_data->data.plane[0].height;
+
 	glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
-		glOrtho(0, video_data->Ywidth, 0, video_data->Yheight, -1, 1);
+		glOrtho(0, video_data_width, 0, video_data_height, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 }
 
@@ -107,7 +110,10 @@ aspectBox(VideoData* video_data
          ,unsigned display_height
          ,bool force_display_aspect)
 {
-	float source_aspect = (float)video_data->Ywidth / video_data->Yheight;
+	unsigned video_data_width = video_data->data.plane[0].width;
+	unsigned video_data_height = video_data->data.plane[0].height;
+
+	float source_aspect = (float)video_data_width / video_data_height;
 	float display_aspect = (float)display_width / display_height;
 
 	/* set full viewport for drawing of black bars */

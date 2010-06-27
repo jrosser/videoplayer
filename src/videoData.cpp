@@ -24,6 +24,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <cassert>
 #include <QtGlobal>
 
 #include <stdlib.h>
@@ -34,194 +35,242 @@
 #endif
 
 #include "videoData.h"
+#include "fourcc.h"
 
-VideoData::VideoData()
+using namespace GLvideo;
+
+DataPtr_valloc::DataPtr_valloc(unsigned length)
 {
-	//make a bogus 1x1 4:4:4 8 bit image
-	allocate(1, 1, V8P4);
-	data[0] = 16;
-	data[1] = 128;
-	data[2] = 128;
+	ptr = valloc(length);
 }
 
-void VideoData::resize(int w, int h, DataFmt f)
+DataPtr_valloc::~DataPtr_valloc()
 {
-	if (w != Ywidth || h != Yheight || f != diskFormat) {
-		if (data)
-			free(data);
-		allocate(w, h, f);
+	free(ptr);
+}
+
+DataPtr_alias::DataPtr_alias(void* in_ptr)
+{
+	ptr = in_ptr;
+}
+
+PackingFmt
+fourccToPacking(FourCC fourcc)
+{
+	switch (fourcc) {
+	case FOURCC_8p0:
+	case FOURCC_420p:
+	case FOURCC_i420:
+	case FOURCC_yv12:
+	case FOURCC_8p2:
+	case FOURCC_422p:
+	case FOURCC_8p4:
+	case FOURCC_444p:
+		return V8P;
+
+	case FOURCC_16p0:
+	case FOURCC_16p2:
+	case FOURCC_16p4:
+		return V16P;
+
+	case FOURCC_uyvy:
+		return UYVY;
+
+	case FOURCC_v216:
+		return V216;
+
+	case FOURCC_v210:
+		return V210;
 	}
 
-	/* Some type conversions don't need to reallocate but
-	 * do change the render format, so there is diskformat
-	 * space avaliable but only renderformat used. */
-	renderFormat = f;
+	assert(!"unspported fourcc");
 }
 
-void VideoData::allocate(int w, int h, DataFmt f)
+ChromaFmt
+fourccToChroma(FourCC fourcc)
 {
-	Ywidth = w;
-	Yheight = h;
-	diskFormat = f;
+	switch (fourcc) {
+	case FOURCC_8p0:
+	case FOURCC_420p:
+	case FOURCC_i420:
+	case FOURCC_yv12:
+	case FOURCC_16p0:
+		return Cr420;
 
-	switch (diskFormat) {
+	case FOURCC_8p2:
+	case FOURCC_422p:
+	case FOURCC_16p2:
+	case FOURCC_uyvy:
+	case FOURCC_v216:
+	case FOURCC_v210:
+		return Cr422;
 
-	case V8P4: //8 bit 444 planar
-		Cwidth = Ywidth;
-		Cheight = Yheight;
-		YdataSize = Ywidth * Yheight;
-		UdataSize = YdataSize;
-		VdataSize = YdataSize;
-		break;
+	case FOURCC_8p4:
+	case FOURCC_444p:
+	case FOURCC_16p4:
+		return Cr444;
+	}
 
-	case V16P4: //16 bit 444 planar
-		Cwidth = Ywidth;
-		Cheight = Yheight;
-		YdataSize = Ywidth * Yheight * 2;
-		UdataSize = YdataSize;
-		VdataSize = YdataSize;
-		break;
+	assert(!"unspported fourcc");
+}
 
-	case V8P2: //8 bit 422 planar
-		Cwidth = Ywidth / 2;
-		Cheight = Yheight;
-		YdataSize = Ywidth * Yheight;
-		UdataSize = YdataSize / 2;
-		VdataSize = YdataSize / 2;
-		break;
+unsigned
+sizeofFrame(PackingFmt packing
+           ,ChromaFmt chroma
+           ,unsigned width, unsigned height)
+{
+	switch (packing) {
+	case V8P:
+		switch (chroma) {
+		case Cr420: return width * height * 3 / 2;
+		case Cr422: return width * height * 2;
+		case Cr444: return width * height * 3;
+		default: assert(!"unsupported V8P chroma format");
+		}
 
-	case V16P2: //16 bit 422 planar
-		Cwidth = Ywidth / 2;
-		Cheight = Yheight;
-		YdataSize = Ywidth * Yheight * 2;
-		UdataSize = YdataSize / 2;
-		VdataSize = YdataSize / 2;
-		break;
-
-	case V16P0: //16 bit 420
-		Cwidth = Ywidth / 2;
-		Cheight = Yheight / 2;
-		YdataSize = Ywidth * Yheight * 2;
-		UdataSize = YdataSize / 4;
-		VdataSize = YdataSize / 4;
-		break;
-
-	case V8P0: //8 bit 420, YUV
-	case YV12: //8 bit 420, YVU
-		Cwidth = Ywidth / 2;
-		Cheight = Yheight / 2;
-		YdataSize = Ywidth * Yheight;
-		UdataSize = YdataSize / 4;
-		VdataSize = YdataSize / 4;
-		break;
+	case V16P:
+		return sizeofFrame(V8P, chroma, width, height) * 2;
 
 	case UYVY:
-		Cwidth = Ywidth / 2;
-		Cheight = Yheight;
-		YdataSize = Ywidth * Yheight * 2;
-		UdataSize = 0;
-		VdataSize = 0;
-		break;
+		assert(chroma == Cr422);
+		return width * height * 2;
 
 	case V216:
-		Cwidth = Ywidth / 2;
-		Cheight = Yheight;
-		YdataSize = Ywidth * Yheight * 4;
-		UdataSize = 0;
-		VdataSize = 0;
-		break;
+		return sizeofFrame(UYVY, chroma, width, height) * 2;
 
-	case V210:
-		//3 10 bit components packed into 4 bytes
-		Cwidth = Ywidth / 2;
-		Cheight = Yheight;
-		YdataSize = (Ywidth * Yheight * 2 * 4) / 3;
-		UdataSize = 0;
-		VdataSize = 0;
-		break;
-
+	case V210: {
+		assert(chroma == Cr422);
+		/* v210:
+		 *  - samples are packed into blocks of 48 samples
+		 *    (the picture is padded to a multiple of this)
+		 *  - blocks are packed into 128 bytes.
+		 */
+		unsigned padded_w = ((width + 47)/48) * 48;
+		unsigned padded_line_length = (2*padded_w*4) / 3;
+		return height * padded_line_length;
+		}
 	default:
-		//oh-no!
-		break;
-	}
-
-	//total size of the frame
-	dataSize = YdataSize + UdataSize + VdataSize;
-
-	//get some nicely page aligned memory
-	data = (unsigned char *)valloc(dataSize);
-	Ydata = data;
-	isPlanar = false;
-	glMinMaxFilter = GL_LINEAR; //linear interpolation
-	Udata = Ydata;
-	Vdata = Ydata;
-	renderFormat = diskFormat;
-
-	switch (diskFormat) {
-	//planar formats YUV
-	case V16P4:
-	case V16P2:
-	case V16P0:
-	case V8P4:
-	case V8P2:
-	case V8P0:
-		glYTextureWidth = Ywidth;
-		glInternalFormat = GL_LUMINANCE;
-		glFormat = GL_LUMINANCE;
-		glType = GL_UNSIGNED_BYTE;
-		isPlanar = true;
-		Udata = Ydata + YdataSize;
-		Vdata = Udata + UdataSize;
-		break;
-
-		//planar format, YVU
-	case YV12:
-		isPlanar = true;
-		glYTextureWidth = Ywidth;
-		glInternalFormat = GL_LUMINANCE;
-		glFormat = GL_LUMINANCE;
-		glType = GL_UNSIGNED_BYTE;
-		//U&V components are exchanged
-		Vdata = Ydata + (Ywidth * Yheight);
-		Udata = Vdata + ((Ywidth * Yheight) / 4);
-		break;
-
-	case UYVY:
-		//muxed 8 bit format
-		glYTextureWidth = Ywidth / 2; //2 Y samples per RGBA quad
-		glInternalFormat = GL_RGBA;
-		glFormat = GL_RGBA;
-		glType = GL_UNSIGNED_BYTE;
-		break;
-
-	case V210: //gets converted to UYVY
-		glYTextureWidth = Ywidth / 2; //2 Y samples per RGBA quad
-		glInternalFormat = GL_RGBA;
-		glFormat = GL_RGBA;
-		glType = GL_UNSIGNED_BYTE;
-		break;
-
-	case V216:
-		glYTextureWidth = Ywidth / 2; //2 Y samples per RGBA quad
-		glInternalFormat = GL_RGBA;
-		glFormat = GL_RGBA;
-		glType = GL_UNSIGNED_SHORT;
-		break;
-
-	default:
-		//oh-no!
-		break;
+		assert(!"unsupported packing format");
 	}
 }
 
-VideoData::~VideoData()
+/* set geometry and data length for all V8P packing formats.
+ * modifies pd, returns reference to pd */
+PictureData<void>&
+setPlaneDimensionsV8P(PictureData<void>& pd,
+                      ChromaFmt chroma, unsigned width, unsigned height)
 {
-	if (data) {
-		free(data);
-		data = NULL;
+	pd.plane.resize(3);
+
+	pd.plane[0].width = width;
+	pd.plane[0].height = height;
+
+	switch (chroma) {
+	case Cr420:
+		pd.plane[1].width =
+		pd.plane[2].width = width / 2;
+		pd.plane[1].height =
+		pd.plane[2].height = height / 2;
+		break;
+	case Cr422:
+		pd.plane[1].width =
+		pd.plane[2].width = width / 2;
+		pd.plane[1].height =
+		pd.plane[2].height = height;
+		break;
+	case Cr444:
+		pd.plane[1].width =
+		pd.plane[2].width = width;
+		pd.plane[1].height =
+		pd.plane[2].height = height;
+		break;
 	}
+
+	pd.plane[0].length = pd.plane[0].width * pd.plane[0].height;
+	pd.plane[1].length = pd.plane[1].width * pd.plane[1].height;
+	pd.plane[2].length = pd.plane[2].width * pd.plane[2].height;
+
+	return pd;
 }
-;
+
+/* set geometry and data length for all V16P packing formats.
+ * modifies pd, returns reference to pd */
+PictureData<void>&
+setPlaneDimensionsV16P(PictureData<void>& pd,
+                    ChromaFmt chroma, unsigned width, unsigned height)
+{
+	setPlaneDimensionsV8P(pd, chroma, width, height);
+
+	pd.plane[0].length *= 2;
+	pd.plane[1].length *= 2;
+	pd.plane[2].length *= 2;
+
+	return pd;
+}
+
+/* set geometry and data length for all UYVY packing formats.
+ * modifies pd, returns reference to pd */
+PictureData<void>&
+setPlaneDimensionsUYVY(PictureData<void>& pd,
+                       ChromaFmt chroma, unsigned width, unsigned height)
+{
+	assert(chroma == Cr422);
+
+	pd.plane.resize(1);
+
+	pd.plane[0].width = width;
+	pd.plane[0].height = height;
+	pd.plane[0].length = sizeofFrame(UYVY, Cr422, width, height);
+
+	return pd;
+}
+
+/* set geometry and data length for all V216 packing formats.
+ * modifies pd, returns reference to pd */
+PictureData<void>&
+setPlaneDimensionsV216(PictureData<void>& pd,
+                       ChromaFmt chroma, unsigned width, unsigned height)
+{
+	assert(chroma == Cr422);
+
+	setPlaneDimensionsUYVY(pd, Cr422, width, height);
+
+	pd.plane[0].length *= 2;
+
+	return pd;
+}
+
+/* set geometry and data length for all V210 packing formats.
+ * modifies pd, returns reference to pd */
+PictureData<void>&
+setPlaneDimensionsV210(PictureData<void>& pd,
+                       ChromaFmt chroma, unsigned width, unsigned height)
+{
+	assert(chroma == Cr422);
+
+	pd.plane.resize(1);
+
+	pd.plane[0].width = width;
+	pd.plane[0].height = height;
+	pd.plane[0].length = sizeofFrame(V210, Cr422, width, height);
+
+	return pd;
+}
+
+PictureData<void>&
+setPlaneDimensions(PictureData<void>& pd,
+                   PackingFmt packing, ChromaFmt chroma, unsigned width, unsigned height)
+{
+	switch (packing) {
+	case V8P: return setPlaneDimensionsV8P(pd, chroma, width, height);
+	case V16P: return setPlaneDimensionsV16P(pd, chroma, width, height);
+	case UYVY: return setPlaneDimensionsUYVY(pd, chroma, width, height);
+	case V216: return setPlaneDimensionsV216(pd, chroma, width, height);
+	case V210: return setPlaneDimensionsV210(pd, chroma, width, height);
+	}
+
+	assert(!"fail");
+}
 
 typedef unsigned int uint_t;
 typedef unsigned char uint8_t;
@@ -290,13 +339,17 @@ void unpackv210line(uint8_t* dst, uint8_t* src, uint_t luma_width)
 
 //utility function to convert V210 data into something easier to display
 //it is too difficult to do this in the openGL shader
-void VideoData::convertV210()
+void convertV210toUYVY(PictureData<DataPtr>& pd)
 {
+	const int Ywidth = pd.plane[0].width;
+	const int Yheight = pd.plane[0].height;
+
 	/* pad to a multiple of 48 luma samples */
 	/* nb, 48 luma samples becomes 128 bytes */
 	const uint_t padded_w = ((Ywidth + 47)/48) * 48; //number of luma samples, padded
 	const uint_t padded_line_length = (2*padded_w*4) / 3; //number of bytes on each line in the file, including padding data
 
+	void* data = pd.plane[0].data->ptr;
 	uint8_t *dst = (uint8_t*) data; /* destination for 8bit uyvy, may = src */
 	uint8_t *src = (uint8_t*) data; /* source of v210 data */
 
@@ -306,57 +359,107 @@ void VideoData::convertV210()
 		dst += Ywidth*2;
 	}
 
-	//change the description of the data to match UYVY
-	//note that the dataSize stays the same
-	renderFormat = UYVY;
-	glYTextureWidth = Ywidth / 2; //2 Y samples per RGBA quad
-	YdataSize = Ywidth * Yheight * 2;
-	UdataSize = 0;
-	VdataSize = 0;
+	pd.packing_format = UYVY;
+	setPlaneDimensionsUYVY(*(PictureData<void>*)&pd, pd.chroma_format, pd.plane[0].width, pd.plane[0].height);
+	/* xxx */
 }
 
-void VideoData::convertPlanar16()
+void convertPlanar16toPlanar8(PictureData<DataPtr>& pd)
 {
-	uint8_t *src=(uint8_t *)Ydata;
-	uint8_t *dst=(uint8_t *)Ydata;
-	const uint8_t *end=(uint8_t *)(Ydata+dataSize);
+	assert(pd.packing_format == V16P);
+
+	for (unsigned i = 0; i < pd.plane.size(); i++) {
+		uint8_t *src = (uint8_t *) pd.plane[i].data->ptr;
+		uint8_t *dst = src;
+		const uint8_t *end = src + pd.plane[i].length;
+
+		//convert the 16 bit source to 8 bit destination, in place
+		//just throw away the LSBs
+		while (src < end) {
+			*dst++ = *src;
+			src+=2;
+		}
+	}
+
+	pd.packing_format = V8P;
+	setPlaneDimensionsV8P(*(PictureData<void>*)&pd, pd.chroma_format, pd.plane[0].width, pd.plane[0].height);
+	/* xxx */
+	/* no need to setPlaneData(),
+	 * since the plane base pointers have not been changed */
+}
+
+void convertV216toUYVY(PictureData<DataPtr>& pd)
+{
+	assert(pd.packing_format == V216);
+
+	uint8_t *src = (uint8_t *) pd.plane[0].data->ptr;
+	uint8_t *dst = src;
+	const uint8_t *end = src + pd.plane[0].length;
 
 	//convert the 16 bit source to 8 bit destination, in place
 	//just throw away the LSBs
 	while (src < end) {
-		*dst++ = *src;
+		*dst++ = src[1];
 		src+=2;
 	}
 
-	//new data size
-	YdataSize = Ywidth * Yheight;
+	pd.packing_format = UYVY;
+	setPlaneDimensionsUYVY(*(PictureData<void>*)&pd, pd.chroma_format, pd.plane[0].width, pd.plane[0].height);
+	/* xxx */
+	/* no need to setPlaneData(),
+	 * since the plane base pointers have not been changed */
+}
 
-	//tell the renderer that this is now 8 bit data
-	switch (renderFormat) {
-	case V16P0:
-		renderFormat = V8P0;
-		UdataSize = YdataSize/4;
-		VdataSize = YdataSize/4;
+VideoDataOld::VideoDataOld(VideoData *vd)
+: frameNum(vd->frame_number)
+, fieldNum(vd->is_field1)
+, isInterlaced(vd->is_interlaced)
+, isLastFrame(vd->is_last_frame)
+, isFirstFrame(vd->is_first_frame)
+{
+	isPlanar = vd->data.packing_format == V16P || vd->data.packing_format == V8P;
+
+	Ywidth = vd->data.plane[0].width;
+	Yheight = vd->data.plane[0].height;
+
+	switch (vd->data.chroma_format) {
+	case Cr420:
+		Cwidth = Ywidth >> 1;
+		Cheight = Yheight >> 1;
 		break;
-
-	case V16P2:
-		renderFormat = V8P2;
-		UdataSize = YdataSize/2;
-		VdataSize = YdataSize/2;
+	case Cr422:
+		Cwidth = Ywidth >> 1;
+		Cheight = Yheight;
 		break;
-
-	case V16P4:
-		renderFormat = V8P4;
-		UdataSize = YdataSize;
-		VdataSize = YdataSize;
-		break;
-
 	default:
-		//doh!
+	case Cr444:
+		Cwidth = Ywidth;
+		Cheight = Yheight;
 		break;
 	}
 
-	//update pointers to the start of each plane
-	Udata = Ydata + YdataSize;
-	Vdata = Udata + UdataSize;
+	YdataSize = vd->data.plane[0].length;
+	Ydata = (unsigned char*) vd->data.plane[0].data->ptr;
+	UdataSize = 0;
+	Udata = 0;
+	VdataSize = 0;
+	Vdata = 0;
+	if (isPlanar) {
+		UdataSize = vd->data.plane[1].length;
+		VdataSize = vd->data.plane[2].length;
+		Udata = (unsigned char*) vd->data.plane[1].data->ptr;
+		Vdata = (unsigned char*) vd->data.plane[2].data->ptr;
+	}
+
+	glInternalFormat = GL_LUMINANCE;
+	glFormat = GL_LUMINANCE;
+	glType = GL_UNSIGNED_BYTE;
+	glMinMaxFilter = GL_LINEAR;
+	glYTextureWidth = Ywidth;
+	if (vd->data.packing_format == UYVY) {
+		glYTextureWidth = Ywidth / 2;
+		glMinMaxFilter = GL_NEAREST;
+		glInternalFormat = GL_RGBA;
+		glFormat = GL_RGBA;
+	}
 }

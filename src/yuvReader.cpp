@@ -24,6 +24,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <stdint.h>
 #include <QtCore>
 
 #include <stdio.h>
@@ -56,6 +57,8 @@
 #include "yuvReader.h"
 #include "stats.h"
 
+#include "util.h"
+
 #define DEBUG 0
 
 YUVReader::YUVReader()
@@ -78,73 +81,14 @@ void YUVReader::setFileName(const QString &fn)
 
 	QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
 
+	FourCC fourcc = qstringToFourCC(type);
+	packing_format = fourccToPacking(fourcc);
+	chroma_format = fourccToChroma(fourcc);
+	frame_size = sizeofFrame(packing_format, chroma_format, videoWidth, videoHeight);
+
 	firstFrameNum = 0;
-
-	if (type == "16p0") {
-		videoFormat = VideoData::V16P0;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3 * 2) / 2);
-		lastFrameNum--;
-	}
-
-	if (type == "16p2") {
-		videoFormat = VideoData::V16P2;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 2 * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "16p4") {
-		videoFormat = VideoData::V16P4;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 3 * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "420p") {
-		videoFormat = VideoData::V8P0;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
-		lastFrameNum--;
-	}
-
-	if (type == "422p") {
-		videoFormat = VideoData::V8P2;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "444p") {
-		videoFormat = VideoData::V8P4;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 3);
-		lastFrameNum--;
-	}
-
-	if (type == "i420") {
-		videoFormat = VideoData::V8P0;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
-		lastFrameNum--;
-	}
-
-	if (type == "yv12") {
-		videoFormat = VideoData::YV12;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
-		lastFrameNum--;
-	}
-
-	if (type == "uyvy") {
-		videoFormat = VideoData::UYVY;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "v216") {
-		videoFormat = VideoData::V216;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
-		lastFrameNum--;
-	}
-
-	if (type == "v210") {
-		videoFormat = VideoData::V210;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 2 * 4) / 3);
-		lastFrameNum--;
-	}
+	lastFrameNum = info.size() / frame_size;
+	lastFrameNum--;
 
 	{
 		Stats &stat = Stats::getInstance();
@@ -173,9 +117,6 @@ void YUVReader::setFileName(const QString &fn)
 //called from the frame queue controller to get frame data for display
 VideoData* YUVReader::pullFrame(int frameNumber)
 {
-	VideoData* frame = new VideoData();
-	frame->resize(videoWidth, videoHeight, videoFormat);
-
 	if (DEBUG)
 		printf("Getting frame number %d\n", frameNumber);
 
@@ -189,15 +130,34 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	if (frameNumber > lastFrameNum)
 		frameNumber %= (lastFrameNum + 1);
 
-	//set frame number and first/last flags
-	frame->frameNum = frameNumber;
-	frame->isFirstFrame = (frameNumber == firstFrameNum);
-	frame->isLastFrame = (frameNumber == lastFrameNum);
-	frame->isInterlaced = interlacedSource;
-	VideoData *dst = frame;
+	/* allocate new storage:
+	 *  1) work out dimensions for the planes
+	 *  2) create contiguous storage (we already know the frame_size)
+	 *  3) create aliases for any other planes
+	 */
+	VideoData* frame = new VideoData();
+	frame->data.packing_format = packing_format;
+	frame->data.chroma_format = chroma_format;
+	setPlaneDimensions(*(PictureData<void>*)&frame->data, packing_format, chroma_format, videoWidth, videoHeight);
 
-	//seek
-	off64_t offset = (off_t)dst->dataSize * (off_t)frameNumber; //seek to the wanted frame
+	using namespace std::tr1;
+	frame->data.plane[0].data = shared_ptr<DataPtr>(new DataPtr_valloc(frame_size));
+	void* const data = frame->data.plane[0].data->ptr;
+	uint8_t* ptr = (uint8_t*) data;
+	for (unsigned i = 1; i < frame->data.plane.size(); i++) {
+		ptr += frame->data.plane[i-1].length;
+		frame->data.plane[i].data = shared_ptr<DataPtr>(new DataPtr_alias(ptr));
+	}
+	/* xxx: fixup plane numbering if required (eg YV12 vs I420) */
+
+	//set frame number and first/last flags
+	frame->frame_number = frameNumber;
+	frame->is_first_frame = (frameNumber == firstFrameNum);
+	frame->is_last_frame = (frameNumber == lastFrameNum);
+	frame->is_interlaced = interlacedSource;
+
+	//seek to requested frame
+	off64_t offset = (off_t)frame_size * (off_t)frameNumber;
 	off64_t sret = lseek64(fd, offset, SEEK_SET);
 	if (!sret && offset != 0)
 		perror("LSEEK");
@@ -205,7 +165,7 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	QTime timer;
 	timer.restart();
 
-	int rret = read(fd, dst->data, dst->dataSize);
+	int rret = read(fd, data, frame_size);
 	if (!rret)
 		perror("READ");
 
@@ -220,5 +180,5 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 		stat.addStat("YUVReader", "Read", ss.str());
 	}
 
-	return dst;
+	return frame;
 }

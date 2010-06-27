@@ -47,6 +47,9 @@ videoplayer_SOURCES = \
 	src/readerInterface.h \
 	src/yuvReader.cpp \
 	src/yuvReader.h \
+	src/yuvReaderMmap.h \
+	src/util.cpp \
+	src/util.h \
 	src/version.h \
 	$(NULL)
 
@@ -58,8 +61,6 @@ nodist_videoplayer_SOURCES = \
 
 if LINUX
 videoplayer_SOURCES += \
-	src/yuvReaderMmap.cpp \
-	src/yuvReaderMmap.h \
 	src/QConsoleInput.h \
 	src/QConsoleInput.cpp \
 	src/QShuttlePro.cpp \
@@ -94,6 +95,7 @@ libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \
 	src/GLfrontend_old.h \
 	src/colourMatrix.cpp \
 	src/stats.cpp \
+	src/fourcc.h \
 	src/videoData.cpp \
 	src/version.c \
 	$(NULL)

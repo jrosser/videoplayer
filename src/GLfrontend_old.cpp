@@ -48,7 +48,9 @@
 
 #define DEBUG 0
 
-static void updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4]);
+static void updateShaderVars(int program, VideoData *video_data, float colour_matrix[4][4]);
+
+using namespace GLvideo;
 
 enum ShaderPrograms {
 	Progressive = 0x0,
@@ -104,64 +106,61 @@ void GLfrontend_old::render()
 	}
 
 	/* obtain the current frame.  NB, this may be the same frame as last time */
-	VideoData* videoData = vt->getFrame();
-	if (!videoData) {
+	/* xxx, this will eventually be moved into an action */
+	VideoData* video_data = vt->getFrame();
+	if (!video_data) {
 		return;
 	}
 
-	bool videoData_is_new_frame = false;
-	if (lastframenum != videoData->frameNum) {
-		videoData_is_new_frame = true;
-		lastframenum = videoData->frameNum;
+	if (video_data->data.packing_format == V210) {
+		/* convert v210 to uyvy */
+		/* todo: refactor this into a shader */
+		convertV210toUYVY(video_data->data);
+	}
+	else
+	if (video_data->data.packing_format == V216) {
+		/* convert 16bit data to 8bit */
+		/* todo: refactor into a shader */
+		/* this avoids endian-ness issues between the host and the GPU
+		 * and reduces the bandwidth to the GPU */
+		convertV216toUYVY(video_data->data);
+	}
+	else
+	if (video_data->data.packing_format == V16P) {
+		convertPlanar16toPlanar8(video_data->data);
+	}
+
+	VideoDataOld videoData(video_data);
+
+	unsigned video_data_width = video_data->data.plane[0].width;
+	unsigned video_data_height = video_data->data.plane[0].height;
+
+	bool video_data_is_new_frame = false;
+	if (lastframenum != video_data->frame_number) {
+		video_data_is_new_frame = true;
+		lastframenum = video_data->frame_number;
 	}
 
 	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
 	perfTimer.start();
-	//perform any format conversions
-	switch (videoData->renderFormat) {
-
-	case VideoData::V210:
-		//check for v210 data - it's very difficult to write a shader for this
-		//due to the lack of GLSL bitwise operators, and it's insistance on filtering the textures
-		if (DEBUG)
-			printf("Converting V210 frame\n");
-		videoData->convertV210();
-		break;
-
-	case VideoData::V16P4:
-	case VideoData::V16P2:
-	case VideoData::V16P0:
-		//convert 16 bit data to 8bit
-		//this avoids endian-ness issues between the host and the GPU
-		//and reduces the bandwidth to the GPU
-		if (DEBUG)
-			printf("Converting 16 bit frame\n");
-		videoData->convertPlanar16();
-		break;
-
-	default:
-		//no conversion needed
-		break;
-	}
-	addStatPerfInt("ReadData", perfTimer.elapsed());
 
 	bool createGLTextures = false;
 	//check for video dimensions changing
-	if ((lastsrcwidth != videoData->Ywidth)
-		|| (lastsrcheight != videoData->Yheight)
-		|| (lastisplanar != videoData->isPlanar)) {
+	if ((lastsrcwidth != video_data_width)
+	|| (lastsrcheight != video_data_height))
+	{
 		if (DEBUG)
-			printf("Changing video dimensions to %dx%d\n",
-				   videoData->Ywidth, videoData->Yheight);
+			printf("Changing video dimensions to %dx%d\n", video_data_width, video_data_height);
 		createGLTextures = true;
 
-		lastsrcwidth = videoData->Ywidth;
-		lastsrcheight = videoData->Yheight;
-		lastisplanar = videoData->isPlanar;
+		lastsrcwidth = video_data_width;
+		lastsrcheight = video_data_height;
 	}
 
-	if (videoData->isPlanar)
+	if (video_data->data.packing_format == V8P
+	||  video_data->data.packing_format == V16P) {
 		currentShader = shaderPlanar;
+	}
 	else
 		currentShader = shaderUYVY;
 
@@ -173,7 +172,7 @@ void GLfrontend_old::render()
 	if (createGLTextures) {
 		if (DEBUG)
 			printf("Creating GL textures\n");
-		renderer->createTextures(videoData);
+		renderer->createTextures(&videoData);
 	}
 
 	if (params.matrix_valid == false) {
@@ -183,45 +182,62 @@ void GLfrontend_old::render()
 
 	//update the uniform variables in the fragment shader
 	perfTimer.restart();
-	updateShaderVars(programs[currentShader], videoData, colour_matrix);
+	updateShaderVars(programs[currentShader], video_data, colour_matrix);
 	addStatPerfInt("UpdateVars", perfTimer.elapsed());
 
 	/* setup viewport for rendering (letter/pillarbox) */
-	aspectBox(videoData, displaywidth, displayheight, !params.aspect_ratio_lock);
+	aspectBox(video_data, displaywidth, displayheight, !params.aspect_ratio_lock);
 
 	if (params.deinterlace) {
 		glUseProgramObjectARB(programs[currentShader]);
 		int i = glGetUniformLocationARB(programs[currentShader], "field");
-		glUniform1fARB(i, (float)videoData->fieldNum);
+		glUniform1fARB(i, (float)video_data->is_field1);
 		glUseProgramObjectARB(0);
 	}
 
 	perfTimer.restart();
 	/* only upload new frames (old ones stay in the GL) */
-	if(videoData_is_new_frame) {
-		renderer->uploadTextures(videoData);
+	if(video_data_is_new_frame) {
+		renderer->uploadTextures(&videoData);
 	}
 	addStatPerfInt("Upload", perfTimer.elapsed());
 
 	perfTimer.restart();
-		renderer->renderVideo(videoData, programs[currentShader]);
+		renderer->renderVideo(&videoData, programs[currentShader]);
 	addStatPerfInt("RenderVid", perfTimer.elapsed());
 }
 
 static void
-updateShaderVars(int program, VideoData *videoData, float colour_matrix[4][4])
+updateShaderVars(int program, VideoData *video_data, float colour_matrix[4][4])
 {
 	if (DEBUG)
 		printf("Updating fragment shader variables\n");
 
+	float chroma_h_subsample;
+	float chroma_v_subsample;
+	switch (video_data->data.chroma_format) {
+	case Cr420:
+		chroma_h_subsample = 2;
+		chroma_v_subsample = 2;
+		break;
+	case Cr422:
+		chroma_h_subsample = 2;
+		chroma_v_subsample = 1;
+		break;
+	default:
+	case Cr444:
+		chroma_h_subsample = 1;
+		chroma_v_subsample = 1;
+		break;
+	}
 	glUseProgramObjectARB(program);
 	//data about the input file to the shader
 	int i;
 	i = glGetUniformLocationARB(program, "CHsubsample");
-	glUniform1fARB(i, (float)(videoData->Ywidth / videoData->Cwidth));
+	glUniform1fARB(i, chroma_h_subsample);
 
 	i = glGetUniformLocationARB(program, "CVsubsample");
-	glUniform1fARB(i, (float)(videoData->Yheight / videoData->Cheight));
+	glUniform1fARB(i, chroma_v_subsample);
 
 	i = glGetUniformLocationARB(program, "colour_matrix");
 	glUniformMatrix4fvARB(i, 1, true, (float*) colour_matrix);

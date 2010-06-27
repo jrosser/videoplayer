@@ -102,7 +102,7 @@ bool VideoTransport::advance()
 			/* todo: this isn't exactly nice, it would be better to
 			 * return a new field period and create a slave picture
 			 * with the new field information */
-			output_frame->fieldNum = current_frame_num.getCurrentField();
+			output_frame->is_field1 = current_frame_num.getCurrentField();
 		}
 		future_frame_num_list_head_idx_semaphore.release();
 		return false;
@@ -126,8 +126,8 @@ bool VideoTransport::advance()
 			if (!frame) {
 				advance_ok = false;
 			} else {
-				frame->fieldNum = current_frame_num.getCurrentField();
-				eof &= frame->isLastFrame;
+				frame->is_field1 = current_frame_num.getCurrentField();
+				eof &= frame->is_last_frame;
 			}
 		} catch (...) {
 			/* eof: advancing in this case is ok, this video will just

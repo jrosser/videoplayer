@@ -1,3 +1,4 @@
+
 /* ***** BEGIN LICENSE BLOCK *****
  *
  * The MIT License
@@ -24,31 +25,31 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef READERINTERFACE_H_
-#define READERINTERFACE_H_
+#ifndef FOURCC_H_
+#define FOURCC_H_
 
-struct VideoData;
+#include <stdint.h>
+typedef uint32_t FourCC;
 
-class ReaderInterface {
-public:
-	ReaderInterface() {}
-	virtual ~ReaderInterface()
-	{
-	}
+#define FOURCC(a,b,c,d) \
+	( ((uint32_t) a << 24) | \
+	  ((uint32_t) b << 16) | \
+	  ((uint32_t) c <<  8) | \
+	  d )
 
-	virtual VideoData* pullFrame(int wantedFrame) = 0;
-
-	virtual void setFPS(double x) { fps = x; }
-	virtual double getFPS(int) { return fps; }
-
-	bool randomAccess;
-
-private:
-	ReaderInterface(ReaderInterface const&);
-	ReaderInterface& operator=(ReaderInterface const&);
-
-private:
-	double fps;
-};
+#define FOURCC_8p0  FOURCC(' ','8','p','0')
+#define FOURCC_420p FOURCC('4','2','0','p')
+#define FOURCC_i420 FOURCC('i','4','2','0')
+#define FOURCC_yv12 FOURCC('y','v','1','2')
+#define FOURCC_8p2  FOURCC(' ','8','p','2')
+#define FOURCC_422p FOURCC('4','2','2','p')
+#define FOURCC_8p4  FOURCC(' ','8','p','4')
+#define FOURCC_444p FOURCC('4','4','4','p')
+#define FOURCC_16p0 FOURCC('1','6','p','0')
+#define FOURCC_16p2 FOURCC('1','6','p','2')
+#define FOURCC_16p4 FOURCC('1','6','p','4')
+#define FOURCC_uyvy FOURCC('u','y','v','y')
+#define FOURCC_v216 FOURCC('v','2','1','6')
+#define FOURCC_v210 FOURCC('v','2','1','0')
 
 #endif

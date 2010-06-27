@@ -32,7 +32,7 @@ void PboTex::deleteTextures()
 	if(glIsBuffer(buf)) glDeleteBuffers(1, &buf);
 }
 
-void PboTex::createTextures(VideoData *video_data)
+void PboTex::createTextures(VideoDataOld *video_data)
 {
 	deleteTextures();
 
@@ -79,7 +79,7 @@ void PboTex::createTextures(VideoData *video_data)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
-void PboTex::uploadTextures(VideoData *video_data)
+void PboTex::uploadTextures(VideoDataOld *video_data)
 {
 	void *ioMem;
 
@@ -123,7 +123,7 @@ void PboTex::uploadTextures(VideoData *video_data)
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
 }
 
-void PboTex::renderVideo(VideoData *video_data, GLuint shader_prog)
+void PboTex::renderVideo(VideoDataOld *video_data, GLuint shader_prog)
 {
 	glUseProgramObjectARB(shader_prog);
 	int i;

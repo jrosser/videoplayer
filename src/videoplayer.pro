@@ -15,17 +15,17 @@ include(local.pro)
 
 # source files
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h videoTransportQT.h
-HEADERS += stats.h version.h program_options_lite.h fileDialog.h
+HEADERS += stats.h util.h version.h program_options_lite.h fileDialog.h
 
 SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp
-SOURCES += stats.cpp version.c program_options_lite.cpp fileDialog.cpp
+SOURCES += stats.cpp util.cpp version.c program_options_lite.cpp fileDialog.cpp
 
 # openGL video widget source files
 HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_rtAdaptor.h GLvideo_renderer.h shaders.h
 SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLvideo_rtAdaptor.cpp
 
 # GL utility functions
-HEADERS += GLutil.h colourMatrix.h
+HEADERS += GLutil.h colourMatrix.h fourcc.h
 SOURCES += GLutil.cpp colourMatrix.cpp
 
 # openGL frontends (for video presentation)
@@ -46,8 +46,8 @@ unix {
   HEADERS += QConsoleInput.h
 
   # mmap gives a performance increase when reading
-  HEADERS += yuvReaderMmap.h
-  SOURCES += yuvReaderMmap.cpp
+#  HEADERS += yuvReaderMmap.h
+#  SOURCES += yuvReaderMmap.cpp
 }
 
 linux-g++ {

@@ -61,11 +61,11 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 	char str[255];
 	switch (params.osd_bot) {
 	case OSD_FRAMENUM:
-		if (!videoData->isInterlaced) {
-			sprintf(str, "%06ld", videoData->frameNum);
+		if (!videoData->is_interlaced) {
+			sprintf(str, "%06ld", videoData->frame_number);
 			font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2);
 		} else {
-			sprintf(str, "%06ld.%1d", videoData->frameNum, videoData->fieldNum);
+			sprintf(str, "%06ld.%1d", videoData->frame_number, videoData->is_field1);
 			font->BBox("000000.0", cx1, cy1, cz1, cx2, cy2, cz2);
 		}
 		break;
@@ -80,12 +80,12 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 	}
 
 	//text box location, defaults to bottom left
-	float tx=0.05 * videoData->Ywidth;
-	float ty=0.05 * videoData->Yheight;
+	float tx=0.05 * videoData->data.plane[0].width;
+	float ty=0.05 * videoData->data.plane[0].height;
 
 	if (params.osd_bot==OSD_CAPTION) {
 		//put the caption in the middle of the screen
-		tx = videoData->Ywidth - ((cx2 - cx1) * params.osd_scale);
+		tx = videoData->data.plane[0].width - ((cx2 - cx1) * params.osd_scale);
 		tx/=2;
 	}
 
@@ -157,8 +157,8 @@ void GLvideo_osd::drawPerfTimer(const char *str, int num, const char *units, flo
 void GLvideo_osd::renderStats(VideoData *videoData)
 {
 	//position of the stats relative to the video
-	float tx = 0.05 * videoData->Ywidth;
-	float ty = 0.95 * videoData->Yheight;
+	float tx = 0.05 * videoData->data.plane[0].width;
+	float ty = 0.95 * videoData->data.plane[0].height;
 
 	//determine approx character size
 	float cx1, cy1, cz1, cx2, cy2, cz2;

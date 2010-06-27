@@ -33,7 +33,7 @@
 
 class ReaderInterface;
 class VideoTransport;
-class VideoData;
+struct VideoData;
 
 class FrameQueue : public QThread {
 public:
@@ -46,8 +46,6 @@ public:
 	~FrameQueue();
 
 	void run();
-
-	VideoData *allocateFrame(void);
 
 	void setReader(ReaderInterface *r)
 	{

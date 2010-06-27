@@ -32,7 +32,7 @@
 #include <QSemaphore>
 #include <QWaitCondition>
 
-class VideoData;
+struct VideoData;
 class FrameQueue;
 class ReaderInterface;
 

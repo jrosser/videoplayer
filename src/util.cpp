@@ -2,7 +2,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2008 BBC Research
+ * Copyright (c) 2010 BBC Research
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,31 +24,36 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef READERINTERFACE_H_
-#define READERINTERFACE_H_
+#include <cassert>
+#include <QString>
+#include "fourcc.h"
 
-struct VideoData;
+FourCC
+qstringToFourCC(QString& s)
+{
+	if (s == "16p0")
+		return FOURCC_16p0;
+	if (s == "16p2")
+		return FOURCC_16p2;
+	if (s == "16p4")
+		return FOURCC_16p4;
+	if (s == "420p")
+		return FOURCC_420p;
+	if (s == "422p")
+		return FOURCC_422p;
+	if (s == "444p")
+		return FOURCC_444p;
+	if (s == "i420")
+		return FOURCC_i420;
+	if (s == "yv12")
+		return FOURCC_yv12;
+	if (s == "uyvy")
+		return FOURCC_uyvy;
+	if (s == "v216")
+		return FOURCC_v216;
+	if (s == "v210")
+		return FOURCC_v210;
 
-class ReaderInterface {
-public:
-	ReaderInterface() {}
-	virtual ~ReaderInterface()
-	{
-	}
-
-	virtual VideoData* pullFrame(int wantedFrame) = 0;
-
-	virtual void setFPS(double x) { fps = x; }
-	virtual double getFPS(int) { return fps; }
-
-	bool randomAccess;
-
-private:
-	ReaderInterface(ReaderInterface const&);
-	ReaderInterface& operator=(ReaderInterface const&);
-
-private:
-	double fps;
-};
-
-#endif
+	assert(!"unknown fourcc");
+	return 0;
+}

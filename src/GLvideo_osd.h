@@ -28,7 +28,7 @@
 #define GLVIDEO_OSD_H_
 
 class FTFont;
-class VideoData;
+struct VideoData;
 struct GLvideo_params;
 
 class GLvideo_osd {

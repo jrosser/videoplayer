@@ -27,7 +27,7 @@ void TradTex::deleteTextures()
 	if(glIsTexture(textures.v)) glDeleteTextures(1, &(textures.v));
 }
 
-void TradTex::createTextures(VideoData *video_data)
+void TradTex::createTextures(VideoDataOld *video_data)
 {
 	deleteTextures();
 	glGenTextures(3, (GLuint *)&textures);
@@ -66,7 +66,7 @@ void TradTex::createTextures(VideoData *video_data)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
-void TradTex::uploadTextures(VideoData *video_data)
+void TradTex::uploadTextures(VideoDataOld *video_data)
 {
 	if (video_data->isPlanar) {
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.u);
@@ -86,7 +86,7 @@ void TradTex::uploadTextures(VideoData *video_data)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 }
 
-void TradTex::renderVideo(VideoData *video_data, GLuint shader_prog)
+void TradTex::renderVideo(VideoDataOld *video_data, GLuint shader_prog)
 {
 	glUseProgramObjectARB(shader_prog);
 	int i;

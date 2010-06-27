@@ -50,7 +50,6 @@ public:
 private:
 
 	//information about the video data
-	VideoData::DataFmt videoFormat;
 	QString fileType;
 	QString fileName;
 	bool forceFileType;
@@ -58,10 +57,14 @@ private:
 	int videoWidth;
 	int videoHeight;
 
+	GLvideo::PackingFmt packing_format;
+	GLvideo::ChromaFmt chroma_format;
+
 	//video file
 	int fd;
 	int lastFrameNum;
 	int firstFrameNum;
+	unsigned frame_size;
 
 	//bandwidth counter
 	int bandwidth_count;

@@ -51,7 +51,6 @@ public:
 private:
 
 	//information about the video data
-	VideoData::DataFmt videoFormat;
 	QString fileType;
 	QString fileName;
 	bool forceFileType;
