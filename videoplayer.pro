@@ -7,12 +7,16 @@ CONFIG += thread console debug_and_release
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h config.h
 HEADERS += stats.h version.h df_boost_prog_opts.hpp
 
-SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp util.cpp
+SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp
 SOURCES += stats.cpp version.c df_boost_prog_opts.cpp
 
 # openGL video widget source files
 HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_renderer.h shaders.h
 SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp
+
+# GL utility functions
+HEADERS += colourMatrix.h
+SOURCES += colourMatrix.cpp
 
 # video texture transfer engines
 HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
