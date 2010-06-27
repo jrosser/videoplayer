@@ -43,13 +43,7 @@ public:
 	void wake();
 
 	VideoData *allocateFrame(void);
-	void releaseFrame(VideoData *);
 
-	void setForceFileType(bool f);
-	void setFileType(const QString &t);
-	void setVideoWidth(int w);
-	void setVideoHeight(int h);
-	void setFileName(const QString &fn);
 	void setReader(ReaderInterface *r)
 	{
 		reader = r;

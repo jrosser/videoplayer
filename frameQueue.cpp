@@ -199,12 +199,6 @@ VideoData *FrameQueue::allocateFrame(void)
 	}
 }
 
-void FrameQueue::releaseFrame(VideoData *v)
-{
-	QMutexLocker listlocker(&listMutex);
-	usedFrames.append(v);
-}
-
 void FrameQueue::run()
 {
 	if (DEBUG)
