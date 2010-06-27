@@ -38,10 +38,10 @@ public:
 
 public:
 	//specific to yuvReader
-	void setForceFileType(bool f);
-	void setFileType(const QString &t);
-	void setVideoWidth(int w);
-	void setVideoHeight(int h);
+	void setForceFileType(bool f) { forceFileType = f; }
+	void setFileType(const QString &t) { fileType = t; }
+	void setVideoWidth(int w) { videoWidth = w; }
+	void setVideoHeight(int h) { videoHeight = h; }
 	void setFileName(const QString &fn);
 
 private:

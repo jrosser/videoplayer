@@ -60,26 +60,6 @@ YUVReader::YUVReader(FrameQueue& frameQ) :
 	randomAccess = true;
 }
 
-void YUVReader::setForceFileType(bool f)
-{
-	forceFileType = f;
-}
-
-void YUVReader::setFileType(const QString &t)
-{
-	fileType = t;
-}
-
-void YUVReader::setVideoWidth(int w)
-{
-	videoWidth = w;
-}
-
-void YUVReader::setVideoHeight(int h)
-{
-	videoHeight = h;
-}
-
 void YUVReader::setFileName(const QString &fn)
 {
 	fileName = fn;
