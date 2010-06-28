@@ -58,11 +58,15 @@ private:
 	int videoWidth;
 	int videoHeight;
 
+	GLvideo::PackingFmt packing_format;
+	GLvideo::ChromaFmt chroma_format;
+
 	//video file
 	int fd;
 	char *base_ptr;
 	int lastFrameNum;
 	int firstFrameNum;
+	unsigned frame_size;
 
 	//bandwidth counter
 	QTime timer;

@@ -26,6 +26,7 @@
 
 #include <QtCore>
 
+#include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -46,8 +47,34 @@
 #include "videoData.h"
 #include "yuvReaderMmap.h"
 #include "stats.h"
+#include "util.h"
 
 #define DEBUG 0
+
+struct DataPtr_mmap : public DataPtr {
+	DataPtr_mmap(void *data, unsigned length)
+		: length(length)
+	{
+		ptr = data;
+		void *aligned_ptr = (void*)((unsigned long)ptr & ~4095);
+		size_t aligned_length = length + ((unsigned long)ptr - (unsigned long)aligned_ptr);
+		/* inform the OS that we do need the pages */
+		madvise(aligned_ptr, aligned_length, MADV_WILLNEED);
+	};
+
+	~DataPtr_mmap() {
+		/* only free entire pages that we nolonger cover */
+		/* todo: handle overlapping pages */
+
+		void *first_complete_page_ptr = (void*) (((unsigned long)ptr + 4095) & ~4095);
+		size_t compete_pages_len = (length - ((unsigned long)first_complete_page_ptr - (unsigned long)ptr)) & ~4095;
+		/* inform the OS that we don't need the pages anymore */
+		madvise(first_complete_page_ptr, compete_pages_len, MADV_DONTNEED);
+	};
+
+private:
+	unsigned length;
+};
 
 YUVReaderMmap::YUVReaderMmap()
 {
@@ -74,73 +101,14 @@ void YUVReaderMmap::setFileName(const QString &fn)
 	QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
 	printf("Playing file with type %s\n", type.toLatin1().data());
 
+	FourCC fourcc = qstringToFourCC(type);
+	packing_format = fourccToPacking(fourcc);
+	chroma_format = fourccToChroma(fourcc);
+	frame_size = sizeofFrame(packing_format, chroma_format, videoWidth, videoHeight);
+
 	firstFrameNum = 0;
-
-	if (type == "16p0") {
-		videoFormat = VideoData::V16P0;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3 * 2) / 2);
-		lastFrameNum--;
-	}
-
-	if (type == "16p2") {
-		videoFormat = VideoData::V16P2;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 2 * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "16p4") {
-		videoFormat = VideoData::V16P4;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 3 * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "420p") {
-		videoFormat = VideoData::V8P0;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
-		lastFrameNum--;
-	}
-
-	if (type == "422p") {
-		videoFormat = VideoData::V8P2;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "444p") {
-		videoFormat = VideoData::V8P4;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 3);
-		lastFrameNum--;
-	}
-
-	if (type == "i420") {
-		videoFormat = VideoData::V8P0;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
-		 lastFrameNum--;
-	}
-
-	if (type == "yv12") {
-		videoFormat = VideoData::YV12;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 3) / 2);
-		lastFrameNum--;
-	}
-
-	if (type == "uyvy") {
-		videoFormat = VideoData::UYVY;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 2);
-		lastFrameNum--;
-	}
-
-	if (type == "v216") {
-		videoFormat = VideoData::V216;
-		lastFrameNum = info.size() / (videoWidth * videoHeight * 4);
-		lastFrameNum--;
-	}
-
-	if (type == "v210") {
-		videoFormat = VideoData::V210;
-		lastFrameNum = info.size() / ((videoWidth * videoHeight * 2 * 4) / 3);
-		lastFrameNum--;
-	}
+	lastFrameNum = info.size() / frame_size;
+	lastFrameNum--;
 
 	{
 		Stats &stat = Stats::getInstance();
@@ -169,9 +137,6 @@ void YUVReaderMmap::setFileName(const QString &fn)
 //called from the frame queue controller to get frame data for display
 VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 {
-	VideoData* frame = new VideoData();
-	frame->resize(videoWidth, videoHeight, videoFormat);
-
 	if (DEBUG)
 		printf("Getting frame number %d\n", frameNumber);
 
@@ -185,24 +150,40 @@ VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 	if (frameNumber > lastFrameNum)
 		frameNumber %= (lastFrameNum + 1);
 
-	//set frame number and first/last flags
-	frame->frameNum = frameNumber;
-	frame->isFirstFrame = (frameNumber == firstFrameNum);
-	frame->isLastFrame = (frameNumber == lastFrameNum);
-	frame->isInterlaced = interlacedSource;
-	VideoData *dst = frame;
+	/* allocate new storage:
+	 *  1) work out dimensions for the planes
+	 *  2) create contiguous storage (we already know the frame_size)
+	 *  3) create aliases for any other planes
+	 */
+	VideoData* frame = new VideoData();
+	frame->data.packing_format = packing_format;
+	frame->data.chroma_format = chroma_format;
+	setPlaneDimensions(*(PictureData<void>*)&frame->data, packing_format, chroma_format, videoWidth, videoHeight);
 
 	//calculate offset
-	off64_t offset = (off_t)dst->dataSize * (off_t)frameNumber; //seek to the wanted frame
+	off64_t offset = (off_t)frame_size * (off_t)frameNumber; //seek to the wanted frame
+	void* const data = base_ptr + offset;
 
-	//read
+	/* the virtual read */
 	int idletime = timer.restart();
-
-	memcpy(dst->data, base_ptr + offset, dst->dataSize);
-
+	using namespace std::tr1;
+	frame->data.plane[0].data = shared_ptr<DataPtr>(new DataPtr_mmap(data, frame_size));
 	int readtime = timer.restart();
 
-	{
+	uint8_t* ptr = (uint8_t*) data;
+	for (unsigned i = 1; i < frame->data.plane.size(); i++) {
+		ptr += frame->data.plane[i-1].length;
+		frame->data.plane[i].data = shared_ptr<DataPtr>(new DataPtr_alias(ptr));
+	}
+	/* xxx: fixup plane numbering if required (eg YV12 vs I420) */
+
+	//set frame number and first/last flags
+	frame->frame_number = frameNumber;
+	frame->is_first_frame = (frameNumber == firstFrameNum);
+	frame->is_last_frame = (frameNumber == lastFrameNum);
+	frame->is_interlaced = interlacedSource;
+
+	if(0){
 		Stats &stat = Stats::getInstance();
 		std::stringstream ss;
 
@@ -211,12 +192,12 @@ VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 		stat.addStat("YUVReader (mmap)", "Read", ss.str());
 
 		ss.str("");
-		int rate = (dst->dataSize) / (readtime * 1024);
+		int rate = frame_size / (readtime * 1024);
 		ss << rate << " MB/s";
 		stat.addStat("YUVReader (mmap)", "Peak Rate", ss.str());
 
 		ss.str("");
-		int avgrate = (dst->dataSize) / ((readtime + idletime) * 1024);
+		int avgrate = frame_size / ((readtime + idletime) * 1024);
 		ss << avgrate << "MB/s";
 		stat.addStat("YUVReader (mmap)", "Avg Rate", ss.str());
 	}
