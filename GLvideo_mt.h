@@ -36,7 +36,7 @@ class GLvideo_rt;
 class MainWindow;
 class VideoTransport;
 class FrameQueue;
-class GLvideo_params;
+struct GLvideo_params;
 
 class GLvideo_mt : public QGLWidget
 {

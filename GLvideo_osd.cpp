@@ -169,7 +169,7 @@ void GLvideo_osd::renderStats(VideoData *videoData)
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 	glEnable(GL_POLYGON_SMOOTH);
-	glColor4f(0.0, 0.0, 0.0, 0.7);
+	glColor4f(0.0, 0.0, 0.0, 0.7f);
 
 	glBegin(GL_QUADS);
 	glVertex2f(bx1, by1);

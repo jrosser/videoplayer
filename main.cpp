@@ -36,8 +36,6 @@
 using namespace std;
 
 #include <iostream>
-
-#define BOOST_AUTO_LINK_NOMANGLE
 #include <boost/program_options.hpp>
 namespace po = boost::program_options;
 
@@ -304,8 +302,8 @@ int main(int argc, char **argv)
 	vr_params.frame_repeats = 1;
 	vr_params.caption = "hello world";
 	vr_params.osd_scale = 1.;
-	vr_params.osd_back_alpha = 0.7;
-	vr_params.osd_text_alpha = 0.5;
+	vr_params.osd_back_alpha = 0.7f;
+	vr_params.osd_text_alpha = 0.5f;
 	vr_params.osd_perf = false;
 	vr_params.osd_bot = OSD_NONE;
 	vr_params.osd_valid = false;

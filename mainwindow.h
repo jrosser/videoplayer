@@ -34,7 +34,7 @@
 class VideoTransport;
 
 class GLvideo_mt;
-class GLvideo_params;
+struct GLvideo_params;
 
 struct Qt_params {
 	bool start_fullscreen;

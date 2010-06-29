@@ -48,7 +48,7 @@ namespace GLVideoRenderer
 {
 class GLVideoRenderer;
 }
-class GLvideo_params;
+struct GLvideo_params;
 class GLvideo_osd;
 
 class GLvideo_rt : public QThread {

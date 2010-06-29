@@ -34,7 +34,7 @@
 
 class FTFont;
 class VideoData;
-class GLvideo_params;
+struct GLvideo_params;
 
 class GLvideo_osd {
 public:

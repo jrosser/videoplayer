@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <GLvideo_params.h>
+#include "GLvideo_params.h"
 
 #define DEBUG 0
 

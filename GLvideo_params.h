@@ -77,9 +77,9 @@ struct GLvideo_params {
 static inline void
 SetLumaCoeffsRec709(GLvideo_params &p)
 {
-	p.matrix_Kr = 0.2126;
-	p.matrix_Kg = 0.7152;
-	p.matrix_Kb = 0.0722;
+	p.matrix_Kr = 0.2126f;
+	p.matrix_Kg = 0.7152f;
+	p.matrix_Kb = 0.0722f;
 }
 
 /* SetLumaCoeffsRec601
@@ -88,8 +88,8 @@ SetLumaCoeffsRec709(GLvideo_params &p)
 static inline void
 SetLumaCoeffsRec601(GLvideo_params &p)
 {
-	p.matrix_Kr = 0.299;
-	p.matrix_Kg = 0.587;
-	p.matrix_Kb = 0.114;
+	p.matrix_Kr = 0.299f;
+	p.matrix_Kg = 0.587f;
+	p.matrix_Kb = 0.114f;
 }
 #endif

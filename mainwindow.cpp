@@ -190,7 +190,7 @@ void MainWindow::toggleLuminance()
 	}
 	else {
 		vr_params.luminance_mul = 0.;
-		vr_params.luminance_offset2 = 128./255.;
+		vr_params.luminance_offset2 = (float)(128./255.);
 	}
 	vr_params.matrix_valid = false;
 }
