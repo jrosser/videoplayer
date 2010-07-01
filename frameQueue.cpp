@@ -24,6 +24,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <cassert>
 #include <QtGui>
 #include <sstream>
 
@@ -42,7 +43,7 @@ FrameQueue::FrameQueue() :
 	m_doReading = true;
 	displayFrame = NULL;
 	displayFrameNum = 0;
-	speed=0;
+	speed=1;
 	direction=0;
 }
 
@@ -126,6 +127,8 @@ VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
 {
 	speed = transportSpeed;
 	direction = transportDirection;
+
+	assert(speed > 0);
 
 	//stopped or paused with no frame displayed, or forwards
 	if ((direction == 0 && displayFrame == NULL) || direction == 1) {
