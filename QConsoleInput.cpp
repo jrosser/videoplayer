@@ -73,7 +73,7 @@ QConsoleInput::run()
 	/* hack: flag set when we get -EIO on read */
 	/* No signal is generated to inform a process if it suddenly
 	 * becomes the foreground process, so some hack is required */
-	bool hack_got_eio;
+	bool hack_got_eio = 0;
 
 	/* put the terminal into cbreak mode, aka character mode, so that read()
 	 * doesn't block waiting for a newline before returning */
@@ -92,7 +92,7 @@ QConsoleInput::run()
 			hack_got_eio = 0;
 		}
 
-		char c = 'a';
+		char c;
 		if (read(STDIN_FILENO, &c, 1) <= 0) {
 			sleep(1);
 			hack_got_eio = 1;
