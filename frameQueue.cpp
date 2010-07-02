@@ -80,10 +80,12 @@ int FrameQueue::wantedFrameNum(bool future)
 
 	//if we can seek then get the number of the last frame in the queue
 	if (future == true) {
+		QMutexLocker listLocker(&listMutex);
 		if (futureFrames.size())
 			lastFrame = futureFrames.last()->frameNum;
 	}
 	else {
+		QMutexLocker listLocker(&listMutex);
 		if (pastFrames.size())
 			lastFrame = pastFrames.last()->frameNum;
 	}
@@ -271,33 +273,26 @@ void FrameQueue::run()
 		//------------------------------------------------------------------------------------------------
 		//make sure the lists are not too long
 		//remove excess frames from the future list, which accumulate when playing backwards
-		{
+		//remove excess future frames
+		while (1) {
 			QMutexLocker listLocker(&listMutex);
-			int numFutureFrames = futureFrames.size();
-			int numPastFrames = pastFrames.size();
-			listLocker.unlock();
+			if (futureFrames.size() <= LISTLEN)
+				break;
+			VideoData *oldFrame = futureFrames.takeLast();
+			if (DEBUG)
+				printf("Retiring future frame %ld\n", oldFrame->frameNum);
+			usedFrames.prepend(oldFrame);
+		}
 
-			//remove excess future frames
-			while (numFutureFrames > LISTLEN) {
-				listLocker.relock();
-				VideoData *oldFrame = futureFrames.takeLast();
-				if (DEBUG)
-					printf("Retiring future frame %ld\n", oldFrame->frameNum);
-				usedFrames.prepend(oldFrame);
-				numFutureFrames = futureFrames.size();
-				listLocker.unlock();
-			}
-
-			//remove excess past frames
-			while (numPastFrames > LISTLEN) {
-				listLocker.relock();
-				VideoData *oldFrame = pastFrames.takeLast();
-				if (DEBUG)
-					printf("Retiring past frame %ld\n", oldFrame->frameNum);
-				usedFrames.prepend(oldFrame);
-				numPastFrames = pastFrames.size();
-				listLocker.unlock();
-			}
+		//remove excess past frames
+		while (1) {
+			QMutexLocker listLocker(&listMutex);
+			if (pastFrames.size() <= LISTLEN)
+				break;
+			VideoData *oldFrame = pastFrames.takeLast();
+			if (DEBUG)
+				printf("Retiring past frame %ld\n", oldFrame->frameNum);
+			usedFrames.prepend(oldFrame);
 		}
 
 		prunetime = timer.restart();
