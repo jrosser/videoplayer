@@ -60,7 +60,7 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 		break;
 
 	default:
-		str[0] = '\0';
+		return;
 	}
 
 	//text box location, defaults to bottom left
