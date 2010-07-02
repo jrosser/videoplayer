@@ -389,11 +389,6 @@ void GLvideo_rt::run()
 				glUseProgramObjectARB(0);
 			}
 
-			perfTimer.restart();
-			if (rendererB)
-				rendererB->renderVideo(videoData, programs[currentShader]);
-			addStatPerfInt("RenderVid", perfTimer.elapsed());
-
 			//upload the texture data for each new frame, or for before we render the first field
 			//of interlaced material
 			perfTimer.restart();
@@ -414,19 +409,24 @@ void GLvideo_rt::run()
 				}
 			}
 			addStatPerfInt("Upload", perfTimer.elapsed());
+		}
+
+		perfTimer.restart();
+		glw.swapBuffers();
+		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
+
+		if (videoData) {
+			perfTimer.restart();
+			if (rendererB)
+				rendererB->renderVideo(videoData, programs[currentShader]);
+			addStatPerfInt("RenderVid", perfTimer.elapsed());
 
 #ifdef WITH_OSD
 			perfTimer.restart();
 			if(osd) osd->render(videoData, params);
 			addStatPerfInt("RenderOSD", perfTimer.elapsed());
 #endif
-
-
 		}
-
-		perfTimer.restart();
-		glw.swapBuffers();
-		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
 
 		//move to the next field when the first has been repeated the required number of times
 		if (params.interlaced_source && (repeat == params.frame_repeats - 1)) {
