@@ -31,4 +31,7 @@
 
 GLuint compileFragmentShader(const char *src);
 
+class VideoData;
+void aspectBox(VideoData* video_data, unsigned display_width, unsigned display_height, bool force_display_aspect);
+
 #endif

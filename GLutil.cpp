@@ -29,6 +29,7 @@
 
 #include <GL/glew.h>
 
+#include <videoData.h>
 #include "GLutil.h"
 
 /* compile the fragment shader specified by @src@.
@@ -75,4 +76,40 @@ GLuint compileFragmentShader(const char *src)
 	glDeleteObjectARB(shader);
 
 	return program;
+}
+
+/**
+ * aspectBox:
+ *
+ * Letter-/Pillar- box the viewport to retain displaying videoData in
+ * the correct aspect ratio for the display.
+ *
+ * NB, currently assumes the pixel_aspect_ratio of the source and
+ * destination are identical
+ */
+void
+aspectBox(VideoData* video_data
+         ,unsigned display_width
+         ,unsigned display_height
+         ,bool force_display_aspect)
+{
+	float source_aspect = (float)video_data->Ywidth / video_data->Yheight;
+	float display_aspect = (float)display_width / display_height;
+
+	if (source_aspect == display_aspect || force_display_aspect) {
+		glViewport(0, 0, display_width, display_height);
+		return;
+	}
+
+	if (display_aspect > source_aspect) {
+		//window is wider than image should be
+		int width = (int)(display_height * source_aspect);
+		int offset = (display_width - width) / 2;
+		glViewport(offset, 0, width, display_height);
+	}
+	else {
+		int height = (int)(display_width / source_aspect);
+		int offset = (display_height - height) / 2;
+		glViewport(0, offset, display_width, height);
+	}
 }

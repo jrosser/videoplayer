@@ -290,33 +290,11 @@ void GLvideo_rt::run()
 			//if the size of the window has changed (doResize)
 			//or the shape of the video in the window has changed
 			if (doResize || (params.view_valid == false)) {
-				//resize the viewport, once we have some video
-				//if(DEBUG) printf("Resizing to %d, %d\n", displaywidth, displayheight);
+				/* setup viewport for rendering */
+				aspectBox(videoData, displaywidth, displayheight, !params.aspect_ratio_lock);
 
-				float sourceAspect = (float)videoData->Ywidth
-				    / (float)videoData->Yheight;
-				float displayAspect = (float)displaywidth
-				    / (float)displayheight;
-
-				if (sourceAspect == displayAspect || !params.aspect_ratio_lock) {
-					glViewport(0, 0, displaywidth, displayheight);
-				}
-				else {
-					if (displayAspect > sourceAspect) {
-						//window is wider than image should be
-						int width = (int)(displayheight*sourceAspect);
-						int offset = (displaywidth - width) / 2;
-						glViewport(offset, 0, width, displayheight);
-					}
-					else {
-						int height = (int)(displaywidth/sourceAspect);
-						int offset = (displayheight - height) / 2;
-						glViewport(0, offset, displaywidth, height);
-					}
-				}
 				doResize = false;
 				params.view_valid = true;
-
 				glClear(GL_COLOR_BUFFER_BIT);
 			}
 
