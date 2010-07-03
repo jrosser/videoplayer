@@ -30,7 +30,7 @@
 #include <GL/glew.h>
 
 #include "GLvideo_renderer.h"
-#include <FTGL/FTGLPolygonFont.h>
+#include <FTGL/ftgl.h>
 
 class FTFont;
 class VideoData;
