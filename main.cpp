@@ -379,6 +379,7 @@ int main(int argc, char **argv)
 		r->setForceFileType(t_params.forceFileType);
 		r->setFileType(t_params.fileType);
 		r->setFileName(t_params.fileName);
+		r->setInterlacedSource(vr_params.interlaced_source);
 
 		reader = r;
 	}
