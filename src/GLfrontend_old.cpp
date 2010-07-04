@@ -77,10 +77,6 @@ void GLfrontend_old::init() {
 	programs[shaderUYVY | Progressive] = compileFragmentShader(shaderUYVYProSrc);
 	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
 
-	lastsrcwidth = 0;
-	lastsrcheight = 0;
-	lastisplanar = false;
-	lastframenum = ULONG_MAX;
 	currentShader = 0;
 }
 
@@ -308,28 +304,8 @@ void GLfrontend_old::render()
 		return;
 	}
 
-	unsigned video_data_width = video_data->data.plane[0].width;
-	unsigned video_data_height = video_data->data.plane[0].height;
-
-	bool video_data_is_new_frame = false;
-	if (lastframenum != video_data->frame_number) {
-		video_data_is_new_frame = true;
-		lastframenum = video_data->frame_number;
-	}
-
 	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
 	perfTimer.start();
-
-	//check for video dimensions changing
-	if ((lastsrcwidth != video_data_width)
-	|| (lastsrcheight != video_data_height))
-	{
-		if (DEBUG)
-			printf("Changing video dimensions to %dx%d\n", video_data_width, video_data_height);
-
-		lastsrcwidth = video_data_width;
-		lastsrcheight = video_data_height;
-	}
 
 	if (video_data->data.packing_format == V8P
 	||  video_data->data.packing_format == V16P) {

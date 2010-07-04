@@ -50,12 +50,6 @@ private:
 	int displaywidth;
 	int displayheight;
 
-	/* cached values to detect if textures need to be recreated/uploaded */
-	int lastsrcwidth;
-	int lastsrcheight;
-	bool lastisplanar;
-	unsigned long lastframenum;
-
 	int currentShader;
 	/* Y'CbCr->RGB matrix */
 	float colour_matrix[4][4];
