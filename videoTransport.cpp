@@ -119,6 +119,15 @@ bool VideoTransport::advance()
 	int currentSpeed = getSpeed();
 	int currentDirection = getDirection();
 
+	//stop after each jog
+	TransportControls ts = transportStatus;
+	if (ts == JogFwd || ts == JogRev) {
+		transportStop();
+		/* a jog is a request to move to the next frame/field immediately
+		 * discard any repeats in this case */
+		current_repeats_todo = 0;
+	}
+
 	if (!current_frame) {
 		/* getting a first frame is more important than waiting for nothing */
 		current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
@@ -173,11 +182,6 @@ bool VideoTransport::advance()
 		/* this is a new frame period with a progressive frame */
 		current_repeats_todo = repeats;
 	}
-
-	//stop after each jog
-	TransportControls ts = transportStatus;
-	if (ts == JogFwd || ts == JogRev)
-		transportStop();
 
 	//stop at first or last frame if there is no looping - will break at speeds other than 1x
 	if (current_frame) {
