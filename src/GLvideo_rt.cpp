@@ -67,9 +67,7 @@
 GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params& params) :
 	QThread(), gl(gl), vt(vt), params(params)
 {
-	renderer[0] = new GLVideoRenderer::PboTex();
-	renderer[1] = new GLVideoRenderer::PboTex();
-	//renderer = new GLVideoRenderer::PboTex();
+	renderer = new GLVideoRenderer::PboTex();
 
 #ifdef WITH_OSD
 	osd = new GLvideo_osd();
@@ -82,9 +80,8 @@ GLvideo_rt::~GLvideo_rt()
 {
 	doRendering = false;
 	wait();
-	
-	if(renderer[0]) delete renderer[0];
-	if(renderer[1]) delete renderer[1];
+
+	if(renderer) delete renderer;
 #ifdef WITH_OSD
 	if(osd) delete osd;
 #endif
@@ -151,10 +148,6 @@ void GLvideo_rt::run()
 	doRendering = true;
 	int currentShader = 0;
 	float colour_matrix[4][4];
-
-	GLVideoRenderer::GLVideoRenderer *rendererA = renderer[0];
-	GLVideoRenderer::GLVideoRenderer *rendererB = NULL;
-	int render_idx = 0;
 
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -265,8 +258,7 @@ void GLvideo_rt::run()
 			if (createGLTextures) {
 				if (DEBUG)
 					printf("Creating GL textures\n");
-				renderer[0]->createTextures(videoData);
-				renderer[1]->createTextures(videoData);
+				renderer->createTextures(videoData);
 			}
 
 			if (params.matrix_valid == false) {
@@ -293,25 +285,12 @@ void GLvideo_rt::run()
 			perfTimer.restart();
 			/* only upload new frames (old ones stay in the GL) */
 			if(videoData_is_new_frame) {
-				if(rendererA)
-					rendererA->uploadTextures(videoData);
-
-				//rotate the renderers for upload and display
-				rendererB = renderer[render_idx];
-				render_idx = (render_idx) ? 0 : 1;
-				rendererA = renderer[render_idx];
+				renderer->uploadTextures(videoData);
 			}
 			addStatPerfInt("Upload", perfTimer.elapsed());
-		}
 
-		perfTimer.restart();
-		gl->swapBuffers();
-		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
-
-		if (videoData) {
 			perfTimer.restart();
-			if (rendererB)
-				rendererB->renderVideo(videoData, programs[currentShader]);
+			renderer->renderVideo(videoData, programs[currentShader]);
 			addStatPerfInt("RenderVid", perfTimer.elapsed());
 
 #ifdef WITH_OSD
@@ -320,6 +299,10 @@ void GLvideo_rt::run()
 			addStatPerfInt("RenderOSD", perfTimer.elapsed());
 #endif
 		}
+
+		perfTimer.restart();
+		gl->swapBuffers();
+		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
 
 		if (is_new_frame_period) {
 			//measure overall frame period

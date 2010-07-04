@@ -66,7 +66,7 @@ private:
 	VideoTransport *vt;
 
 	GLvideo_osd *osd;
-	GLVideoRenderer::GLVideoRenderer *renderer[2];
+	GLVideoRenderer::GLVideoRenderer *renderer;
 	GLvideo_params& params;
 
 	int displaywidth;
