@@ -63,6 +63,7 @@ public:
 
 	VideoTransport(FrameQueue *fq);
 	void setLooping(bool l);
+	void setRepeats(unsigned) {}
 
 	VideoData* getNextFrame(void); //the frame that is currently being displayed, this pointer is only manipulated from the read thread
 	int getDirection(); //return the current transport direction -1 reverse, 0 stopped/paused, 1 forward.
