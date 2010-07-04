@@ -211,5 +211,8 @@ void MainWindow::toggleChrominance()
 void MainWindow::toggleDeinterlace()
 {
 	vr_params.deinterlace ^= 1;
+	/* configure the video transport such that if deinterlacing is not occuring,
+	 * to only display a frame once when jogging */
+	video_transport->setSteppingIgnoreInterlace(!vr_params.deinterlace);
 }
 

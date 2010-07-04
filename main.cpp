@@ -407,6 +407,7 @@ int main(int argc, char **argv)
 	//object controlling the video playback 'transport'
 	VideoTransport* vt = new VideoTransport(frameQueue);
 	vt->setRepeats(t_params.frame_repeats);
+	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
 
 	frameQueue->start();
 

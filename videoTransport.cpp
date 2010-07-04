@@ -40,6 +40,7 @@ VideoTransport::VideoTransport(FrameQueue *fq) :
 	current_frame_field_num = 0;
 	repeats = 1;
 	repeats_rem = 0;
+	ignore_interlaced_when_stepping = 0;
 }
 
 void VideoTransport::setLooping(bool l)
@@ -119,6 +120,8 @@ bool VideoTransport::advance()
 	int currentSpeed = getSpeed();
 	int currentDirection = getDirection();
 
+	bool do_interlace = 1;
+
 	//stop after each jog
 	TransportControls ts = transportStatus;
 	if (ts == JogFwd || ts == JogRev) {
@@ -126,6 +129,9 @@ bool VideoTransport::advance()
 		/* a jog is a request to move to the next frame/field immediately
 		 * discard any repeats in this case */
 		current_repeats_todo = 0;
+		/* if using an interlaced source but not deinterlacing,
+		 * don't display each frame twice when stepping */
+		do_interlace = !ignore_interlaced_when_stepping;
 	}
 
 	if (!current_frame) {
@@ -141,7 +147,7 @@ bool VideoTransport::advance()
 		}
 
 		/* if there are insufficient repeats to do interlace, don't do it */
-		bool do_interlace = repeats > 1;
+		do_interlace &= repeats > 1;
 
 		/* advance by speed, counting in fields/frames */
 		int field_delta = current_frame_field_num + currentSpeed*currentDirection;

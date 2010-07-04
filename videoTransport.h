@@ -64,6 +64,8 @@ public:
 	VideoTransport(FrameQueue *fq);
 	void setLooping(bool l);
 	void setRepeats(unsigned r) { repeats = r; }
+	/* if using an interlaced source but not deinterlacing, set the following */
+	void setSteppingIgnoreInterlace(bool b) { ignore_interlaced_when_stepping = b; }
 
 	VideoData* getFrame(); //the frame that is currently being displayed
 	bool advance(); //advance to the next frame (in the correct directon @ speed).
@@ -111,6 +113,9 @@ private:
 	unsigned repeats; //< the number of times advance is called before moving to the next frame period.
 	unsigned repeats_rem; //< when interlaced, number of leftover repeats after previous field
 
+	/* modify behaviour of advance() when single stepping interlaced content
+	 * (but no deinterlacing is occuring) */
+	bool ignore_interlaced_when_stepping;
 
 	bool looping;
 	TransportControls transportStatus; //what we are doing now - shared with readThread
