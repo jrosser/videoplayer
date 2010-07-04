@@ -70,6 +70,7 @@ struct Transport_params {
 	bool forceFileType;
 	int videoWidth;
 	int videoHeight;
+	int frame_repeats;
 };
 
 static void
@@ -149,7 +150,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		desc.add_options()
 		    ("width,w",       po::value(&tp.videoWidth),         "int    1920    Width of video luma component")
 		    ("height,h",      po::value(&tp.videoHeight),        "int    1080    Height of video luma component")
-		    ("repeats,r",     po::value(&vp.frame_repeats),      "int    0       Frame is repeated r extra times")
+		    ("repeats,r",     po::value(&tp.frame_repeats),      "int    0       Frame is repeated r extra times")
 		    ("loop,l",        po::value(&tp.looping),            "int    1       Number of times to loop video (1=inf)")
 		    ("quit,q",        po::bool_switch(&tp.quit_at_end),  "int    0       Exit at end of video file (implies loop=0)")
 		    ("interlace,i",   po::bool_switch(&vp.interlaced_source),   "               Source is interlaced")
@@ -304,7 +305,6 @@ int main(int argc, char **argv)
 
 	struct GLvideo_params vr_params;
 	/* some defaults in the abscence of any settings */
-	vr_params.frame_repeats = 1;
 	vr_params.caption = "hello world";
 	vr_params.osd_scale = 1.;
 	vr_params.osd_back_alpha = 0.7f;
@@ -336,6 +336,7 @@ int main(int argc, char **argv)
 	t_params.forceFileType = false;
 	t_params.videoWidth = 1920;
 	t_params.videoHeight = 1080;
+	t_params.frame_repeats = 1;
 
 	struct Qt_params qt_params;
 	qt_params.hidemouse = false;
@@ -388,7 +389,7 @@ int main(int argc, char **argv)
 
 	//object controlling the video playback 'transport'
 	VideoTransport* vt = new VideoTransport(frameQueue);
-	vt->setRepeats(vr_params.frame_repeats);
+	vt->setRepeats(t_params.frame_repeats);
 
 	frameQueue->start();
 

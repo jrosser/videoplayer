@@ -25,8 +25,6 @@ std::istream& operator>>(std::istream& s, OSDmode& m)
 }
 
 struct GLvideo_params {
-	int frame_repeats;
-
 	bool osd_valid;
 	QString font_file;
 	QString caption;
