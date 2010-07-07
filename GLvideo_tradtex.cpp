@@ -1,12 +1,9 @@
 #include "GLvideo_tradtex.h"
 #include "videoData.h"
 
-//needed for NULL
-#include <stdio.h>
-
 namespace GLVideoRenderer
 {
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
+#define BUFFER_OFFSET(i) ((char *)0 + (i))
 
 TradTex::TradTex()
 {
@@ -36,7 +33,7 @@ void TradTex::createTextures(VideoData *video_data)
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.u);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, video_data->glInternalFormat,
 		             video_data->Cwidth, video_data->Cheight, 0,
-		             video_data->glFormat, video_data->glType, NULL);
+		             video_data->glFormat, video_data->glType, 0);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
 		                video_data->glMinMaxFilter);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
@@ -45,7 +42,7 @@ void TradTex::createTextures(VideoData *video_data)
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.v);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, video_data->glInternalFormat,
 		             video_data->Cwidth, video_data->Cheight, 0,
-		             video_data->glFormat, video_data->glType, NULL);
+		             video_data->glFormat, video_data->glType, 0);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
 		                video_data->glMinMaxFilter);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
@@ -57,7 +54,7 @@ void TradTex::createTextures(VideoData *video_data)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.y);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, video_data->glInternalFormat,
 	             video_data->glYTextureWidth, video_data->Yheight, 0,
-	             video_data->glFormat, video_data->glType, NULL);
+	             video_data->glFormat, video_data->glType, 0);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
 	                video_data->glMinMaxFilter);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,

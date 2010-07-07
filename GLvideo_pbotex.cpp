@@ -1,8 +1,6 @@
 #include <string.h>
 #include <cassert>
 
-//needed for NULL
-#include <stdio.h>
 
 #include "GLvideo_pbotex.h"
 
@@ -10,7 +8,7 @@
 
 namespace GLVideoRenderer
 {
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
+#define BUFFER_OFFSET(i) ((char *)0 + (i))
 
 PboTex::PboTex()
 {
@@ -41,7 +39,7 @@ void PboTex::createTextures(VideoData *video_data)
 	glGenBuffers(1, &buf);
 
 	/* The explicit bind to the zero pixel unpack buffer object allows
-	 * passing NULL in glTexImage2d() to be unspecified texture data
+	 * passing 0 in glTexImage2d() to be unspecified texture data
 	 * (ie, create the storage for the texture but don't upload antything
 	 */
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
@@ -50,7 +48,7 @@ void PboTex::createTextures(VideoData *video_data)
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.u);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, video_data->glInternalFormat,
 		             video_data->Cwidth, video_data->Cheight, 0,
-		             video_data->glFormat, video_data->glType, NULL);
+		             video_data->glFormat, video_data->glType, 0);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
 		                video_data->glMinMaxFilter);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
@@ -59,7 +57,7 @@ void PboTex::createTextures(VideoData *video_data)
 		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.v);
 		glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, video_data->glInternalFormat,
 		             video_data->Cwidth, video_data->Cheight, 0,
-		             video_data->glFormat, video_data->glType, NULL);
+		             video_data->glFormat, video_data->glType, 0);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
 		                video_data->glMinMaxFilter);
 		glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
@@ -71,7 +69,7 @@ void PboTex::createTextures(VideoData *video_data)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, textures.y);
 	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, video_data->glInternalFormat,
 	             video_data->glYTextureWidth, video_data->Yheight, 0,
-	             video_data->glFormat, video_data->glType, NULL);
+	             video_data->glFormat, video_data->glType, 0);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER,
 	                video_data->glMinMaxFilter);
 	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER,
@@ -87,7 +85,7 @@ void PboTex::uploadTextures(VideoData *video_data)
 	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, buf);
 
 	if (video_data->isPlanar) {
-		glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->UdataSize, NULL,
+		glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->UdataSize, 0,
 		             GL_STREAM_DRAW);
 		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
 		assert(ioMem);
@@ -98,7 +96,7 @@ void PboTex::uploadTextures(VideoData *video_data)
 		                video_data->Cheight, video_data->glFormat,
 		                video_data->glType, BUFFER_OFFSET(0));
 
-		glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->VdataSize, NULL,
+		glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->VdataSize, 0,
 		             GL_STREAM_DRAW);
 		ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
 		assert(ioMem);
@@ -110,7 +108,7 @@ void PboTex::uploadTextures(VideoData *video_data)
 		                video_data->glType, BUFFER_OFFSET(0));
 	}
 
-	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->YdataSize, NULL,
+	glBufferData(GL_PIXEL_UNPACK_BUFFER_ARB, video_data->YdataSize, 0,
 	             GL_STREAM_DRAW);
 	ioMem = glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY);
 	assert(ioMem);
