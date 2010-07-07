@@ -1,7 +1,9 @@
 #ifndef __GLVIDEO_PBOTEX
 #define __GLVIDEO_PBOTEX
 
+#include <GL/glew.h>
 #include "GLvideo_renderer.h"
+class VideoData;
 
 /* NB, any changes to the public interface
  * /must/ be reflected in GLvideo_tradtex.h */

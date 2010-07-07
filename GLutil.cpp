@@ -29,13 +29,13 @@
 
 #include <GL/glew.h>
 
-#include <videoData.h>
+#include "videoData.h"
 #include "GLutil.h"
 
 /* compile the fragment shader specified by @src@.
  * Returns the allocated program object name.
  * Aborts whole program on failure .*/
-GLuint compileFragmentShader(const char *src)
+unsigned compileFragmentShader(const char *src)
 {
 	/* Compile shader source */
 	GLuint shader = glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);

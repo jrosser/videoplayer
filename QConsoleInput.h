@@ -27,8 +27,9 @@
 #ifndef __QCONSOLEINPUT
 #define __QCONSOLEINPUT
 
-#include <QtCore>
+#include <QThread>
 
+struct QObject;
 struct termios;
 
 class QConsoleInput : public QThread {

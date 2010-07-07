@@ -25,9 +25,10 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <cassert>
-#include <QtGui>
+#include <QtCore>
 #include <sstream>
 
+#include "videoData.h"
 #include "frameQueue.h"
 #include "videoTransport.h"
 #include "readerInterface.h"

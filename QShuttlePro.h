@@ -27,9 +27,11 @@
 #ifndef QSHUTTLEPRO_H
 #define QSHUTTLEPRO_H
 
-#include <QtGui>
+#include <sys/time.h>
+#include <pthread.h>
 
-#include "pthread.h"
+#include <QObject>
+#include <QThread>
 
 class QShuttlePro : public QThread {
 	Q_OBJECT

@@ -1,6 +1,7 @@
 #ifndef __GLVIDEO_TRADTEX
 #define __GLVIDEO_TRADTEX
 
+#include <GL/glew.h>
 #include "GLvideo_renderer.h"
 class VideoData;
 

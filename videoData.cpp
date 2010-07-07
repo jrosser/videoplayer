@@ -24,17 +24,16 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include "videoData.h"
+#include <QtGlobal>
 
 #include <stdlib.h>
-#include <QtGlobal>
-
-#include <QtGlobal>
 
 #ifdef Q_OS_WIN32
 #include <malloc.h>
 #define valloc malloc
 #endif
+
+#include "videoData.h"
 
 VideoData::VideoData()
 {

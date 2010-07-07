@@ -27,8 +27,8 @@
 #ifndef READERINTERFACE_H_
 #define READERINTERFACE_H_
 
-#include "videoData.h"
-#include "frameQueue.h"
+class VideoData;
+class FrameQueue;
 
 class ReaderInterface {
 public:

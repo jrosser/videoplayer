@@ -34,7 +34,6 @@ class QComboBox;
 class QCheckBox;
 class QValidator;
 
-
 class VideoFileDialog : public QFileDialog
 {
 	Q_OBJECT

@@ -27,10 +27,9 @@
 #ifndef VIDEOTRANSPORT_H
 #define VIDEOTRANSPORT_H
 
-#include <QtGui>
+#include <QObject>
 
-#include "videoData.h"
-
+class VideoData;
 class FrameQueue;
 
 class VideoTransport : public QObject

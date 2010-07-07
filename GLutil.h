@@ -27,9 +27,7 @@
 #ifndef GLUTIL_H_
 #define GLUTIL_H_
 
-#include <GL/glew.h>
-
-GLuint compileFragmentShader(const char *src);
+unsigned compileFragmentShader(const char *src);
 
 class VideoData;
 void aspectBox(VideoData* video_data, unsigned display_width, unsigned display_height, bool force_display_aspect);

@@ -1,6 +1,7 @@
 #include <string.h>
 #include <cassert>
 
+#include <GL/glew.h>
 
 #include "GLvideo_pbotex.h"
 

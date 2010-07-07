@@ -27,9 +27,7 @@
 #ifndef GLVIDEO_RT_H_
 #define GLVIDEO_RT_H_
 
-#include <GL/glew.h>
-#include <QtGui>
-
+#include <QThread>
 
 class QGLWidget;
 class VideoTransport;
@@ -62,7 +60,7 @@ private:
 
 	bool doRendering;
 
-	GLuint programs[shaderMax]; //handles for the shaders and programs
+	unsigned programs[shaderMax]; //handles for the shaders and programs
 	QGLWidget &glw; /* widget/interface providing a GL context */
 
 	VideoTransport *vt;

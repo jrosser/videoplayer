@@ -27,9 +27,8 @@
 #ifndef GLVIDEO_MT_H
 #define GLVIDEO_MT_H
 
-#include <QtGui>
-/* glew.h must be included before gl.h, which QGLWidget includes */
-#include <GL/glew.h>
+#include <QObject>
+#include <QTimer>
 #include <QGLWidget>
 
 class GLvideo_rt;

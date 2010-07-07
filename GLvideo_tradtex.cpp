@@ -1,3 +1,6 @@
+
+#include <GL/glew.h>
+
 #include "GLvideo_tradtex.h"
 #include "videoData.h"
 

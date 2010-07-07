@@ -24,6 +24,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <QtCore>
 #include <stdio.h>
 
 #include <GL/glew.h>
@@ -35,9 +36,10 @@
 #ifdef Q_OS_MACX
 # include "agl_getproc.h"
 #endif
-
-#include <QtGui>
+/* glew.h must be included before gl.h (included by QGLWidget) */
 #include <QGLWidget>
+
+
 #include "GLvideo_rt.h"
 #include "GLvideo_renderer.h"
 #include "GLvideo_tradtex.h"

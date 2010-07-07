@@ -27,8 +27,6 @@
 #ifndef GLVIDEO_OSD_H_
 #define GLVIDEO_OSD_H_
 
-#include <GL/glew.h>
-
 class FTFont;
 class VideoData;
 struct GLvideo_params;

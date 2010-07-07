@@ -24,6 +24,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <QtGui>
+
 #include "mainwindow.h"
 
 #include "GLvideo_mt.h"

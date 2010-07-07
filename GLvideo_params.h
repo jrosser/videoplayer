@@ -1,7 +1,8 @@
 #ifndef __GLVIDEO_PARAMS_H
 #define __GLVIDEO_PARAMS_H
 
-#include <QtCore>
+#include <istream>
+#include <QString>
 
 enum OSDmode {
 	OSD_NONE = 0,

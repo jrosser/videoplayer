@@ -24,7 +24,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <QtGui>
+#include <QtCore>
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -43,6 +43,8 @@
 #define mmap64 mmap
 #endif
 
+#include "frameQueue.h"
+#include "videoData.h"
 #include "yuvReaderMmap.h"
 #include "stats.h"
 

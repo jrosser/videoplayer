@@ -27,6 +27,8 @@
 #ifndef YUVREADER_H_
 #define YUVREADER_H_
 
+#include <QString>
+
 #include "readerInterface.h"
 #include "videoData.h"
 

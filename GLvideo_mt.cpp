@@ -24,11 +24,11 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <QtGui>
+
 #include "GLvideo_mt.h"
 #include "GLvideo_rt.h"
 #include "videoTransport.h"
-
-#include "GLvideo_params.h"
 
 GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, GLvideo_params& vr_params) :
 	QGLWidget(parent), renderThread(new GLvideo_rt(*this, v, vr_params)), vr_params(vr_params)

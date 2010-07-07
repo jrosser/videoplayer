@@ -24,7 +24,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <QtGui>
+#include <QtCore>
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -49,6 +49,8 @@
 #define off64_t off_t
 #endif
 
+#include "frameQueue.h"
+#include "videoData.h"
 #include "yuvReader.h"
 #include "stats.h"
 

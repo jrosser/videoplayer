@@ -24,6 +24,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <stdio.h>
+
+#include "videoData.h"
 #include "videoTransport.h"
 #include "frameQueue.h"
 

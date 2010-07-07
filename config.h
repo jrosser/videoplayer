@@ -1,6 +1,8 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+#include <QtGlobal>
+
 #ifdef Q_OS_LINUX
 #define DEFAULT_FONTFILE "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf"
 #endif

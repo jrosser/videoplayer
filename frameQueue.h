@@ -27,11 +27,9 @@
 #ifndef FRAMEQUEUE_H_
 #define FRAMEQUEUE_H_
 
-#include <QtGui>
+#include <QtCore>
 
-#include "videoData.h"
-
-class VideoRead;
+class VideoData;
 class ReaderInterface;
 
 class FrameQueue : public QThread {
