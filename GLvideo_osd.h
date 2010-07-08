@@ -35,6 +35,7 @@ struct GLvideo_params;
 
 class GLvideo_osd {
 public:
+	GLvideo_osd();
 
 	void render(VideoData *videoData, GLvideo_params &params);
 	~GLvideo_osd();

@@ -9,6 +9,12 @@
 
 #define DEBUG 0
 
+GLvideo_osd::GLvideo_osd()
+	: font(0)
+{
+	return;
+}
+
 GLvideo_osd::~GLvideo_osd()
 {
 	if(font)
