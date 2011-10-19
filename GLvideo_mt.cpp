@@ -31,7 +31,7 @@
 #include "videoTransport.h"
 
 GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, GLvideo_params& vr_params) :
-	QGLWidget(parent), renderThread(new GLvideo_rt(*this, v, vr_params)), vr_params(vr_params)
+	QGLWidget(parent), renderThread(new GLvideo_rt(*this, v, vr_params)), vr_params(vr_params), done_qt_glinit(0)
 {
 	alwaysHideMouse = false;
 	setMouseTracking(true);
@@ -75,24 +75,47 @@ void GLvideo_mt::setAlwaysHideMouse(bool h)
 
 void GLvideo_mt::initializeGL()
 {
-	//handled by the worker thread
+	/* initializeGL is called by QT from QGLWidget::glInit. */
+	done_qt_glinit = 1;
+	/* All GL commands are handled by the rendering thread */
 }
 
-/* rendering is done here. */
 void GLvideo_mt::paintGL()
 {
+	/* All GL commands are handled by the rendering thread */
+}
+
+void GLvideo_mt::resizeGL(int w, int h)
+{
+	/* Signal the resize to the rendering thread, but don't issue
+	 * any GL commands in this context */
+	renderThread->resizeViewport(w, h);
 }
 
 void GLvideo_mt::paintEvent(QPaintEvent * event)
 {
-	event=event;
-	//absorb any paint events - let the worker thread update the window
+	/* Painting is handled by the worker thread, however, QT internally
+	 * initializes the GL context and state by QGLWidget::glInit() if
+	 * uninitialized during handling paintEvent.
+	 * If no initialization has occured, pass the call to the parent.
+	 * However, all subsequent calls must be absorbed, since QT's
+	 * default paintEvent handler will call makeCurrent() and play
+	 * havock with the rendering context */
+	if (!done_qt_glinit)
+		QGLWidget::paintEvent(event);
 }
 
 void GLvideo_mt::resizeEvent(QResizeEvent * event)
 {
-	//added at the suggestion of Trolltech - if the rendering thread
-	//is slow to start the first window resize event will issue a makeCurrent() before
-	//the rendering thread does, stealing the openGL context from it
-	renderThread->resizeViewport(event->size().width(), event->size().height());
+	/* Painting is handled by the worker thread, however, QT internally
+	 * initializes the GL context and state by QGLWidget::glInit() if
+	 * uninitialized during handling resizeEvent.
+	 * If no initialization has occured, pass the call to the parent.
+	 * However, all subsequent calls must be absorbed, since QT's
+	 * default resizeEvent handler will call makeCurrent() and play
+	 * havock with the rendering context */
+	if (!done_qt_glinit)
+		QGLWidget::resizeEvent(event);
+	else
+		resizeGL(event->size().width(), event->size().height());
 }

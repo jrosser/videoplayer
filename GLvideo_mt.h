@@ -61,11 +61,13 @@ private slots:
 private:
 	void initializeGL();
 	void paintGL();
+	void resizeGL(int, int);
 	void paintEvent(QPaintEvent * event);
 	void resizeEvent(QResizeEvent * event);
 	void mouseMoveEvent(QMouseEvent *ev);
 	bool alwaysHideMouse;
 	QTimer mouseHideTimer;
+	bool done_qt_glinit;
 };
 
 #endif
