@@ -36,9 +36,7 @@
 using namespace std;
 
 #include <iostream>
-#include <boost/program_options.hpp>
-#include "df_boost_prog_opts.hpp"
-//namespace po = boost::program_options;
+#include "program_options_lite.h"
 
 #include "readerInterface.h"
 #include "yuvReader.h"
@@ -135,6 +133,17 @@ usage()
 	printf("\n");
 }
 
+/* string parsing is specialized -- copy the whole string, not just the
+ * first word */
+namespace df { namespace program_options_lite {
+	template<>
+	inline void
+	Option<QString>::parse(const std::string& arg)
+	{
+		opt_storage = arg.c_str();
+	}
+}}
+
 bool
 parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp, Qt_params& qt)
 {
@@ -144,154 +153,122 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 	if (getenv("COLUMNS"))
 		cols = atoi(getenv("COLUMNS"));
 
-	try {
-		//using namespace fixes;
-		//namespace po = boost::program_options;
-		namespace po = fixes::program_options;
-		// Declare the supported options.
-		po::options_description desc("Allowed options            type   default  description\n"
-		                             "===============            ====   =======  ===========", cols);
-		desc.add_options()
-		    ("width,w",       po::value(&tp.videoWidth),         "int    1920    Width of video luma component")
-		    ("height,h",      po::value(&tp.videoHeight),        "int    1080    Height of video luma component")
-		    ("repeats,r",     po::value(&tp.frame_repeats),      "int    0       Frame is repeated r extra times")
-		    ("loop,l",        po::value(&tp.looping),            "int    1       Number of times to loop video (1=inf)")
-		    ("quit,q",        po::bool_switch(&tp.quit_at_end),  "int    0       Exit at end of video file (implies loop=0)")
-		    ("interlace,i",   po::bool_switch(&tp.interlaced_source),   "               Source is interlaced")
-		    ("deinterlace,d", po::bool_switch(&vp.deinterlace),  "               Enable Deinterlacer (requires -i)")
-		    ("yrange",        po::value(&vp.input_luma_range),   "int    220     Range of input luma (white-black+1)")
-		    ("yblack",        po::value(&vp.input_luma_blacklevel),   "int    16      Blacklevel of input luma")
-		    ("cblack",        po::value(&vp.input_chroma_blacklevel),   "int    16      Blacklevel of input chroma")
-		    ("out-range",     po::value(&vp.output_range),       "int    220     Range of R'G'B' output (white-black+1)")
-		    ("out-black",     po::value(&vp.output_blacklevel),   "int    16      Blacklevel of R'G'B' output")
-		    ("ymult",         po::value(&vp.luminance_mul),       "float  1.0     User luma multipler")
-		    ("cmult",         po::value(&vp.chrominance_mul),     "float  1.0     User chroma multiplier")
-		    ("yoffset2",      po::value(&vp.luminance_offset2),   "float  0.0     User luma offset2")
-		    ("coffset2",      po::value(&vp.chrominance_offset2), "float  0.0     User chroma offset2")
-		    ("matrixkr",      po::value(&vp.matrix_Kr),           "float  0.2126  Luma coefficient Kr")
-		    ("matrixkg",      po::value(&vp.matrix_Kg),           "float  0.7152  Luma coefficient Kg")
-		    ("matrixkb",      po::value(&vp.matrix_Kb),           "float  0.0722  Luma coefficient Kb\n"
-		                                                      "               ITU-R BT709/BT1361, SMPTE274M/296M")
-		    ("sdmatrix,s",                                    "               As '-kr 0.299 -kg 0.587 -kb 0.114'\n"
-		                                                      "               ITU-R BT601/BT470, SMPTE170M/293M")
+	bool opt_sdmatrix, opt_help, opt_version;
+	namespace po = df::program_options_lite;
+	po::Options opts;
+	opts.addOptions()
+		("width,w",       tp.videoWidth,                  "Width of video luma component")
+		("height,h",      tp.videoHeight,                 "Height of video luma component")
+		("repeats,r",     tp.frame_repeats,               "Frame is repeated r extra times")
+		("loop,l",        tp.looping,                     "Number of times to loop video (1=inf)")
+		("quit,q",        tp.quit_at_end,                 "Exit at end of video file (implies --loop=0)")
+		("interlace,i",   tp.interlaced_source,           "Source is interlaced")
+		("deinterlace,d", vp.deinterlace,                 "Enable Deinterlacer (requires -i)")
+		("yrange",        vp.input_luma_range,            "Range of input luma (white-black+1)")
+		("yblack",        vp.input_luma_blacklevel,       "Blacklevel of input luma")
+		("cblack",        vp.input_chroma_blacklevel,     "Blacklevel of input chroma")
+		("out-range",     vp.output_range,                "Range of R'G'B' output (white-black+1)")
+		("out-black",     vp.output_blacklevel,           "Blacklevel of R'G'B' output")
+		("ymult",         vp.luminance_mul,               "User luma multipler")
+		("cmult",         vp.chrominance_mul,             "User chroma multiplier")
+		("yoffset2",      vp.luminance_offset2,           "User luma offset2")
+		("coffset2",      vp.chrominance_offset2,         "User chroma offset2")
+		("matrixkr",      vp.matrix_Kr,                   "Luma coefficient Kr")
+		("matrixkg",      vp.matrix_Kg,                   "Luma coefficient Kg")
+		("matrixkb",      vp.matrix_Kb,                   "Luma coefficient Kb\nITU-R BT709/BT1361, SMPTE274M/296M")
+		("sdmatrix,s",    opt_sdmatrix, false,            "As '-kr 0.299 -kg 0.587 -kb 0.114'\nITU-R BT601/BT470, SMPTE170M/293M")
 #if WITH_OSD
-		    ("fontfile",      po::value<string>(),            "string         TrueType font file for OSD")
-		    ("osdscale",      po::value(&vp.osd_scale),           "float  1.0     OSD size scaling factor")
-		    ("osdbackalpha",  po::value(&vp.osd_back_alpha),"float  0.7     Transparency for OSD background")
-		    ("osdtextalpha",  po::value(&vp.osd_text_alpha),"float  0.5     Transparency for OSD text")
-		    ("osdstate",      po::value(&vp.osd_bot),           "int    0       OSD initial state")
-		    ("caption",       po::value<string>(),            "string         OSD Caption text")
+		("fontfile",      vp.font_file,                   "TrueType font file for OSD")
+		("osdscale",      vp.osd_scale,                   "OSD size scaling factor")
+		("osdbackalpha",  vp.osd_back_alpha,              "Transparency for OSD background")
+		("osdtextalpha",  vp.osd_text_alpha,              "Transparency for OSD text")
+		("osdstate",      (int&)vp.osd_bot,               "OSD initial state")
+		("caption",       vp.caption,                     "OSD Caption text")
 #endif
-		    ("filetype,t",    po::value<string>(),            "string         Force file type\n"
-		                                                      "               [i420|yv12|uyvy|v210|v216]")
-		    ("full,f",        po::bool_switch(&qt.start_fullscreen),"               Start in full screen mode")
-		    ("hidemouse",     po::bool_switch(&qt.hidemouse), "               Never show the mouse pointer")
-		    ("video",                                         "               Video file to play")
-		    ("help",                                          "               Show usage information")
-		    ("version,V",                                     "               Show version information");
+		("filetype,t",    tp.fileType,                    "Force file type\n[i420|yv12|uyvy|v210|v216]")
+		("full,f",        qt.start_fullscreen,            "Start in full screen mode")
+		("hidemouse",     qt.hidemouse,                   "Never show the mouse pointer")
+		("help",          opt_help, false,                "Show usage information")
+		("version,V",     opt_version, false,             "Show version information");
 
-		//file filename is a 'positional option' that we give the name 'video' to
-		po::positional_options_description p;
-		p.add("video", -1);
+	po::setDefaults(opts);
+	const list<const char*>& argv_unhandled = po::scanArgv(opts, argc, (const char**) argv);
 
-		po::variables_map vm;
-		po::store(po::command_line_parser(argc, argv). options(desc).positional(p).run(), vm);
-		po::notify(vm);
+	if (opt_help) {
+		usage();
+		po::doHelp(cout, opts, cols);
+		exit(0);
+	}
 
-		if (vm.count("help")) {
-			usage();
-			std::cout << desc << std::endl;
-			exit(0);
-		}
+	if (opt_version) {
+		version();
+		exit(0);
+	}
 
-		if (vm.count("version")) {
-			version();
-			exit(0);
-		}
+	if (opt_sdmatrix) {
+		SetLumaCoeffsRec601(vp);
+	}
 
-		if (vm.count("sd")) {
-			SetLumaCoeffsRec601(vp);
-		}
-
-		if (vm.count("matrixkr") || vm.count("matrixkg") || vm.count("matrixkb")) {
-			if (vp.matrix_Kr + vp.matrix_Kg + vp.matrix_Kb < 1.0)
-				printf("Warning, luma coefficients do not sum to unity\n");
-		}
+	if (vp.matrix_Kr + vp.matrix_Kg + vp.matrix_Kb < 1.0) {
+		printf("Warning, luma coefficients do not sum to unity\n");
+	}
 
 #ifdef WITH_OSD
-		if (vm.count("fontfile")) {
-			string tmp = vm["fontfile"].as<string>();
-			vp.font_file = tmp.data();
+	if (1) {
+		/* unconditionally verify this, even if the default */
 
-			//check OSD font file exists
-			QFileInfo fi(vp.font_file);
-			if(fi.exists() == false) {
-				printf("Cannot find OSD font file %s\n", vp.font_file.toLatin1().data());
-				allParsed = false;
-			}
-			else {
-				if(fi.isReadable() == false) {
-					printf("Cannot read OSD font file %s\n", vp.font_file.toLatin1().data());
-					allParsed = false;
-				}
-			}
+		//check OSD font file exists
+		QFileInfo fi(vp.font_file);
+		if(fi.exists() == false) {
+			printf("Cannot find OSD font file %s\n", vp.font_file.toLatin1().data());
+			allParsed = false;
 		}
-
-		if(vm.count("caption")) {
-			string tmp = vm["caption"].as<string>();
-			vp.caption = tmp.data();
-		}
-#endif
-
-		QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0");
-#ifdef HAVE_DIRAC
-		known_extensions.append(" drc");
-#endif
-
-		if (vm.count("filetype")) {
-			string tmp = vm["filetype"].as<string>();
-			tp.fileType = tmp.data();
-
-			if(known_extensions.contains(tp.fileType.toLower(), Qt::CaseInsensitive))
-				tp.forceFileType=true;
-			else {
-				printf("Unknown file type %s\n", tp.fileType.toLatin1().data());
-				allParsed = false;
-			}
-
-		}
-
-		if (vm.count("video")) {
-			string tmp = vm["video"].as<string>();
-			tp.fileName = tmp.data();
-
-			QFileInfo fi(tp.fileName);
-
-			if(fi.exists()) {
-				if(tp.forceFileType == false) {
-					//file extension must be one we know about
-					if(known_extensions.contains(fi.suffix().toLower(), Qt::CaseInsensitive) == false) {
-						printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
-						printf("Please specify file format with the -t flag\n");
-						allParsed = false;
-					}
-					else {
-						//the file type has not been forced, and it is an allowed file type
-						tp.fileType = fi.suffix().toLower();
-					}
-				}
-			}
-			else {
-				printf("File %s does not exist\n", tp.fileName.toLatin1().data());
+		else {
+			if(fi.isReadable() == false) {
+				printf("Cannot read OSD font file %s\n", vp.font_file.toLatin1().data());
 				allParsed = false;
 			}
 		}
 	}
-	catch(exception& e)
-	{
-		printf("Command line error : ");
-		cout << e.what() << "\n";
-		allParsed = false;
+#endif
+
+	QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0");
+#ifdef HAVE_DIRAC
+	known_extensions.append(" drc");
+#endif
+
+	if (!tp.fileType.isEmpty()) {
+		if(known_extensions.contains(tp.fileType.toLower(), Qt::CaseInsensitive))
+			tp.forceFileType=true;
+		else {
+			printf("Unknown file type %s\n", tp.fileType.toLatin1().data());
+			allParsed = false;
+		}
+	}
+
+	if (!argv_unhandled.empty()) {
+		tp.fileName = QString(argv_unhandled.front());
+
+		QFileInfo fi(tp.fileName);
+
+		if(fi.exists()) {
+			if(tp.forceFileType == false) {
+				//file extension must be one we know about
+				if(known_extensions.contains(fi.suffix().toLower(), Qt::CaseInsensitive) == false) {
+					printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
+					printf("Please specify file format with the -t flag\n");
+					allParsed = false;
+				}
+				else {
+					//the file type has not been forced, and it is an allowed file type
+					tp.fileType = fi.suffix().toLower();
+				}
+			}
+		}
+		else {
+			printf("File %s does not exist\n", tp.fileName.toLatin1().data());
+			allParsed = false;
+		}
 	}
 
 	return allParsed;

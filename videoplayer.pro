@@ -5,10 +5,10 @@ CONFIG += thread console debug_and_release
 
 # source files
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h config.h
-HEADERS += stats.h version.h df_boost_prog_opts.hpp fileDialog.h
+HEADERS += stats.h version.h program_options_lite.h fileDialog.h
 
 SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp
-SOURCES += stats.cpp version.c df_boost_prog_opts.cpp fileDialog.cpp
+SOURCES += stats.cpp version.c program_options_lite.cpp fileDialog.cpp
 
 # openGL video widget source files
 HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_renderer.h shaders.h
@@ -67,9 +67,6 @@ macx {
   SOURCES += agl_getproc.cpp
   HEADERS += agl_getproc.h
 
-  #boost
-  INCLUDEPATH += /opt/local/include/boost-1_34_1/
-
   contains(DEFINES, WITH_OSD) {
     CONFIG += link_pkgconfig
     PKGCONFIG += ftgl
@@ -99,14 +96,6 @@ win32 {
 		DEFINES += GLEW_STATIC
 		LIBS += $$WINLIBS\glew\lib\glew32s.lib
 		INCLUDEPATH += $$WINLIBS\glew\include
-
-		#----------------------------------------------------
-		# boost (program_options only)
-		BOOST_LIB = $$WINLIBS\boost_1_35_0\stage\lib\boost_program_options
-		CONFIG(debug, debug|release):BOOST_LIB = $$join(BOOST_LIB,,, _D.lib)
-		else:BOOST_LIB = $$join(BOOST_LIB,,, .lib)
-		LIBS += $$BOOST_LIB
-		INCLUDEPATH += $$WINLIBS\boost_1_35_0
 
 		contains(DEFINES, WITH_OSD) {
 			#----------------------------------------------------
@@ -139,11 +128,6 @@ win32 {
 		LIBS = $$MINGWLIBS\glew\lib\libglew32.a
 		INCLUDEPATH += $$MINGWLIBS\glew\include
 
-		#----------------------------------------------------
-		# boost
-		LIBS += $$MINGWLIBS\boost_1_35_0\stage\lib\libboost_program_options-mgw34-mt-s-1_35.lib
-		INCLUDEPATH += $$MINGWLIBS\boost_1_35_0
-
 		contains(DEFINES, WITH_OSD) {
 			#----------------------------------------------------
 			# ftgl
@@ -160,8 +144,6 @@ win32 {
 			LIBS += -lopengl32 -lglu32
 		}
 	}
-} else {
-	LIBS += -lboost_program_options
 }
 
 VersionGen.name = Generate version.c based on git describe
