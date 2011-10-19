@@ -2,7 +2,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2008 BBC Research
+ * Copyright (c) 2011 BBC Research and Development
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,53 +24,33 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GLVIDEO_RT_H_
-#define GLVIDEO_RT_H_
+#include <QGLWidget>
 
-#include <QThread>
+#include "GLvideo_rtAdaptor.h"
 
-class GLvideo_rtAdaptor;
-class VideoTransport;
-namespace GLVideoRenderer
-{
-class GLVideoRenderer;
-}
-struct GLvideo_params;
-class GLvideo_osd;
-
-class GLvideo_rt : public QThread {
+class GLvideo_rtAdaptorQT : public GLvideo_rtAdaptor {
 public:
+	GLvideo_rtAdaptorQT(QGLWidget& glw)
+		: glw(glw)
+	{}
 
-	GLvideo_rt(GLvideo_rtAdaptor* gl, VideoTransport *vt, GLvideo_params& params);
-	~GLvideo_rt();
-	void resizeViewport(int w, int h);
-	void run();
+	/* make the window's openGL context current for the calling
+	 * thread.  It is important that prior to this call, that the
+	 * context is released from any other thread via glw.doneCurrent()
+	 */
+	void init() {
+		glw.makeCurrent();
+	}
+
+	void swapBuffers() {
+		glw.swapBuffers();
+	}
 
 private:
-	enum ShaderPrograms {
-		Progressive = 0x0,
-		Deinterlace = 0x1,
-		shaderUYVY = 0,
-		shaderPlanar = 2,
-		/* Increment in steps of 2 */
-		shaderBogus,
-		shaderMax};
-
-	void compileFragmentShaders();
-
-	bool doRendering;
-
-	unsigned programs[shaderMax]; //handles for the shaders and programs
-	GLvideo_rtAdaptor *gl; /* widget/interface providing a GL context */
-
-	VideoTransport *vt;
-
-	GLvideo_osd *osd;
-	GLVideoRenderer::GLVideoRenderer *renderer[2];
-	GLvideo_params& params;
-
-	int displaywidth;
-	int displayheight;
+	QGLWidget& glw;
 };
 
-#endif /*GLVIDEO_RT_H_*/
+GLvideo_rtAdaptor* mkGLvideo_rtAdaptorQT(QGLWidget& qtwidget)
+{
+	return new GLvideo_rtAdaptorQT(qtwidget);
+}

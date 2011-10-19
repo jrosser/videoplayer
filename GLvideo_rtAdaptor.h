@@ -2,7 +2,7 @@
  *
  * The MIT License
  *
- * Copyright (c) 2008 BBC Research
+ * Copyright (c) 2011 BBC Research and Development
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,53 +24,24 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GLVIDEO_RT_H_
-#define GLVIDEO_RT_H_
+#ifndef __GLVIDEO_RTADAPTOR
+#define __GLVIDEO_RTADAPTOR
 
-#include <QThread>
-
-class GLvideo_rtAdaptor;
-class VideoTransport;
-namespace GLVideoRenderer
-{
-class GLVideoRenderer;
-}
-struct GLvideo_params;
-class GLvideo_osd;
-
-class GLvideo_rt : public QThread {
+class GLvideo_rtAdaptor {
 public:
+	/* perform any initialization to allow the current thread to render
+	 * into a particular drawable */
+	virtual void init() = 0;
 
-	GLvideo_rt(GLvideo_rtAdaptor* gl, VideoTransport *vt, GLvideo_params& params);
-	~GLvideo_rt();
-	void resizeViewport(int w, int h);
-	void run();
-
-private:
-	enum ShaderPrograms {
-		Progressive = 0x0,
-		Deinterlace = 0x1,
-		shaderUYVY = 0,
-		shaderPlanar = 2,
-		/* Increment in steps of 2 */
-		shaderBogus,
-		shaderMax};
-
-	void compileFragmentShaders();
-
-	bool doRendering;
-
-	unsigned programs[shaderMax]; //handles for the shaders and programs
-	GLvideo_rtAdaptor *gl; /* widget/interface providing a GL context */
-
-	VideoTransport *vt;
-
-	GLvideo_osd *osd;
-	GLVideoRenderer::GLVideoRenderer *renderer[2];
-	GLvideo_params& params;
-
-	int displaywidth;
-	int displayheight;
+	/* swap the front and back buffers of the current drawable */
+	virtual void swapBuffers() = 0;
 };
 
-#endif /*GLVIDEO_RT_H_*/
+class QGLWidget;
+class QWidget;
+
+/* factory to create an adaptor for reusing the QT GL rendering context
+ * and passing all calls through the QT connection to the paintdevice */
+GLvideo_rtAdaptor* mkGLvideo_rtAdaptorQT(QGLWidget&);
+
+#endif

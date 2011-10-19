@@ -36,9 +36,7 @@
 #ifdef Q_OS_MACX
 # include "agl_getproc.h"
 #endif
-/* glew.h must be included before gl.h (included by QGLWidget) */
-#include <QGLWidget>
-
+#include "GLvideo_rtAdaptor.h"
 
 #include "GLvideo_rt.h"
 #include "GLvideo_renderer.h"
@@ -62,8 +60,8 @@
 #define DEBUG 0
 
 
-GLvideo_rt::GLvideo_rt(QGLWidget &gl, VideoTransport *vt, GLvideo_params& params) :
-	QThread(), glw(gl), vt(vt), params(params)
+GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params& params) :
+	QThread(), gl(gl), vt(vt), params(params)
 {
 	renderer[0] = new GLVideoRenderer::PboTex();
 	renderer[1] = new GLVideoRenderer::PboTex();
@@ -126,6 +124,9 @@ void GLvideo_rt::run()
 	if (DEBUG)
 		printf("Starting renderthread\n");
 
+	/* initialize the gl windowing adaptor */
+	gl->init();
+
 	VideoData *videoData = NULL;
 
 	//monitoring
@@ -144,16 +145,6 @@ void GLvideo_rt::run()
 	doRendering = true;
 	int currentShader = 0;
 	float colour_matrix[4][4];
-
-	//initialise OpenGL
-	glw.makeCurrent();
-	const QGLContext* context = glw.context();
-
-	while (!context || !context->isValid()) {
-		msleep(50);
-		glw.makeCurrent();
-		context = glw.context();
-	}
 
 	GLVideoRenderer::GLVideoRenderer *rendererA = renderer[0];
 	GLVideoRenderer::GLVideoRenderer *rendererB = NULL;
@@ -308,7 +299,7 @@ void GLvideo_rt::run()
 		}
 
 		perfTimer.restart();
-		glw.swapBuffers();
+		gl->swapBuffers();
 		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
 
 		if (videoData) {
