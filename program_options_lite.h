@@ -69,18 +69,30 @@ struct OptionBase
 template<typename T>
 struct Option : public OptionBase
 {
-	Option(const std::string& name, T& storage, T default_val, const std::string& desc)
-	: OptionBase(name, desc), opt_storage(storage), opt_default_val(default_val)
+	Option(const std::string& name, T& storage, const std::string& desc)
+	: OptionBase(name, desc), opt_storage(storage)
 	{}
 
 	void parse(const std::string& arg);
 
-	void setDefault()
-	{
-		opt_storage = opt_default_val;
-	}
+	void setDefault() {}
 
 	T& opt_storage;
+};
+
+/** Type specific option storage (with default value) */
+template<typename T>
+struct OptionDefault : public Option<T>
+{
+	OptionDefault(const std::string& name, T& storage, T default_val, const std::string& desc)
+	: Option<T>(name, storage, desc), opt_default_val(default_val)
+	{}
+
+	void setDefault()
+	{
+		Option<T>::opt_storage = opt_default_val;
+	}
+
 	T opt_default_val;
 };
 
@@ -165,6 +177,19 @@ public:
 	/**
 	 * Add option described by name to the parent Options list,
 	 *   with storage for the option's value
+	 *   with desc as an optional help description
+	 */
+	template<typename T>
+	OptionSpecific&
+	operator()(const std::string& name, T& storage, const std::string& desc = "")
+	{
+		parent.addOption(new Option<T>(name, storage, desc));
+		return *this;
+	}
+
+	/**
+	 * Add option described by name to the parent Options list,
+	 *   with storage for the option's value
 	 *   with default_val as the default value
 	 *   with desc as an optional help description
 	 */
@@ -172,7 +197,7 @@ public:
 	OptionSpecific&
 	operator()(const std::string& name, T& storage, T default_val, const std::string& desc = "")
 	{
-		parent.addOption(new Option<T>(name, storage, default_val, desc));
+		parent.addOption(new OptionDefault<T>(name, storage, default_val, desc));
 		return *this;
 	}
 
