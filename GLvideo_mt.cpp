@@ -51,11 +51,6 @@ GLvideo_mt::~GLvideo_mt()
 	if(renderThread) delete renderThread;
 }
 
-void GLvideo_mt::start()
-{
-	renderThread->start(/*QThread::TimeCriticalPriority*/);
-}
-
 /* Reveal the mouse whenever it is moved,
  * Cause it to be hidden 1second later */
 void GLvideo_mt::mouseMoveEvent(QMouseEvent *ev)
@@ -80,11 +75,14 @@ void GLvideo_mt::setAlwaysHideMouse(bool h)
 		hideMouse();
 }
 
+#include <iostream>
 void GLvideo_mt::initializeGL()
 {
 	/* initializeGL is called by QT from QGLWidget::glInit. */
 	done_qt_glinit = 1;
 	/* All GL commands are handled by the rendering thread */
+	doneCurrent();
+	renderThread->start(/*QThread::TimeCriticalPriority*/);
 }
 
 void GLvideo_mt::paintGL()

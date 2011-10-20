@@ -52,7 +52,6 @@ MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTra
 	glvideo_mt = new GLvideo_mt(this, vt, vr_params);
 
 	setCentralWidget(glvideo_mt);
-	glvideo_mt->start();
 
 	//set up menus etc
 	createActions();
