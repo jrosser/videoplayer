@@ -44,4 +44,12 @@ class QWidget;
  * and passing all calls through the QT connection to the paintdevice */
 GLvideo_rtAdaptor* mkGLvideo_rtAdaptorQT(QGLWidget&);
 
+#ifdef Q_WS_X11
+/* factory to create an adaptor for using an independent X11 connection
+ * with its own GL rendering context.  This works around an issue when
+ * using QT with X11/XCB, whereby glXSwapBuffers would block, waiting for
+ * something to kick the X event loop. */
+GLvideo_rtAdaptor* mkGLvideo_rtAdaptorQTX11(QWidget&);
+#endif
+
 #endif

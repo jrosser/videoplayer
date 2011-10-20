@@ -25,6 +25,12 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <QGLWidget>
+#ifdef Q_WS_X11
+# include <QWidget>
+# include <QX11Info>
+# include <X11/Xlib.h>
+# include <GL/glx.h>
+#endif
 
 #include "GLvideo_rtAdaptor.h"
 
@@ -54,3 +60,60 @@ GLvideo_rtAdaptor* mkGLvideo_rtAdaptorQT(QGLWidget& qtwidget)
 {
 	return new GLvideo_rtAdaptorQT(qtwidget);
 }
+
+#ifdef Q_WS_X11
+class GLvideo_rtAdaptorQTX11 : public GLvideo_rtAdaptor {
+public:
+	/*
+	 * Lame hack to work around issues with QT, X11, XCB and GLX stalling
+	 * when threads are enabled.
+	 * Obtain a new GL context and run with a completely seperate set of
+	 * X communication, so that QT can't break it.
+	 */
+	GLvideo_rtAdaptorQTX11(QWidget& qtwidget) {
+		win = qtwidget.winId();
+		const QX11Info& x11info = qtwidget.x11Info();
+		screen = x11info.screen();
+		visualid = static_cast<Visual*>(x11info.visual())->visualid;
+	}
+
+	void init();
+	void swapBuffers();
+
+private:
+	Window win;
+	int screen;
+	VisualID visualid;
+	Display *dpy;
+	GLXContext context;
+};
+
+void GLvideo_rtAdaptorQTX11::init()
+{
+	dpy = XOpenDisplay(DisplayString(QX11Info::display()));
+
+	/* Find the Visual */
+	XVisualInfo *visual;
+	XVisualInfo visual_template;
+	visual_template.visualid = visualid;
+	visual_template.screen = screen;
+	int visual_num;
+	visual = XGetVisualInfo(dpy, VisualIDMask | VisualScreenMask, &visual_template, &visual_num);
+
+	/* Create Context & install in thread */
+	context = glXCreateContext(dpy, visual, NULL, True);
+	glXMakeCurrent(dpy, win, context);
+
+	XFree(visual);
+};
+
+void GLvideo_rtAdaptorQTX11::swapBuffers()
+{
+	glXSwapBuffers(dpy, win);
+}
+
+GLvideo_rtAdaptor* mkGLvideo_rtAdaptorQTX11(QWidget& qtwidget)
+{
+	return new GLvideo_rtAdaptorQTX11(qtwidget);
+}
+#endif

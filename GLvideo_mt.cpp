@@ -31,7 +31,11 @@
 #include "videoTransport.h"
 
 #include "GLvideo_rtAdaptor.h"
-#define RTADAPTOR(obj) mkGLvideo_rtAdaptorQT(obj)
+#ifdef Q_WS_X11
+# define RTADAPTOR(obj) mkGLvideo_rtAdaptorQTX11(obj)
+#else
+# define RTADAPTOR(obj) mkGLvideo_rtAdaptorQT(obj)
+#endif
 
 GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, GLvideo_params& vr_params) :
 	QGLWidget(parent), renderThread(new GLvideo_rt(RTADAPTOR(*this), v, vr_params)), vr_params(vr_params), done_qt_glinit(0)
