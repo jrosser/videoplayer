@@ -41,9 +41,6 @@ using namespace std;
 #include "readerInterface.h"
 #include "yuvReader.h"
 #include "yuvReaderMmap.h"
-#ifdef HAVE_DIRAC
-#include "diracReader.h"
-#endif
 
 #include "frameQueue.h"
 #include "videoTransport.h"
@@ -233,9 +230,6 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 #endif
 
 	QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0");
-#ifdef HAVE_DIRAC
-	known_extensions.append(" drc");
-#endif
 
 	if (!tp.fileType.isEmpty()) {
 		if(known_extensions.contains(tp.fileType.toLower(), Qt::CaseInsensitive))
@@ -350,17 +344,6 @@ int main(int argc, char **argv)
 
 	//object that generates frames to be inserted into the frame queue
 	ReaderInterface* reader = NULL;
-#ifdef HAVE_DIRAC
-	//make dirac reader if required
-	if(t_params.fileType.toLower() == "drc") {
-		DiracReader *r = new DiracReader( *frameQueue );
-
-		r->setFileName(t_params.fileName);
-		reader = r;
-		r->start(QThread::LowestPriority);
-	}
-#endif
-
 	//default to YUV reader
 	if (reader == NULL) {
 #if 0

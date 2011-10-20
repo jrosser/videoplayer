@@ -23,7 +23,6 @@ HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
 SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp
 
 # enable or disable the optional features here
-#DEFINES += HAVE_DIRAC
 DEFINES += WITH_OSD
 
 contains(DEFINES, WITH_OSD) {
@@ -38,15 +37,6 @@ unix {
   # mmap gives a performance increase when reading
   HEADERS += yuvReaderMmap.h
   SOURCES += yuvReaderMmap.cpp
-}
-
-contains(DEFINES, HAVE_DIRAC) {
-	HEADERS += diracReader.h schro_parse.c
-	SOURCES += diracReader.cpp
-
-	#schroedinger library
-	CONFIG += link_pkgconfig
-	PKGCONFIG += schroedinger-1.0
 }
 
 linux-g++ {
