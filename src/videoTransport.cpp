@@ -27,6 +27,7 @@
 #include <cassert>
 #include <list>
 #include <vector>
+#include <algorithm>
 #include <stdio.h>
 
 #include "videoData.h"
@@ -80,7 +81,7 @@ bool VideoTransport::advance()
 
 	future_frame_num_list_head_idx_semaphore.acquire();
 
-	current_frame_num.setSrcFPS(frame_queue->getReader()->getFPS(current_frame_num.getCurrentFrameNum()));
+	current_frame_num.setSrcFPS(frame_queues[0]->getReader()->getFPS(current_frame_num.getCurrentFrameNum()));
 
 	if (!advance_ok) {
 		/* don't advance the frame counter: we have unfinished business from
@@ -93,8 +94,8 @@ bool VideoTransport::advance()
 	}
 	else if (!current_frame_num.advance()) {
 		/* no need to load a new frame, still reusing the old one */
-		for (int i = 0; i < 1 /* num_frame_queues */; i++) {
-			if (!output_frame)
+		for (unsigned i = 0; i < frame_queues.size() ; i++) {
+			if (!output_frames[i])
 				continue;
 			/* update the field polarity of the current output frame to
 			 * handle the case where we jump from one field to the next
@@ -102,7 +103,7 @@ bool VideoTransport::advance()
 			/* todo: this isn't exactly nice, it would be better to
 			 * return a new field period and create a slave picture
 			 * with the new field information */
-			output_frame->is_field1 = current_frame_num.getCurrentField();
+			output_frames[i]->is_field1 = current_frame_num.getCurrentField();
 		}
 		future_frame_num_list_head_idx_semaphore.release();
 		return false;
@@ -112,17 +113,17 @@ bool VideoTransport::advance()
 
 	/* sanity check: verify that current_frame is expected */
 	assert(current_frame == current_frame_num.getCurrentFrameNum());
-	VideoData *next_output[1];
+	VideoData *next_output[8]; /* xxx: arbitary large constant */
 
 	/* extract next frame from the FrameQueue.  If the FrameQueue has
 	 * not been able to load the required frame, it will return NULL.
 	 * In such cases, the frame period is not advanced */
 	advance_ok = true; /* set to false if a frame queue failed to provide a frame */
 	bool eof = true; /* set to false if any frame_queue is not at eof */
-	for (int i = 0; i < 1 /*num_frame_queues*/; i++) {
+	for (unsigned i = 0; i < frame_queues.size(); i++) {
 		VideoData *frame = NULL;
 		try {
-			frame = frame_queue->getFrame(current_frame);
+			frame = frame_queues[i]->getFrame(current_frame);
 			if (!frame) {
 				advance_ok = false;
 			} else {
@@ -167,9 +168,7 @@ bool VideoTransport::advance()
 		/* copy the frames that we have fetched from the queues to the
 		 * output list.  this ensures that the output list always refers
 		 * to the same frame period. */
-		for (int i = 0; i < 1 /*um_frame_queues*/; i++) {
-			output_frame = next_output[i];
-		}
+		copy(next_output, next_output+output_frames.size(), output_frames.begin());
 	}
 	future_frame_num_list_head_idx_semaphore.release();
 	/* wake the reader threads in case any are blocked on a full list */
@@ -208,14 +207,13 @@ void VideoTransport::setSpeed(int new_speed, bool jog)
 }
 
 
-VideoTransport::VideoTransport(ReaderInterface *r, int read_ahead, int lru_cache_len)
-	: output_frame(0)
-	, future_frame_num_list(read_ahead, 0)
-	, future_frame_num_list_head_idx_semaphore(2)
+VideoTransport::VideoTransport(const list<ReaderInterface*>& readers, int read_ahead, int lru_cache_len)
+	: future_frame_num_list(read_ahead, 0)
+	, future_frame_num_list_head_idx_semaphore(readers.size()+1)
 	, transport_pause(0)
 	, transport_jog(0)
 {
-	num_listeners = 2; /* 1 framequeue + this */
+	num_listeners = readers.size()+1; /* 1 framequeue + this */
 
 	current_frame_num.setInterlaced(true);
 
@@ -224,14 +222,18 @@ VideoTransport::VideoTransport(ReaderInterface *r, int read_ahead, int lru_cache
 	/* preload the initial future frame list with an obvious default */
 	setSpeed(1);
 
-	frame_queue = new FrameQueue(*this, lru_cache_len);
-	frame_queue->setReader(r);
-	frame_queue->start();
+	for (list<ReaderInterface*>::const_iterator it = readers.begin(); it != readers.end(); it++) {
+		FrameQueue *fq = new FrameQueue(*this, lru_cache_len);
+		fq->setReader(*it);
+		fq->start();
+		frame_queues.push_back(fq);
+		output_frames.push_back(NULL);
+	}
 }
 
-VideoData *VideoTransport::getFrame()
+VideoData *VideoTransport::getFrame(int queue)
 {
-	return output_frame;
+	return output_frames.at(queue);
 }
 
 void VideoTransport::transportPlay(int speed)

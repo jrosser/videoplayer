@@ -62,7 +62,7 @@ using namespace std;
 
 struct Transport_params {
 	bool looping;
-	QString fileName;
+	std::list<QString> file_names;
 	QString fileType;
 	bool quit_at_end;
 	bool forceFileType;
@@ -250,10 +250,9 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		}
 	}
 
-	if (!argv_unhandled.empty()) {
-		tp.fileName = QString(argv_unhandled.front());
-
-		QFileInfo fi(tp.fileName);
+	for (list<const char*>::const_iterator it = argv_unhandled.begin(); it != argv_unhandled.end(); it++) {
+		QString file_name(*it);
+		QFileInfo fi(file_name);
 
 		if(fi.exists()) {
 			if(tp.forceFileType == false) {
@@ -262,6 +261,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 					printf("Do not know how to play file with extension %s\n", fi.suffix().toLatin1().data());
 					printf("Please specify file format with the -t flag\n");
 					allParsed = false;
+					break;
 				}
 				else {
 					//the file type has not been forced, and it is an allowed file type
@@ -270,9 +270,11 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 			}
 		}
 		else {
-			printf("File %s does not exist\n", tp.fileName.toLatin1().data());
+			printf("File %s does not exist\n", *it);
 			allParsed = false;
+			break;
 		}
+		tp.file_names.push_back(file_name);
 	}
 
 	return allParsed;
@@ -337,12 +339,13 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	if (t_params.fileName.isEmpty()) {
+	if (t_params.file_names.empty()) {
 		/* user did not provide a file to play.  Prompt the user with an
 		 * OpenFile fialog for a more interactive choice */
 		VideoFileDialog dlg(0);
 
-		if (dlg.exec(t_params.fileName,
+		QString file_name;
+		if (dlg.exec(file_name,
 		             t_params.fileType,
 		             t_params.videoWidth,
 		             t_params.videoHeight,
@@ -352,12 +355,12 @@ int main(int argc, char **argv)
 		}
 
 		t_params.forceFileType = 1;
+		t_params.file_names.push_back(file_name);
 	}
 
 	//object that generates frames to be inserted into the frame queue
-	ReaderInterface* reader = NULL;
-	//default to YUV reader
-	if (reader == NULL) {
+	list<ReaderInterface*> readers;
+	for (list<QString>::iterator it = t_params.file_names.begin(); it != t_params.file_names.end(); it++) {
 #if 0
 		YUVReaderMmap *r = new YUVReaderMmap();
 #else
@@ -368,15 +371,15 @@ int main(int argc, char **argv)
 		r->setVideoHeight(t_params.videoHeight);
 		r->setForceFileType(t_params.forceFileType);
 		r->setFileType(t_params.fileType);
-		r->setFileName(t_params.fileName);
+		r->setFileName(*it);
 		r->setInterlacedSource(t_params.interlaced_source);
 		r->setFPS(t_params.src_fps);
 
-		reader = r;
+		readers.push_back(r);
 	}
 
 	//object controlling the video playback 'transport'
-	VideoTransportQT* vt = new VideoTransportQT(reader, t_params.read_ahead, t_params.lru_cache);
+	VideoTransportQT* vt = new VideoTransportQT(readers, t_params.read_ahead, t_params.lru_cache);
 	//vt->setRepeats(t_params.frame_repeats);
 	vt->setVDUfps(t_params.vdu_fps);
 	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);

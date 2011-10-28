@@ -146,7 +146,7 @@ void GLvideo_rt::run()
 		/* advance the video transport to the next frame.
 		 * frames will be uploaded by GLactions called by the frontend */
 		bool is_new_frame_period = vt->advance();
-		VideoData* videoData = vt->getFrame();
+		VideoData* videoData = vt->getFrame(0);
 
 		perfTimer.restart();
 		frontend->render();

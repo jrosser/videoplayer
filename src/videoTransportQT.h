@@ -8,8 +8,8 @@ class VideoTransportQT : public QObject, public VideoTransport
 	Q_OBJECT
 
 public:
-	VideoTransportQT(ReaderInterface *r, int read_ahead=16, int lru_cache_len=16)
-	: VideoTransport(r, read_ahead, lru_cache_len)
+	VideoTransportQT(const std::list<ReaderInterface*>& rs, int read_ahead=16, int lru_cache_len=16)
+	: VideoTransport(rs, read_ahead, lru_cache_len)
 	{}
 
 protected:

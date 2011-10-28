@@ -27,6 +27,7 @@
 #ifndef VIDEOTRANSPORT_H
 #define VIDEOTRANSPORT_H
 
+#include <list>
 #include <vector>
 
 #include <QSemaphore>
@@ -91,7 +92,7 @@ private:
 class VideoTransport
 {
 public:
-	VideoTransport(ReaderInterface *r, int read_ahead=16, int lru_cache_len=16);
+	VideoTransport(const std::list<ReaderInterface*>& rs, int read_ahead=16, int lru_cache_len=16);
 	void setLooping(bool l) { looping = l; }
 	void setRepeats(unsigned r) { current_frame_num.setRepeats(r); }
 	void setSpeed(int s, bool jog = 0);
@@ -100,7 +101,7 @@ public:
 	void setSteppingIgnoreInterlace(bool b) { ignore_interlaced_when_stepping = b; }
 
 	/* access must be serialised with respect to advance() */
-	VideoData* getFrame(); //the frame that is currently being displayed
+	VideoData* getFrame(int queue); //the frame that is currently being displayed
 	bool advance(); //advance to the next frame (in the correct directon @ speed).
 
 	void transportPlay(int speed);
@@ -113,9 +114,8 @@ protected:
 	virtual void notifyEndOfFile() {};
 
 public:
-	FrameQueue *frame_queue;
-
-	VideoData* output_frame;
+	std::vector<FrameQueue*> frame_queues;
+	std::vector<VideoData*> output_frames;
 
 	/* modify behaviour of advance() when single stepping interlaced content
 	 * (but no deinterlacing is occuring) */

@@ -296,7 +296,7 @@ void GLfrontend_old::render()
 
 	/* obtain the current frame.  NB, this may be the same frame as last time */
 	/* xxx, this will eventually be moved into an action */
-	VideoData* video_data = vt->getFrame();
+	VideoData* video_data = vt->getFrame(0);
 	if (!video_data) {
 		return;
 	}
