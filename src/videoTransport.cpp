@@ -107,6 +107,11 @@ bool VideoTransport::advance()
 	}
 #endif
 
+	if (transport_pause) {
+		/* don't do anything when paused */
+		return false;
+	}
+
 	future_frame_num_list_head_idx_semaphore.acquire();
 
 	/* NB: only advance if we havn't got unfinished business from the
@@ -209,6 +214,7 @@ VideoTransport::VideoTransport(ReaderInterface *r, int read_ahead, int lru_cache
 	: output_frame(0)
 	, future_frame_num_list(read_ahead, 0)
 	, future_frame_num_list_head_idx_semaphore(2)
+	, transport_pause(0)
 {
 	num_listeners = 2; /* 1 framequeue + this */
 
@@ -228,7 +234,7 @@ VideoData *VideoTransport::getFrame()
 }
 
 #define TRANSPORT_MODE(name, speed) \
-	void VideoTransport::transport ## name () { setSpeed(speed); }
+	void VideoTransport::transport ## name () { transport_pause = 0; setSpeed(speed); }
 TRANSPORT_MODE(Fwd100, 100);
 TRANSPORT_MODE(Fwd50, 50);
 TRANSPORT_MODE(Fwd20, 20);
@@ -246,18 +252,19 @@ TRANSPORT_MODE(Rev100, -100);
 
 void VideoTransport::transportStop()
 {
-	/* todo: set stopped state so that advance does nothing */
+	transport_pause = 1;
 	setSpeed(1);
 }
+
 void VideoTransport::transportJogFwd()
 {
 }
+
 void VideoTransport::transportJogRev()
 {
 }
+
 void VideoTransport::transportPlayPause()
 {
-}
-void VideoTransport::transportPause()
-{
+	transport_pause ^= 1;
 }

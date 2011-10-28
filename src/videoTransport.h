@@ -128,7 +128,6 @@ public slots:
 
 	//play / pause
 	void transportPlayPause();
-	void transportPause();
 
 public:
 	FrameQueue *frame_queue;
@@ -178,6 +177,11 @@ public:
 	 * In future this will be fractional to allow framerate matching
 	 */
 	int transport_speed;
+
+	/**
+	 * do not advance the transport automatically if set
+	 */
+	bool transport_pause;
 
 	int num_listeners;
 	bool advance_ok;
