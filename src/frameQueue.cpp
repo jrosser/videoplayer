@@ -26,6 +26,7 @@
 
 #include <QtCore>
 
+#include "videoData.h"
 #include "frameQueue.h"
 #include "videoTransport.h"
 #include "readerInterface.h"
@@ -42,6 +43,10 @@ FrameQueue::~FrameQueue()
 void FrameQueue::run()
 {
 	stop = false;
+
+	/* ideal length of frame queue, must be as long as the readahead list */
+	int ideal_past_queue_len = 10;
+
 	while (!stop) {
 		/* todo: clean up */
 		vt.future_frame_num_list_head_idx_semaphore.acquire();
@@ -57,6 +62,11 @@ void FrameQueue::run()
 				do_load = 1;
 				break;
 			}
+		}
+		/* remove anything that is in the future list from the LRU list */
+		for (int i = 0; i < future_list_len; i++) {
+			int future_frame_num = vt.future_frame_num_list[(vt.future_frame_num_list_head_idx+i) % future_list_len];
+			frame_map_lru.remove(future_frame_num);
 		}
 		locker.unlock();
 
@@ -74,6 +84,17 @@ void FrameQueue::run()
 		locker.relock();
 		frame_map[frame_num] = v;
 		frame_map_lru.push_back(frame_num);
+
+		/* purge excess frames from the queue */
+		int num_frames_to_discard = frame_map_lru.size() - ideal_past_queue_len;
+		for (int i = 0; i < num_frames_to_discard; i++) {
+			int frame_to_delete = frame_map_lru.front();
+			frame_map_lru.pop_front();
+			frame_map_t::iterator it = frame_map.find(frame_to_delete);
+			delete it->second;
+			frame_map.erase(it);
+		}
+
 		locker.unlock();
 	}
 }
@@ -87,7 +108,11 @@ VideoData* FrameQueue::getFrame(int frame_num)
 		/* not found */
 		return NULL;
 	}
-	return it->second;
 
+	/* update the LRU status */
+	frame_map_lru.remove(frame_num);
+	frame_map_lru.push_back(frame_num);
+
+	return it->second;
 	/* todo: handle EOF */
 }
