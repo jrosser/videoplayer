@@ -107,16 +107,23 @@ bool VideoTransport::advance()
 	}
 #endif
 
-	if (transport_pause) {
-		/* don't do anything when paused */
+	bool paused = transport_pause && !transport_jog;
+	if (paused) {
 		return false;
 	}
 
 	future_frame_num_list_head_idx_semaphore.acquire();
 
-	/* NB: only advance if we havn't got unfinished business from the
-	 * previous frame period */
-	if (advance_ok && !current_frame_num.advance()) {
+	if (!advance_ok) {
+		/* don't advance the frame counter: we have unfinished business from
+		 * the previous frame period */
+	}
+	else if (transport_jog) {
+		transport_jog = 0; /* only jog once */
+		/* skip to new frames only (ignoring repeats) when jogging */
+		while (!current_frame_num.advance());
+	}
+	else if (!current_frame_num.advance()) {
 		/* no need to load a new frame, still reusing the old one */
 		/* todo: set interlace flag in output */
 		future_frame_num_list_head_idx_semaphore.release();
@@ -188,8 +195,10 @@ bool VideoTransport::advance()
 	return advance_ok;
 }
 
-void VideoTransport::setSpeed(int new_speed)
+void VideoTransport::setSpeed(int new_speed, bool jog)
 {
+	transport_speed = new_speed;
+
 	/* 1. grab the semaphore */
 	future_frame_num_list_head_idx_semaphore.acquire(num_listeners);
 
@@ -201,9 +210,15 @@ void VideoTransport::setSpeed(int new_speed)
 	//future_frame_num_list_serial++; /* allow frame queues to spot a change */
 	future_frame_num_list_head_idx = 0;
 	for (unsigned i = 0; i < future_frame_num_list.size(); i++) {
-		while (!future_frame_num_counter.advance());
+		if (advance_ok || i > 0)
+			/* on the first iteration of the loop, don't advance the counter
+			 * if the current frame failed to load -- we need to cause it to reload */
+			while (!future_frame_num_counter.advance());
 		future_frame_num_list[i] = future_frame_num_counter.getCurrentFrameNum();
 	}
+
+	/* propagate the jog flag */
+	transport_jog = jog;
 
 	/* release the semaphore for FrameQueues to continue */
 	future_frame_num_list_head_idx_semaphore.release(num_listeners);
@@ -215,6 +230,7 @@ VideoTransport::VideoTransport(ReaderInterface *r, int read_ahead, int lru_cache
 	, future_frame_num_list(read_ahead, 0)
 	, future_frame_num_list_head_idx_semaphore(2)
 	, transport_pause(0)
+	, transport_jog(0)
 {
 	num_listeners = 2; /* 1 framequeue + this */
 
@@ -234,7 +250,7 @@ VideoData *VideoTransport::getFrame()
 }
 
 #define TRANSPORT_MODE(name, speed) \
-	void VideoTransport::transport ## name () { transport_pause = 0; setSpeed(speed); }
+	void VideoTransport::transport ## name () { transport_jog = transport_pause = 0; setSpeed(speed); }
 TRANSPORT_MODE(Fwd100, 100);
 TRANSPORT_MODE(Fwd50, 50);
 TRANSPORT_MODE(Fwd20, 20);
@@ -252,19 +268,32 @@ TRANSPORT_MODE(Rev100, -100);
 
 void VideoTransport::transportStop()
 {
+	transport_speed_prev = 1; /* in case pause/play is used to resume */
 	transport_pause = 1;
 	setSpeed(1);
 }
 
 void VideoTransport::transportJogFwd()
 {
+	if (!transport_pause)
+		return;
+	setSpeed(1, true);
 }
 
 void VideoTransport::transportJogRev()
 {
+	if (!transport_pause)
+		return;
+	setSpeed(-1, true);
 }
 
 void VideoTransport::transportPlayPause()
 {
-	transport_pause ^= 1;
+	if (!transport_pause) {
+		transport_pause = 1;
+		transport_speed_prev = transport_speed;
+	} else {
+		transport_pause = 0;
+		setSpeed(transport_speed_prev);
+	}
 }

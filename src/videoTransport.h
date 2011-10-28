@@ -91,7 +91,7 @@ public:
 	VideoTransport(ReaderInterface *r, int read_ahead=16, int lru_cache_len=16);
 	void setLooping(bool l) { looping = l; }
 	void setRepeats(unsigned r) { current_frame_num.setRepeats(r); }
-	void setSpeed(int s);
+	void setSpeed(int s, bool jog = 0);
 	/* if using an interlaced source but not deinterlacing, set the following */
 	void setSteppingIgnoreInterlace(bool b) { ignore_interlaced_when_stepping = b; }
 
@@ -177,6 +177,8 @@ public:
 	 * In future this will be fractional to allow framerate matching
 	 */
 	int transport_speed;
+	int transport_speed_prev;
+	bool transport_jog;
 
 	/**
 	 * do not advance the transport automatically if set
