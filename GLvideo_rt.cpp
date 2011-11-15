@@ -81,7 +81,9 @@ GLvideo_rt::~GLvideo_rt()
 	
 	if(renderer[0]) delete renderer[0];
 	if(renderer[1]) delete renderer[1];
+#ifdef WITH_OSD
 	if(osd) delete osd;
+#endif
 }
 
 void GLvideo_rt::resizeViewport(int width, int height)
