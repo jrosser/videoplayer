@@ -32,6 +32,9 @@
 #include "videoData.h"
 #include "GLutil.h"
 
+#include <algorithm>
+using namespace std;
+
 /* compile the fragment shader specified by @src@.
  * Returns the allocated program object name.
  * Aborts whole program on failure .*/
@@ -108,7 +111,8 @@ void
 aspectBox(VideoData* video_data
          ,unsigned display_width
          ,unsigned display_height
-         ,bool force_display_aspect)
+         ,bool force_display_aspect
+         ,bool zoom_1to1)
 {
 	unsigned video_data_width = video_data->data.plane[0].width;
 	unsigned video_data_height = video_data->data.plane[0].height;
@@ -137,7 +141,41 @@ aspectBox(VideoData* video_data
 	unsigned w_or_x;
 	unsigned y_or_h;
 
-	if (display_aspect > source_aspect) {
+	if (zoom_1to1) {
+		/* place video in middle of display, and postagestamp */
+		int display_centre_x = display_width / 2;
+		int display_centre_y = display_height / 2;
+		int video_width = video_data->data.plane[0].width;
+		int video_height = video_data->data.plane[0].height;
+		int video_centre_x = video_width / 2;
+		int video_centre_y = video_height / 2;
+		/* if video narrower than display: we need to shrink the viewport
+		 * if       wider,                 we limit to the dispay width */
+		viewport_w = min(video_width, (int) display_width);
+		viewport_h = min(video_height, (int) display_height);
+		viewport_x = max(0, display_centre_x - video_centre_x);
+		viewport_y = max(0, display_centre_y - video_centre_y);
+
+		/* draw letterbox */
+		glBegin(GL_QUADS);
+			glColor3f(0.5f, 0.5f, 0.5f);
+			/* bottom */
+			glVertex2i(0, 0);
+			glVertex2i(display_width, 0);
+			glVertex2i(display_width, viewport_y);
+			glVertex2i(0, viewport_y);
+			/* top */
+			glVertex2i(display_width, display_height);
+			glVertex2i(0, display_height);
+			glVertex2i(0, display_height - viewport_y - 1);
+			glVertex2i(display_width, display_height - viewport_y -1);
+		glEnd();
+
+		/* configure to draw pillarboxes */
+		w_or_x = viewport_x;
+		y_or_h = display_height;
+	}
+	else if (display_aspect > source_aspect) {
 		/* pillar boxing required */
 		viewport_w = (int)(display_height * source_aspect);
 		viewport_x = (display_width - viewport_w) / 2;
@@ -153,7 +191,7 @@ aspectBox(VideoData* video_data
 	}
 	/* draw letter/pillar boxes */
 	glBegin(GL_QUADS);
-		glColor3f(0.f, 0.f, 0.f);
+		glColor3f(0.5f, 0.5f, 0.5f);
 		/* bottom / left */
 		glVertex2i(0, 0);
 		glVertex2i(w_or_x, 0);
@@ -161,12 +199,26 @@ aspectBox(VideoData* video_data
 		glVertex2i(0, y_or_h);
 		/* top / right */
 		glVertex2i(display_width, display_height);
-		glVertex2i(display_width - w_or_x, display_height);
-		glVertex2i(display_width - w_or_x, display_height - y_or_h);
+		glVertex2i(display_width - w_or_x -1, display_height);
+		glVertex2i(display_width - w_or_x -1, display_height - y_or_h);
 		glVertex2i(display_width, display_height - y_or_h);
 	glEnd();
 	/* set viewport to required area for video rendering */
 	glViewport(viewport_x, viewport_y, viewport_w, viewport_h);
 
-	setCoordSystem(video_data);
+	if (zoom_1to1) {
+		int video_width = video_data->data.plane[0].width;
+		int video_height = video_data->data.plane[0].height;
+		int xoff = max(0, (video_width - (int)display_width)/2);
+		int yoff = max(0, (video_height - (int)display_height)/2);
+		int width = xoff ? display_width : video_width;
+		int height = yoff ? display_height : video_height;
+		glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0,width,0,height,-1, 1);
+		glMatrixMode(GL_MODELVIEW);
+	}
+	else {
+		setCoordSystem(video_data);
+	}
 }

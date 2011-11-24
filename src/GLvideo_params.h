@@ -64,6 +64,10 @@ struct GLvideo_params {
 	/* @aspect_ratio_lock@ forces the assumption that
 	 * the video PAR is the same as the device PAR */
 	bool aspect_ratio_lock;
+
+	/* @zoom_1to1@ forces video to be pixel mapped, even if the
+	 * viewport isn't large enough */
+	bool zoom_1to1;
 };
 
 /* SetLumaCoeffsRec709

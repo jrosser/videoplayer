@@ -184,6 +184,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("matrixkg",      vp.matrix_Kg,                   "Luma coefficient Kg")
 		("matrixkb",      vp.matrix_Kb,                   "Luma coefficient Kb\nITU-R BT709/BT1361, SMPTE274M/296M")
 		("sdmatrix,s",    opt_sdmatrix, false,            "As '-kr 0.299 -kg 0.587 -kb 0.114'\nITU-R BT601/BT470, SMPTE170M/293M")
+		("pixelmapped",   vp.zoom_1to1,                   "Pixel map video, rather than scailing to viewport")
 		("vt.readahead",  tp.read_ahead,                  "Video transport read ahead list length")
 		("vt.lrucache",   tp.lru_cache,                   "Video transport least recently used cache length")
 #if WITH_OSD
@@ -313,6 +314,7 @@ int main(int argc, char **argv)
 	vr_params.aspect_ratio_lock = true;
 	vr_params.show_luma = true;
 	vr_params.show_chroma = true;
+	vr_params.zoom_1to1 = true;
 
 	struct Transport_params t_params;
 	t_params.looping = true;
