@@ -35,16 +35,16 @@ class GLvideo_osd {
 public:
 	GLvideo_osd();
 
-	void render(VideoData *videoData, GLvideo_params &params);
+	void render(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params);
 	~GLvideo_osd();
 	
 private:
 
-	void renderOSD(VideoData *videoData, GLvideo_params &params);
+	void renderOSD(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params);
 	void drawText(const char *str);
 	void draw2Text(const char *str1, const char *str2, float h_spacing);
 	void drawPerfTimer(const char *str, int num, const char *units, float h_spacing);
-	void renderStats(VideoData *);
+	void renderStats(unsigned viewport_width, unsigned viewport_height, GLvideo_params &);
 	FTFont *font;
 };
 

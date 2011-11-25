@@ -21,7 +21,7 @@ GLvideo_osd::~GLvideo_osd()
 		delete font;
 }
 
-void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params)
+void GLvideo_osd::render(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params)
 {
 	if (!params.osd_valid) {
 		if (DEBUG)
@@ -31,7 +31,6 @@ void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params)
 
 		font = new FTGLPolygonFont(params.font_file.toLatin1().constData());
 		if (!font->Error()) {
-			font->FaceSize(72);
 			font->CharMap(ft_encoding_unicode);
 		}
 		else {
@@ -45,19 +44,20 @@ void GLvideo_osd::render(VideoData *videoData, GLvideo_params &params)
 	if(font) {
 
 		if(params.osd_bot != OSD_NONE)
-			renderOSD(videoData, params);
+			renderOSD(viewport_width, viewport_height, videoData, params);
 
 		if(params.osd_perf)
-			renderStats(videoData);
+			renderStats(viewport_width, viewport_height, params);
 	}
 }
 
-void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
+void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params)
 {
 	//bounding box of text
 	float cx1, cy1, cz1, cx2, cy2, cz2;
 
 	//text string
+	font->FaceSize(72);
 	char str[255];
 	switch (params.osd_bot) {
 	case OSD_FRAMENUM:
@@ -82,13 +82,12 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 	}
 
 	//text box location, defaults to bottom left
-	float tx=0.05 * videoData->data.plane[0].width;
-	float ty=0.05 * videoData->data.plane[0].height;
+	float tx = 0.05 * viewport_width;
+	float ty = 0.05 * viewport_height;
 
 	if (params.osd_bot==OSD_CAPTION) {
 		//put the caption in the middle of the screen
-		tx = videoData->data.plane[0].width - ((cx2 - cx1) * params.osd_scale);
-		tx/=2;
+		tx = (viewport_width - (cx2 - cx1)) / 2.0;
 	}
 
 	//black box that text is rendered onto, larger than the text by 'border'
@@ -102,7 +101,6 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 	//box beind text
 	glPushMatrix();
 	glTranslated(tx, ty, 0);
-	glScalef(params.osd_scale, params.osd_scale, 0); //scale the on screen display
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
@@ -156,15 +154,12 @@ void GLvideo_osd::drawPerfTimer(const char *str, int num, const char *units, flo
 	draw2Text(str, str2, h_spacing);
 }
 
-void GLvideo_osd::renderStats(VideoData *videoData)
+void GLvideo_osd::renderStats(unsigned viewport_width, unsigned viewport_height, GLvideo_params &params)
 {
-	//position of the stats relative to the video
-	float tx = 0.05 * videoData->data.plane[0].width;
-	float ty = 0.95 * videoData->data.plane[0].height;
-
 	//determine approx character size
 	float cx1, cy1, cz1, cx2, cy2, cz2;
 
+	font->FaceSize(12);
 	font->BBox("0", cx1, cy1, cz1, cx2, cy2, cz2);
 	float spacing = (cy2-cy1) * 1.5;
 	float width = cx2 - cx1;
@@ -180,8 +175,7 @@ void GLvideo_osd::renderStats(VideoData *videoData)
 	by2 = (spacing * n_lines * -1) - border*2;
 
 	glPushMatrix();
-	glTranslated(tx, ty, 0); //near the top left corner
-	glScalef(0.25, 0.25, 0); //reduced in size compared to OSD
+	glTranslated(0.025 * viewport_width, (1 - 0.025) * viewport_height, 0); //near the top left corner
 
 	//box beind text
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

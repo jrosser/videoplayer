@@ -153,13 +153,21 @@ void GLvideo_rt::run()
 
 #ifdef WITH_OSD
 		perfTimer.restart();
+
+		glViewport(0, 0, viewport_width, viewport_height);
+		glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0, viewport_width, 0, viewport_height, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+
 		if (videoData_io && videoData) {
 			const QString& tmp = videoData_io->getCaption(videoData->frame_number);
 			if (!tmp.isEmpty()) {
 				params.caption = tmp;
 			}
 		}
-		if(osd && videoData) osd->render(videoData, params);
+		if(osd && videoData) osd->render(viewport_width, viewport_height, videoData, params);
+
 		addStat(*stats, "OSD", perfTimer.elapsed(), "ms");
 #endif
 
