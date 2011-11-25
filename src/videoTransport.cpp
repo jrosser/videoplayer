@@ -123,11 +123,12 @@ bool VideoTransport::advance()
 		VideoData *frame = NULL;
 		try {
 			frame = frame_queue->getFrame(current_frame);
-			eof = false;
-			if (!frame)
+			if (!frame) {
 				advance_ok = false;
-			else
+			} else {
 				frame->fieldNum = current_frame_num.getCurrentField();
+				eof &= frame->isLastFrame;
+			}
 		} catch (...) {
 			/* eof: advancing in this case is ok, this video will just
 			 * be NULL until all queues reach eof */
@@ -135,12 +136,13 @@ bool VideoTransport::advance()
 		next_output[i] = frame;
 	}
 
-	if (eof) {
+	if (advance_ok && eof && !looping) {
 		/* only handle the eof case when all input files have reached eof */
 		if (looping) {
 			//reset frame count
 		} else {
-			transportStop();
+			//transportStop();
+			transport_pause = 1; // fixme: transportStop() causes things to hang.
 			emit(endOfFile());
 		}
 		/* todo: tail recurse, so that frames can be returned after this
