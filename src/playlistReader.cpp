@@ -149,3 +149,19 @@ double PlayListReader::getFPS(int frame_number_raw)
 	}
 	assert(0);
 }
+
+QString PlayListReader::getCaption(int frame_number_raw)
+{
+	unsigned frame_number = frame_number_raw % (last_frame_num+1);
+
+	/* find which playlist item that framenumber is in */
+	typedef std::list<PlayListItem*> PL;
+	for (PL::iterator li = play_list.begin(); li != play_list.end(); li++) {
+		if ((frame_number >= (*li)->frame_num)
+		&&  (frame_number < (*li)->frame_num + (*li)->num_frames))
+		{
+			return (*li)->osdtext;
+		}
+	}
+	assert(0);
+}

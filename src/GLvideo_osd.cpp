@@ -71,6 +71,8 @@ void GLvideo_osd::renderOSD(VideoData *videoData, GLvideo_params &params)
 		break;
 
 	case OSD_CAPTION:
+		if (params.caption.isEmpty())
+			return;
 		sprintf(str, "%s", params.caption.toLatin1().constData());
 		font->BBox(str, cx1, cy1, cz1, cx2, cy2, cz2);
 		break;

@@ -41,6 +41,7 @@ public:
 	PlayListReader();
 	virtual VideoData* pullFrame(int wantedFrame);
 	virtual double getFPS(int wantedFrame);
+	virtual QString getCaption(int wantedFrame);
 
 public:
 	//specific to PlayListReader

@@ -102,6 +102,8 @@ public:
 
 	/* access must be serialised with respect to advance() */
 	VideoData* getFrame(int queue); //the frame that is currently being displayed
+	ReaderInterface* getReader(int queue);
+
 	bool advance(); //advance to the next frame (in the correct directon @ speed).
 
 	void transportPlay(int speed);

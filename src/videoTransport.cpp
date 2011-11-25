@@ -236,6 +236,11 @@ VideoData *VideoTransport::getFrame(int queue)
 	return output_frames.at(queue);
 }
 
+ReaderInterface *VideoTransport::getReader(int queue)
+{
+	return frame_queues.at(queue)->getReader();
+}
+
 void VideoTransport::transportPlay(int speed)
 {
 	transport_jog = 0;

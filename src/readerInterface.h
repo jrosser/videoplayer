@@ -41,6 +41,8 @@ public:
 	virtual void setFPS(double x) { fps = x; }
 	virtual double getFPS(int) { return fps; }
 
+	virtual QString getCaption(int) { return ""; }
+
 	bool randomAccess;
 
 private:

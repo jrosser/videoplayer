@@ -48,6 +48,7 @@
 
 #include "videoData.h"
 #include "videoTransport.h"
+#include "readerInterface.h"
 #include "stats.h"
 
 #include "GLvideo_params.h"
@@ -144,6 +145,7 @@ void GLvideo_rt::run()
 		 * frames will be uploaded by GLactions called by the frontend */
 		bool is_new_frame_period = vt->advance();
 		VideoData* videoData = vt->getFrame(0);
+		ReaderInterface* videoData_io = vt->getReader(0);
 
 		perfTimer.restart();
 		frontend->render();
@@ -151,6 +153,12 @@ void GLvideo_rt::run()
 
 #ifdef WITH_OSD
 		perfTimer.restart();
+		if (videoData_io && videoData) {
+			const QString& tmp = videoData_io->getCaption(videoData->frame_number);
+			if (!tmp.isEmpty()) {
+				params.caption = tmp;
+			}
+		}
 		if(osd && videoData) osd->render(videoData, params);
 		addStat(*stats, "OSD", perfTimer.elapsed(), "ms");
 #endif
