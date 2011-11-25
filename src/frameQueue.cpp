@@ -25,11 +25,13 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <QtCore>
+#include <iostream>
 
 #include "videoData.h"
 #include "frameQueue.h"
 #include "videoTransport.h"
 #include "readerInterface.h"
+#include "stats.h"
 
 using namespace std;
 
@@ -53,7 +55,9 @@ void FrameQueue::run()
 		bool do_load = false;
 		int future_list_len = vt.future_frame_num_list.size();
 		int frame_num;
+		int last_idx = 0;
 		for (int i = 0; i < future_list_len; i++) {
+			last_idx = i;
 			frame_num = vt.future_frame_num_list[(vt.future_frame_num_list_head_idx+i) % future_list_len];
 			if (frame_map.find(frame_num) == frame_map.end()) {
 				do_load = 1;
@@ -65,6 +69,8 @@ void FrameQueue::run()
 			int future_frame_num = vt.future_frame_num_list[(vt.future_frame_num_list_head_idx+i) % future_list_len];
 			frame_map_lru.remove(future_frame_num);
 		}
+		std::stringstream ss; ss << last_idx << "/" << future_list_len << " (" << frame_map.size() << ")";
+		Stats::getInstance().addStat("FrameQueue", "Future", ss.str());
 		locker.unlock();
 
 		vt.future_frame_num_list_head_idx_semaphore.release();
@@ -84,6 +90,8 @@ void FrameQueue::run()
 
 		/* purge excess frames from the queue */
 		int num_frames_to_discard = frame_map_lru.size() - frame_map_lru_cache_maxlen;
+		ss.str(""); ss << num_frames_to_discard << "/" << frame_map_lru.size();
+		Stats::getInstance().addStat("FrameQueue", "LRU discard", ss.str());
 		for (int i = 0; i < num_frames_to_discard; i++) {
 			int frame_to_delete = frame_map_lru.front();
 			frame_map_lru.pop_front();
