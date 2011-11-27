@@ -49,6 +49,9 @@
 #define off64_t off_t
 #endif
 
+#include <errno.h>
+#include <string.h>
+
 #include "frameQueue.h"
 #include "videoData.h"
 #include "yuvReader.h"
@@ -68,17 +71,14 @@ void YUVReader::setFileName(const QString &fn)
 	fileName = fn;
 	QFileInfo info(fileName);
 
-	if (DEBUG)
-		printf("Opening file %s\n", fileName.toLatin1().data());
 	fd = open(fileName.toLatin1().data(), O_RDONLY);
-
-	if (fd < 0 && DEBUG == 1) {
-		printf("[%s]\n", fileName.toLatin1().data());
-		perror("OPEN");
+	if (fd < 0) {
+		fprintf(stderr, "Failed to open '%s': %s\n", fileName.toLatin1().data(), strerror(errno));
+		exit(1);
+		return;
 	}
 
 	QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
-	printf("Playing file with type %s\n", type.toLatin1().data());
 
 	firstFrameNum = 0;
 
