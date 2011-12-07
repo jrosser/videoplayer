@@ -4,7 +4,7 @@ QT += opengl
 CONFIG += thread console debug_and_release
 
 # source files
-HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h config.h
+HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h
 HEADERS += stats.h version.h program_options_lite.h fileDialog.h
 
 SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp
@@ -29,6 +29,10 @@ contains(DEFINES, WITH_OSD) {
   SOURCES += GLvideo_osd.cpp
   HEADER += GLvideo_osd.h
 }
+
+unix  { DEFINES += DEFAULT_FONTFILE=\\\"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf\\\" }
+macx  { DEFINES += DEFAULT_FONTFILE=\\\"/Library/Fonts/GillSans.dfont\\\" }
+win32 { DEFINES += DEFAULT_FONTFILE=\\\"c:\\\\windows\\\\fonts\\\\arial.ttf\\\" }
 
 unix {
   SOURCES += QConsoleInput.cpp

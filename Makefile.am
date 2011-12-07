@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS=-I m4
 
+CPPFLAGS += -DWITH_CONFIG_H
+
 #
 # common: conditionally generate version.c
 #
@@ -30,7 +32,6 @@ videoplayer_CPPFLAGS = $(QTGUI_CFLAGS) $(QTGL_CFLAGS) $(GLEW_CFLAGS)
 videoplayer_LDADD = libqttv-@QTTV_MAJORMINOR@.la
 
 videoplayer_SOURCES = \
-	src/config.h \
 	src/fileDialog.cpp \
 	src/fileDialog.h \
 	src/mainwindow.cpp \

@@ -24,6 +24,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#ifdef WITH_CONFIG_H
+# include <config.h>
+#endif
+
 #include "mainwindow.h"
 
 #ifdef Q_OS_LINUX
@@ -55,7 +59,6 @@ using namespace std;
 #include "GLvideo_params.h"
 
 #include "version.h"
-#include "config.h"
 #include "fileDialog.h"
 
 struct Transport_params {

@@ -24,6 +24,10 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#ifdef WITH_CONFIG_H
+# include <config.h>
+#endif
+
 #include <QtCore>
 #include <stdio.h>
 
