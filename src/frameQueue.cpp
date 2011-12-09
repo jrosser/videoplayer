@@ -24,303 +24,70 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <cassert>
 #include <QtCore>
-#include <sstream>
 
-#include "videoData.h"
 #include "frameQueue.h"
 #include "videoTransport.h"
 #include "readerInterface.h"
-#include "stats.h"
 
-#define DEBUG 0
-#define LISTLEN 50
-#define MAXREADS 10
-
-FrameQueue::FrameQueue() :
-	QThread()
-{
-	m_doReading = true;
-	displayFrame = NULL;
-	displayFrameNum = 0;
-	speed=1;
-	direction=0;
-}
+using namespace std;
 
 FrameQueue::~FrameQueue()
 {
-	m_doReading = false;
-	wake();
+	stop = true;
+	vt.frame_queue_wake.wakeAll();
 	wait();
-
-	if (displayFrame)
-		delete displayFrame;
-	displayFrame = NULL;
-
-	while (!pastFrames.isEmpty())
-		delete pastFrames.takeFirst();
-
-	while (!futureFrames.isEmpty())
-		delete futureFrames.takeFirst();
-}
-
-int FrameQueue::wantedFrameNum(bool future)
-{
-	//if there are no frames in the list, then the last displayed frame number is the
-	//starting point for working out what the next needed frame is
-	int lastFrame=displayFrameNum;
-	int wantedFrame;
-
-	//if the reader cannot do random access then it will always return the next frame
-	//we cannot seek so frame numbers are a bit meaningless here
-	if (reader->randomAccess == false)
-		return 0;
-
-	//if we can seek then get the number of the last frame in the queue
-	if (future == true) {
-		QMutexLocker listLocker(&listMutex);
-		if (futureFrames.size())
-			lastFrame = futureFrames.last()->frameNum;
-	}
-	else {
-		QMutexLocker listLocker(&listMutex);
-		if (pastFrames.size())
-			lastFrame = pastFrames.last()->frameNum;
-	}
-
-	//frame offset from the last one
-	int offset = future ? speed : -speed;
-	wantedFrame = lastFrame + offset;
-
-	return wantedFrame;
-}
-
-void FrameQueue::addFrames(bool future)
-{
-	QLinkedList<VideoData *> *list = (future == true) ? &futureFrames : &pastFrames;
-	int stop= MAXREADS;
-
-	QMutexLocker listLocker(&listMutex);
-	int numFrames = list->size();
-	listLocker.unlock();
-
-	//add extra frames to the past frames list
-	while (stop-- && numFrames < LISTLEN) {
-
-		int wantedFrame = wantedFrameNum(future);
-
-		VideoData *v = reader->pullFrame(wantedFrame);
-
-		listLocker.relock();
-		list->append(v);
-		numFrames = list->size();
-		listLocker.unlock();
-	}
-}
-
-//called from the transport controller to get frame data for display
-VideoData* FrameQueue::getNextFrame(int transportSpeed, int transportDirection)
-{
-	speed = transportSpeed;
-	direction = transportDirection;
-
-	assert(speed > 0);
-
-	//stopped or paused with no frame displayed, or forwards
-	if ((direction == 0 && displayFrame == NULL) || direction == 1) {
-
-		if (futureFrames.isEmpty()) {
-			//printf("Dropped frame - no future frame available\n");
-		}
-		else {
-			QMutexLocker listLocker(&listMutex);
-
-			//playing forward
-			if (displayFrame)
-				pastFrames.prepend(displayFrame);
-
-			displayFrame = futureFrames.takeFirst();
-			displayFrameNum = displayFrame->frameNum;
-			listLocker.unlock();
-		}
-	}
-
-	//backwards
-	if (direction == -1) {
-
-		if (pastFrames.isEmpty()) {
-			//printf("Dropped frame - no past frame available\n");
-		}
-		else {
-			QMutexLocker listLocker(&listMutex);
-
-			//playing backward
-			if (displayFrame)
-				futureFrames.prepend(displayFrame);
-
-			displayFrame = pastFrames.takeFirst();
-			displayFrameNum = displayFrame->frameNum;
-			listLocker.unlock();
-		}
-	}
-
-	//stats
-	{
-		QMutexLocker listLocker(&listMutex);
-
-		Stats &stat = Stats::getInstance();
-		std::stringstream ss;
-
-		ss << futureFrames.size();
-		stat.addStat("FrameQueue", "QueueFuture", ss.str());
-
-		ss.str("");
-		ss << pastFrames.size();
-		stat.addStat("FrameQueue", "QueuePast", ss.str());
-	}
-
-	return displayFrame;
-}
-
-void FrameQueue::wake()
-{
-	frameConsumed.wakeOne();
-}
-
-VideoData *FrameQueue::allocateFrame(void)
-{
-	return new VideoData();
 }
 
 void FrameQueue::run()
 {
-	if (DEBUG)
-		printf("Starting FrameQueue\n");
+	stop = false;
+	while (!stop) {
+		/* todo: clean up */
+		vt.future_frame_num_list_head_idx_semaphore.acquire();
 
-	//set to play forward to avoid deleting the frame lists first time round
-	int lastSpeed = speed;
-
-	//performance timer
-	QTime timer;
-	timer.restart();
-	int addtime=0;
-	int prunetime=0;
-	int sleeptime=0;
-
-	while (m_doReading) {
-
-		//------------------------------------------------------------------------------------------------
-		//trash the contents of the frame lists when we change speed
-		//this could be made MUCH cleverer - to keep past and future frames that we need when changing speed
-		if (speed != lastSpeed) {
-
-			if (DEBUG)
-				printf("Trashing frame lists - speed=%d, last=%d\n", speed,
-				       lastSpeed);
-
-			QMutexLocker listLocker(&listMutex);
-
-			while (futureFrames.size()) {
-				delete futureFrames.takeLast();
-			}
-
-			while (pastFrames.size()) {
-				delete pastFrames.takeLast();
-			}
-		}
-
-		lastSpeed = speed;
-
-		//------------------------------------------------------------------------------------------------
-		//make sure the lists are long enough
-		switch (direction) {
-		case 1:
-			if (DEBUG)
-				printf("Adding future frames\n");
-			addFrames(true);
-			break;
-
-		case -1:
-			if (DEBUG)
-				printf("Adding past frames\n");
-			if (reader->randomAccess == true)
-				addFrames(false);
-			break;
-
-		case 0:
-			//when pasued or stopped fill both lists for nice jog-wheel response
-			addFrames(true);
-			if (reader->randomAccess == true)
-				addFrames(false);
-			break;
-
-		default:
-			break;
-
-		}
-
-		addtime = timer.restart();
-
-		//------------------------------------------------------------------------------------------------
-		//make sure the lists are not too long
-		//remove excess frames from the future list, which accumulate when playing backwards
-		//remove excess future frames
-		while (1) {
-			QMutexLocker listLocker(&listMutex);
-			if (futureFrames.size() <= LISTLEN)
+		QMutexLocker locker(&frame_map_mutex);
+		/* find the next frame in the list to be loaded */
+		bool do_load = false;
+		int future_list_len = vt.future_frame_num_list.size();
+		int frame_num;
+		for (int i = 0; i < future_list_len; i++) {
+			frame_num = vt.future_frame_num_list[(vt.future_frame_num_list_head_idx+i) % future_list_len];
+			if (frame_map.find(frame_num) == frame_map.end()) {
+				do_load = 1;
 				break;
-			VideoData *oldFrame = futureFrames.takeLast();
-			if (DEBUG)
-				printf("Retiring future frame %ld\n", oldFrame->frameNum);
-			delete oldFrame;
-		}
-
-		//remove excess past frames
-		while (1) {
-			QMutexLocker listLocker(&listMutex);
-			if (pastFrames.size() <= LISTLEN)
-				break;
-			VideoData *oldFrame = pastFrames.takeLast();
-			if (DEBUG)
-				printf("Retiring past frame %ld\n", oldFrame->frameNum);
-			delete oldFrame;
-		}
-
-		prunetime = timer.restart();
-
-		//stats
-		{
-			int busytime = addtime + prunetime;
-			timer.restart();
-
-			int totaltime = busytime + sleeptime;
-
-			if(totaltime) {
-				int load = (busytime * 100) / totaltime;
-
-				Stats &stat = Stats::getInstance();
-				std::stringstream ss;
-				ss << load << "%";
-				stat.addStat("FrameQueue", "Load", ss.str());
-
-				ss.str("");
-				ss << addtime << " ms";
-				stat.addStat("FrameQueue", "AddTime", ss.str());
-
-				ss.str("");
-				ss << prunetime << "ms";
-				stat.addStat("FrameQueue", "RemTime", ss.str());
 			}
 		}
+		locker.unlock();
 
-		//wait for display thread to display a new frame
-		frameMutex.lock();
-		if(m_doReading)
-			frameConsumed.wait(&frameMutex);
-		frameMutex.unlock();
+		vt.future_frame_num_list_head_idx_semaphore.release();
 
-		sleeptime = timer.elapsed();
-		timer.restart();
+		if (!do_load) {
+			/* sleep */
+			QMutex m; m.lock();
+			vt.frame_queue_wake.wait(&m);
+			m.unlock();
+			continue;
+		}
+		/* load the frame, append frame num to LRU list for culling later */
+		VideoData *v = reader->pullFrame(frame_num);
+		locker.relock();
+		frame_map[frame_num] = v;
+		frame_map_lru.push_back(frame_num);
+		locker.unlock();
 	}
+}
+
+VideoData* FrameQueue::getFrame(int frame_num)
+{
+	QMutexLocker locker(&frame_map_mutex);
+
+	frame_map_t::iterator it = frame_map.find(frame_num);
+	if (it == frame_map.end()) {
+		/* not found */
+		return NULL;
+	}
+	return it->second;
+
+	/* todo: handle EOF */
 }

@@ -28,17 +28,23 @@
 #define FRAMEQUEUE_H_
 
 #include <QtCore>
+#include <map>
+#include <list>
 
-class VideoData;
 class ReaderInterface;
+class VideoTransport;
+class VideoData;
 
 class FrameQueue : public QThread {
 public:
-	FrameQueue();
+	FrameQueue(VideoTransport& vt)
+		: QThread()
+		, vt(vt)
+	{ }
+
 	~FrameQueue();
 
 	void run();
-	void wake();
 
 	VideoData *allocateFrame(void);
 
@@ -47,34 +53,23 @@ public:
 		reader = r;
 	}
 
-	VideoData *getNextFrame(int speed, int direction);
+	VideoData *getFrame(int frame_num);
 
 private:
-	int wantedFrameNum(bool future);
-	void addFrames(bool future);
-
-	bool m_doReading;
+	bool stop;
 
 	//the reader
 	ReaderInterface *reader;
 
-	//lists of pointers to frames
-	QLinkedList<VideoData *> pastFrames;
-	QLinkedList<VideoData *> futureFrames;
-	QMutex listMutex; //protect the lists of frames
+	/* the video transport we are a queue for */
+	VideoTransport& vt;
 
-	//what is currently on the screen
-	VideoData *displayFrame;
-	int displayFrameNum;
+	/* */
+	typedef std::map<int, VideoData*> frame_map_t;
+	frame_map_t frame_map;
+	std::list<int> frame_map_lru;
 
-	//playback status
-	int direction;
-	int speed;
-
-	//wait condition that is released each time the a frame is consumed for display
-	QWaitCondition frameConsumed; //condition variable to pause/wake reading thread, synchronising display rate and data reading thread
-	QMutex frameMutex;
-
+	QMutex frame_map_mutex;
 };
 
 #endif

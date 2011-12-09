@@ -24,6 +24,9 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+#include <cassert>
+#include <list>
+#include <vector>
 #include <stdio.h>
 
 #include "videoData.h"
@@ -32,103 +35,69 @@
 
 #define DEBUG 0
 
-VideoTransport::VideoTransport(FrameQueue *fq) :
-	frameQueue(fq), current_frame(0)
-{
-	lastTransportStatus = Fwd1;
-	looping=true;
-	transportFwd1();
+using namespace std;
 
-	current_repeats_todo = 0;
-	current_frame_field_num = 0;
-	repeats = 1;
-	repeats_rem = 0;
-	ignore_interlaced_when_stepping = 0;
-}
+#if 0
+class SomeEOF : public exception {
+public:
+	explicit SomeEOF(const string& msg);
+	const char* what() const throw();
+};
+#endif
 
-void VideoTransport::setLooping(bool l)
-{
-	looping = l;
-}
+bool
+FrameNumCounter::advance() {
+	/* if there are insufficient repeats to do interlace, don't do it */
+	bool do_interlace = is_interlaced & (repeats > 1);
+	bool is_new_frame_period = true;
 
-int VideoTransport::getSpeed()
-{
-	TransportControls ts = transportStatus;
+	if (steady_state) {
+		/* soak up any repeats */
+		if (current_repeats_todo > 1) {
+			current_repeats_todo--;
+			return false;
+		}
 
-	int speed = 1;
+		/* advance by speed, counting in fields/frames */
+		int field_delta = current_field + transport_speed;
+		int frame_delta = field_delta >> do_interlace;
 
-	switch (ts) {
+		current_frame_number += frame_delta;
+		current_field = field_delta & do_interlace;
 
-	case Fwd2:
-	case Rev2:
-		speed = 2;
-		break;
+		is_new_frame_period = frame_delta;
+	}
+	steady_state = true;
 
-	case Fwd5:
-	case Rev5:
-		speed = 5;
-		break;
-
-	case Fwd10:
-	case Rev10:
-		speed = 10;
-		break;
-
-	case Fwd20:
-	case Rev20:
-		speed = 20;
-		break;
-
-	case Fwd50:
-	case Rev50:
-		speed = 50;
-		break;
-
-	case Fwd100:
-	case Rev100:
-		speed = 100;
-		break;
-
-	default:
-		break;
+	/* update the number of times to repeat this new frame/field */
+	if (current_repeats_field1) {
+		/* use any repeats left over from the previous iteration (field) */
+		/* this is the second field in the frame period */
+		current_repeats_todo = current_repeats_field1;
+		current_repeats_field1 = 0;
+	}
+	else if (do_interlace) {
+		/* this is a new frame period with an interlaced frame
+		 * share the number of repeats for this frame period
+		 * between two field periods */
+		/* interlaced handling is done by effectively stealing
+		 * a factor of 2 from repeats, and using it to display two fields */
+		current_repeats_todo = repeats / 2;
+		current_repeats_field1 = repeats - current_repeats_todo;
+	}
+	else {
+		/* this is a new frame period with a progressive frame */
+		current_repeats_todo = repeats;
 	}
 
-	return speed;
+	return is_new_frame_period;
 }
 
-int VideoTransport::getDirection()
-{
-	TransportControls ts = transportStatus;
-
-	//stopped or paused
-	int direction = 0;
-
-	//any forward speed
-	if (ts == Fwd1 || ts == Fwd2 || ts == Fwd5 || ts == Fwd10 || ts == Fwd20
-	        || ts == Fwd50 || ts == Fwd100 || ts == JogFwd)
-		direction = 1;
-
-	//any reverse speed
-	if (ts == Rev1 || ts == Rev2 || ts == Rev5 || ts == Rev10 || ts == Rev20
-	        || ts == Rev50 || ts == Rev100 || ts == JogRev)
-		direction = -1;
-
-	return direction;
-}
-
-/* advance the transport.  This may or maynot move to a new frame period.
- * Returns true if moving to a new frame period */
 bool VideoTransport::advance()
 {
-	int currentSpeed = getSpeed();
-	int currentDirection = getDirection();
-
-	bool do_interlace = 1;
-
-	//stop after each jog
-	TransportControls ts = transportStatus;
-	if (ts == JogFwd || ts == JogRev) {
-		transportStop();
+#if 0
+	/* modify state if we have been asked to jog a single frame */
+	if (transport_jog != None) {
 		/* a jog is a request to move to the next frame/field immediately
 		 * discard any repeats in this case */
 		current_repeats_todo = 0;
@@ -136,255 +105,159 @@ bool VideoTransport::advance()
 		 * don't display each frame twice when stepping */
 		do_interlace = !ignore_interlaced_when_stepping;
 	}
+#endif
 
-	if (!current_frame) {
-		/* getting a first frame is more important than waiting for nothing */
-		current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
-		if (!current_frame)
-			return false;
-	} else {
-		/* soak up any repeats */
-		if (current_repeats_todo > 1) {
-			current_repeats_todo--;
-			return false;
+	future_frame_num_list_head_idx_semaphore.acquire();
+
+	/* NB: only advance if we havn't got unfinished business from the
+	 * previous frame period */
+	if (advance_ok && !current_frame_num.advance()) {
+		/* no need to load a new frame, still reusing the old one */
+		/* todo: set interlace flag in output */
+		future_frame_num_list_head_idx_semaphore.release();
+		return false;
+	}
+
+	int current_frame = future_frame_num_list[future_frame_num_list_head_idx];
+
+	/* sanity check: verify that current_frame is expected */
+	assert(current_frame == current_frame_num.getCurrentFrameNum());
+	VideoData *next_output[1];
+
+	/* extract next frame from the FrameQueue.  If the FrameQueue has
+	 * not been able to load the required frame, it will return NULL.
+	 * In such cases, the frame period is not advanced */
+	advance_ok = true; /* set to false if a frame queue failed to provide a frame */
+	bool eof = true; /* set to false if any frame_queue is not at eof */
+	for (int i = 0; i < 1 /*num_frame_queues*/; i++) {
+		VideoData *frame = NULL;
+		try {
+			frame = frame_queue->getFrame(current_frame);
+			eof = false;
+			if (!frame)
+				advance_ok = false;
+		} catch (...) {
+			/* eof: advancing in this case is ok, this video will just
+			 * be NULL until all queues reach eof */
 		}
-
-		/* if there are insufficient repeats to do interlace, don't do it */
-		do_interlace &= repeats > 1;
-
-		/* advance by speed, counting in fields/frames */
-		int field_delta = current_frame_field_num + currentSpeed*currentDirection;
-		int frame_delta = field_delta >> (do_interlace & current_frame->isInterlaced);
-		/* if we wanted to have a notional target frame number, it would be:
-		 *    frame_num += frame_delta;
-		 */
-		if (frame_delta)
-			current_frame = frameQueue->getNextFrame(currentSpeed, currentDirection);
-
-		/* recalculate field position taking into account that any nextframe
-		 * may be interlaced differently to the previous */
-		current_frame_field_num =
-		current_frame->fieldNum = field_delta
-		                        & (int) (do_interlace & current_frame->isInterlaced);
+		next_output[i] = frame;
 	}
 
-	bool is_new_frame_period = true;
-
-	/* update the number of times to repeat this new frame/field */
-	if (repeats_rem) {
-		/* use any repeats left over from the previous iteration (field) */
-		current_repeats_todo = repeats_rem;
-		repeats_rem = 0;
-		/* this is the second filed in the frame period */
-		is_new_frame_period = false;
-	}
-	else if (current_frame->isInterlaced) {
-		/* this is a new frame period with an interlaced frame
-		 * share the number of repeats for this frame period
-		 * between two field periods */
-		/* interlaced handling is done by effectively stealing
-		 * a factor of 2 from repeats, and using it to display two fields */
-		current_repeats_todo = repeats / 2;
-		repeats_rem = repeats - current_repeats_todo;
-	}
-	else {
-		/* this is a new frame period with a progressive frame */
-		current_repeats_todo = repeats;
-	}
-
-	//stop at first or last frame if there is no looping - will break at speeds other than 1x
-	if (current_frame) {
-		if ((looping == false) && (current_frame->isLastFrame == true
-		        || current_frame->isFirstFrame == true)) {
+	if (eof) {
+		/* only handle the eof case when all input files have reached eof */
+		if (looping) {
+			//reset frame count
+		} else {
 			transportStop();
 			emit(endOfFile());
 		}
+		/* todo: tail recurse, so that frames can be returned after this
+		 * advance call */
+		advance_ok = false;
 	}
 
-	//wake the reader thread - done each time as jogging will move the frame number
-	frameQueue->wake();
+	if (advance_ok) {
+		/* this frame has been completed, time to move to the next */
+		future_frame_num_list_head_idx_semaphore.acquire(num_listeners-1);
 
-	return is_new_frame_period;
+		/* advance the read-ahead frame num counter, to the next frame to load */
+		while (!future_frame_num_counter.advance());
+		future_frame_num_list[future_frame_num_list_head_idx] = future_frame_num_counter.getCurrentFrameNum();
+
+		future_frame_num_list_head_idx += 1;
+		future_frame_num_list_head_idx %= future_frame_num_list.size();
+
+		future_frame_num_list_head_idx_semaphore.release(num_listeners-1);
+
+		/* copy the frames that we have fetched from the queues to the
+		 * output list.  this ensures that the output list always refers
+		 * to the same frame period. */
+		for (int i = 0; i < 1 /*um_frame_queues*/; i++) {
+			output_frame = next_output[i];
+		}
+	}
+	future_frame_num_list_head_idx_semaphore.release();
+	/* wake the reader threads in case any are blocked on a full list */
+	frame_queue_wake.wakeAll();
+
+	return advance_ok;
+}
+
+void VideoTransport::setSpeed(int new_speed)
+{
+	/* 1. grab the semaphore */
+	future_frame_num_list_head_idx_semaphore.acquire(num_listeners);
+
+	/* 2. reset the future frame num counter to "now", update with the
+	 * new speed and repopulate the future framenum list */
+	current_frame_num.setSpeed(new_speed);
+	future_frame_num_counter = current_frame_num;
+
+	//future_frame_num_list_serial++; /* allow frame queues to spot a change */
+	future_frame_num_list_head_idx = 0;
+	for (unsigned i = 0; i < future_frame_num_list.size(); i++) {
+		while (!future_frame_num_counter.advance());
+		future_frame_num_list[i] = future_frame_num_counter.getCurrentFrameNum();
+	}
+
+	/* release the semaphore for FrameQueues to continue */
+	future_frame_num_list_head_idx_semaphore.release(num_listeners);
+}
+
+
+VideoTransport::VideoTransport(ReaderInterface *r)
+	: output_frame(0)
+	, future_frame_num_list(16, 0)
+	, future_frame_num_list_head_idx_semaphore(2)
+{
+	num_listeners = 2; /* 1 framequeue + this */
+
+	advance_ok =1;
+	looping=true;
+	/* preload the initial future frame list with an obvious default */
+	setSpeed(1);
+
+	frame_queue = new FrameQueue(*this);
+	frame_queue->setReader(r);
+	frame_queue->start();
 }
 
 VideoData *VideoTransport::getFrame()
 {
-	return current_frame;
+	return output_frame;
 }
 
-void VideoTransport::transportFwd100()
-{
-	transportController(Fwd100);
-}
-void VideoTransport::transportFwd50()
-{
-	transportController(Fwd50);
-}
-void VideoTransport::transportFwd20()
-{
-	transportController(Fwd20);
-}
-void VideoTransport::transportFwd10()
-{
-	transportController(Fwd10);
-}
-void VideoTransport::transportFwd5()
-{
-	transportController(Fwd5);
-}
-void VideoTransport::transportFwd2()
-{
-	transportController(Fwd2);
-}
-void VideoTransport::transportFwd1()
-{
-	transportController(Fwd1);
-}
+#define TRANSPORT_MODE(name, speed) \
+	void VideoTransport::transport ## name () { setSpeed(speed); }
+TRANSPORT_MODE(Fwd100, 100);
+TRANSPORT_MODE(Fwd50, 50);
+TRANSPORT_MODE(Fwd20, 20);
+TRANSPORT_MODE(Fwd10, 10);
+TRANSPORT_MODE(Fwd5, 5);
+TRANSPORT_MODE(Fwd2, 2);
+TRANSPORT_MODE(Fwd1, 1);
+TRANSPORT_MODE(Rev1, -1);
+TRANSPORT_MODE(Rev2, -2);
+TRANSPORT_MODE(Rev5, -5);
+TRANSPORT_MODE(Rev10, -10);
+TRANSPORT_MODE(Rev20, -20);
+TRANSPORT_MODE(Rev50, -50);
+TRANSPORT_MODE(Rev100, -100);
+
 void VideoTransport::transportStop()
 {
-	transportController(Stop);
-}
-void VideoTransport::transportRev1()
-{
-	transportController(Rev1);
-}
-void VideoTransport::transportRev2()
-{
-	transportController(Rev2);
-}
-void VideoTransport::transportRev5()
-{
-	transportController(Rev5);
-}
-void VideoTransport::transportRev10()
-{
-	transportController(Rev10);
-}
-void VideoTransport::transportRev20()
-{
-	transportController(Rev20);
-}
-void VideoTransport::transportRev50()
-{
-	transportController(Rev50);
-}
-void VideoTransport::transportRev100()
-{
-	transportController(Rev100);
+	/* todo: set stopped state so that advance does nothing */
+	setSpeed(1);
 }
 void VideoTransport::transportJogFwd()
 {
-	transportController(JogFwd);
 }
 void VideoTransport::transportJogRev()
 {
-	transportController(JogRev);
 }
 void VideoTransport::transportPlayPause()
 {
-	transportController(PlayPause);
 }
 void VideoTransport::transportPause()
 {
-	transportController(Pause);
-}
-
-void VideoTransport::transportController(TransportControls in)
-{
-	TransportControls newStatus = Unknown;
-	TransportControls currentStatus;
-
-	currentStatus = transportStatus;
-
-	switch (in) {
-	case Stop:
-		newStatus = Stop;
-		lastTransportStatus = Fwd1; //after 'Stop', unpausing makes us play forwards
-		break;
-
-	case JogFwd:
-		if (currentStatus == Stop || currentStatus == Pause) {
-			newStatus = JogFwd; //do jog forward
-		}
-		break;
-
-	case JogRev:
-		if (currentStatus == Stop || currentStatus == Pause) {
-			newStatus = JogRev; //do jog backward
-		}
-		break;
-
-	case Pause:
-		//when not stopped or paused we can pause, remebering what were doing
-		if (currentStatus != Stop || currentStatus == Pause) {
-			lastTransportStatus = currentStatus;
-			newStatus = Pause;
-		}
-		break;
-
-	case PlayPause:
-		//PlayPause toggles between stop and playing, and paused and playing. It
-		//remembers the direction and speed were going
-		if (currentStatus == Stop || currentStatus == Pause) {
-
-			if (lastTransportStatus == Stop)
-				newStatus = Fwd1;
-			else
-				newStatus = lastTransportStatus;
-
-		}
-		else {
-			lastTransportStatus = currentStatus;
-			newStatus = Pause;
-		}
-		break;
-
-		//we can change from any state to a 'shuttle' or play
-	case Fwd100:
-	case Rev100:
-		newStatus = in;
-		break;
-
-	case Fwd50:
-	case Rev50:
-		newStatus = in;
-		break;
-
-	case Fwd20:
-	case Rev20:
-		newStatus = in;
-		break;
-
-	case Fwd10:
-	case Rev10:
-		newStatus = in;
-		break;
-
-	case Fwd5:
-	case Rev5:
-		newStatus = in;
-		break;
-
-	case Fwd2:
-	case Rev2:
-		newStatus = in;
-		break;
-
-	case Fwd1:
-	case Rev1:
-		newStatus = in;
-		break;
-
-	default:
-		//oh-no!
-		break;
-	}
-
-	//if we have determined a new transport status, set it
-	if (newStatus != Unknown) {
-		transportStatus = newStatus;
-		if (DEBUG)
-			printf("Changed transport state to %d\n", (int)transportStatus);
-	}
-
 }

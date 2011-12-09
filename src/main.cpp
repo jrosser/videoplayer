@@ -46,7 +46,6 @@ using namespace std;
 #include "yuvReader.h"
 #include "yuvReaderMmap.h"
 
-#include "frameQueue.h"
 #include "videoTransport.h"
 #ifdef Q_OS_LINUX
 #include "QShuttlePro.h"
@@ -342,9 +341,6 @@ int main(int argc, char **argv)
 		t_params.forceFileType = 1;
 	}
 
-	//object containing a seperate thread that manages the lists of frames to be displayed
-	FrameQueue* frameQueue = new FrameQueue();
-
 	//object that generates frames to be inserted into the frame queue
 	ReaderInterface* reader = NULL;
 	//default to YUV reader
@@ -365,14 +361,10 @@ int main(int argc, char **argv)
 		reader = r;
 	}
 
-	frameQueue->setReader(reader);
-
 	//object controlling the video playback 'transport'
-	VideoTransport* vt = new VideoTransport(frameQueue);
+	VideoTransport* vt = new VideoTransport(reader);
 	vt->setRepeats(t_params.frame_repeats);
 	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
-
-	frameQueue->start();
 
 	MainWindow* window = new MainWindow(vr_params, qt_params, vt);
 
@@ -438,7 +430,6 @@ int main(int argc, char **argv)
 #endif
 
 	delete window;
-	delete frameQueue;
 
 	return 0;
 }
