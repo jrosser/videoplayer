@@ -44,9 +44,6 @@ void FrameQueue::run()
 {
 	stop = false;
 
-	/* ideal length of frame queue, must be as long as the readahead list */
-	int ideal_past_queue_len = 10;
-
 	while (!stop) {
 		/* todo: clean up */
 		vt.future_frame_num_list_head_idx_semaphore.acquire();
@@ -86,7 +83,7 @@ void FrameQueue::run()
 		frame_map_lru.push_back(frame_num);
 
 		/* purge excess frames from the queue */
-		int num_frames_to_discard = frame_map_lru.size() - ideal_past_queue_len;
+		int num_frames_to_discard = frame_map_lru.size() - frame_map_lru_cache_maxlen;
 		for (int i = 0; i < num_frames_to_discard; i++) {
 			int frame_to_delete = frame_map_lru.front();
 			frame_map_lru.pop_front();

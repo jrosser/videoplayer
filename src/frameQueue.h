@@ -37,9 +37,10 @@ class VideoData;
 
 class FrameQueue : public QThread {
 public:
-	FrameQueue(VideoTransport& vt)
+	FrameQueue(VideoTransport& vt, int lru_cache_len=16)
 		: QThread()
 		, vt(vt)
+		, frame_map_lru_cache_maxlen(lru_cache_len)
 	{ }
 
 	~FrameQueue();
@@ -68,6 +69,7 @@ private:
 	typedef std::map<int, VideoData*> frame_map_t;
 	frame_map_t frame_map;
 	std::list<int> frame_map_lru;
+	int frame_map_lru_cache_maxlen;
 
 	QMutex frame_map_mutex;
 };

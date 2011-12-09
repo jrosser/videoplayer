@@ -88,7 +88,7 @@ class VideoTransport : public QObject
 	Q_OBJECT
 
 public:
-	VideoTransport(ReaderInterface *r);
+	VideoTransport(ReaderInterface *r, int read_ahead=16, int lru_cache_len=16);
 	void setLooping(bool l) { looping = l; }
 	void setRepeats(unsigned r) { current_frame_num.setRepeats(r); }
 	void setSpeed(int s);

@@ -205,9 +205,9 @@ void VideoTransport::setSpeed(int new_speed)
 }
 
 
-VideoTransport::VideoTransport(ReaderInterface *r)
+VideoTransport::VideoTransport(ReaderInterface *r, int read_ahead, int lru_cache_len)
 	: output_frame(0)
-	, future_frame_num_list(16, 0)
+	, future_frame_num_list(read_ahead, 0)
 	, future_frame_num_list_head_idx_semaphore(2)
 {
 	num_listeners = 2; /* 1 framequeue + this */
@@ -217,7 +217,7 @@ VideoTransport::VideoTransport(ReaderInterface *r)
 	/* preload the initial future frame list with an obvious default */
 	setSpeed(1);
 
-	frame_queue = new FrameQueue(*this);
+	frame_queue = new FrameQueue(*this, lru_cache_len);
 	frame_queue->setReader(r);
 	frame_queue->start();
 }

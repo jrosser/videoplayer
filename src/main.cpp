@@ -72,6 +72,8 @@ struct Transport_params {
 	/* @interlaced_source@ modifies behaviour when repeating
 	 * frames (paused) and playing backwards (field reversal) */
 	bool interlaced_source;
+	int read_ahead;
+	int lru_cache;
 };
 
 static void
@@ -176,6 +178,8 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("matrixkg",      vp.matrix_Kg,                   "Luma coefficient Kg")
 		("matrixkb",      vp.matrix_Kb,                   "Luma coefficient Kb\nITU-R BT709/BT1361, SMPTE274M/296M")
 		("sdmatrix,s",    opt_sdmatrix, false,            "As '-kr 0.299 -kg 0.587 -kb 0.114'\nITU-R BT601/BT470, SMPTE170M/293M")
+		("vt.readahead",  tp.read_ahead,                  "Video transport read ahead list length")
+		("vt.lrucache",   tp.lru_cache,                   "Video transport least recently used cache length")
 #if WITH_OSD
 		("fontfile",      vp.font_file,                   "TrueType font file for OSD")
 		("osdscale",      vp.osd_scale,                   "OSD size scaling factor")
@@ -310,6 +314,8 @@ int main(int argc, char **argv)
 	t_params.videoHeight = 1080;
 	t_params.interlaced_source = false;
 	t_params.frame_repeats = 1;
+	t_params.read_ahead = 16;
+	t_params.lru_cache = 16;
 
 	struct Qt_params qt_params;
 	qt_params.hidemouse = false;
@@ -362,7 +368,7 @@ int main(int argc, char **argv)
 	}
 
 	//object controlling the video playback 'transport'
-	VideoTransport* vt = new VideoTransport(reader);
+	VideoTransport* vt = new VideoTransport(reader, t_params.read_ahead, t_params.lru_cache);
 	vt->setRepeats(t_params.frame_repeats);
 	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
 
