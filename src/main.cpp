@@ -69,6 +69,8 @@ struct Transport_params {
 	int videoWidth;
 	int videoHeight;
 	int frame_repeats;
+	double vdu_fps;
+	double src_fps;
 	/* @interlaced_source@ modifies behaviour when repeating
 	 * frames (paused) and playing backwards (field reversal) */
 	bool interlaced_source;
@@ -160,6 +162,8 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 	opts.addOptions()
 		("width,w",       tp.videoWidth,                  "Width of video luma component")
 		("height,h",      tp.videoHeight,                 "Height of video luma component")
+		("vdu-fps",       tp.vdu_fps,                     "Display's frame rate")
+		("fps",           tp.src_fps,                     "Source frame rate")
 		("repeats,r",     tp.frame_repeats,               "Frame is repeated r extra times")
 		("loop,l",        tp.looping,                     "Number of times to loop video (1=inf)")
 		("quit,q",        tp.quit_at_end,                 "Exit at end of video file (implies --loop=0)")
@@ -314,6 +318,9 @@ int main(int argc, char **argv)
 	t_params.videoHeight = 1080;
 	t_params.interlaced_source = false;
 	t_params.frame_repeats = 1;
+	/* in case these aren't specified, assume a 1:1 mapping */
+	t_params.vdu_fps = 1.;
+	t_params.src_fps = 1.;
 	t_params.read_ahead = 16;
 	t_params.lru_cache = 16;
 
@@ -363,13 +370,15 @@ int main(int argc, char **argv)
 		r->setFileType(t_params.fileType);
 		r->setFileName(t_params.fileName);
 		r->setInterlacedSource(t_params.interlaced_source);
+		r->setFPS(t_params.src_fps);
 
 		reader = r;
 	}
 
 	//object controlling the video playback 'transport'
 	VideoTransport* vt = new VideoTransport(reader, t_params.read_ahead, t_params.lru_cache);
-	vt->setRepeats(t_params.frame_repeats);
+	//vt->setRepeats(t_params.frame_repeats);
+	vt->setVDUfps(t_params.vdu_fps);
 	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
 
 	MainWindow* window = new MainWindow(vr_params, qt_params, vt);

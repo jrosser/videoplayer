@@ -32,6 +32,7 @@
 #include "videoData.h"
 #include "videoTransport.h"
 #include "frameQueue.h"
+#include "readerInterface.h"
 
 #define DEBUG 0
 
@@ -48,71 +49,38 @@ public:
 bool
 FrameNumCounter::advance() {
 	/* if there are insufficient repeats to do interlace, don't do it */
-	bool do_interlace = is_interlaced & (repeats > 1);
-	bool is_new_frame_period = true;
+	bool do_interlace = is_interlaced & (fps_out/fps_src >= 2.);
 
-	if (steady_state) {
-		/* soak up any repeats */
-		if (current_repeats_todo > 1) {
-			current_repeats_todo--;
-			return false;
-		}
-
-		/* advance by speed, counting in fields/frames */
-		int field_delta = current_field + transport_speed;
-		int frame_delta = field_delta >> do_interlace;
-
-		current_frame_number += frame_delta;
-		current_field = field_delta & do_interlace;
-
-		is_new_frame_period = frame_delta;
-	}
-	steady_state = true;
-
-	/* update the number of times to repeat this new frame/field */
-	if (current_repeats_field1) {
-		/* use any repeats left over from the previous iteration (field) */
-		/* this is the second field in the frame period */
-		current_repeats_todo = current_repeats_field1;
-		current_repeats_field1 = 0;
-	}
-	else if (do_interlace) {
-		/* this is a new frame period with an interlaced frame
-		 * share the number of repeats for this frame period
-		 * between two field periods */
-		/* interlaced handling is done by effectively stealing
-		 * a factor of 2 from repeats, and using it to display two fields */
-		current_repeats_todo = repeats / 2;
-		current_repeats_field1 = repeats - current_repeats_todo;
-	}
-	else {
-		/* this is a new frame period with a progressive frame */
-		current_repeats_todo = repeats;
+	if (!steady_state) {
+		/* initial frame */
+		steady_state = true;
+		return true;
 	}
 
-	return is_new_frame_period;
+	fps_accum += fps_src * transport_speed;
+	int num_frames_to_advance = fps_accum / fps_out;
+	fps_accum -= num_frames_to_advance * fps_out;
+	current_frame_number += num_frames_to_advance;
+
+	/* field polarity for interlaced systems: first half of frame interval = field 0 */
+	current_field = 0;
+	if (do_interlace && 2.0 * fps_accum >= fps_out) {
+		current_field = 1;
+	}
+
+	return num_frames_to_advance != 0;
 }
 
 bool VideoTransport::advance()
 {
-#if 0
-	/* modify state if we have been asked to jog a single frame */
-	if (transport_jog != None) {
-		/* a jog is a request to move to the next frame/field immediately
-		 * discard any repeats in this case */
-		current_repeats_todo = 0;
-		/* if using an interlaced source but not deinterlacing,
-		 * don't display each frame twice when stepping */
-		do_interlace = !ignore_interlaced_when_stepping;
-	}
-#endif
-
 	bool paused = transport_pause && !transport_jog;
 	if (paused) {
 		return false;
 	}
 
 	future_frame_num_list_head_idx_semaphore.acquire();
+
+	current_frame_num.setSrcFPS(frame_queue->getReader()->getFPS(current_frame_num.getCurrentFrameNum()));
 
 	if (!advance_ok) {
 		/* don't advance the frame counter: we have unfinished business from
@@ -125,7 +93,17 @@ bool VideoTransport::advance()
 	}
 	else if (!current_frame_num.advance()) {
 		/* no need to load a new frame, still reusing the old one */
-		/* todo: set interlace flag in output */
+		for (int i = 0; i < 1 /* num_frame_queues */; i++) {
+			if (!output_frame)
+				continue;
+			/* update the field polarity of the current output frame to
+			 * handle the case where we jump from one field to the next
+			 * of the same frame period */
+			/* todo: this isn't exactly nice, it would be better to
+			 * return a new field period and create a slave picture
+			 * with the new field information */
+			output_frame->fieldNum = current_frame_num.getCurrentField();
+		}
 		future_frame_num_list_head_idx_semaphore.release();
 		return false;
 	}
@@ -148,6 +126,8 @@ bool VideoTransport::advance()
 			eof = false;
 			if (!frame)
 				advance_ok = false;
+			else
+				frame->fieldNum = current_frame_num.getCurrentField();
 		} catch (...) {
 			/* eof: advancing in this case is ok, this video will just
 			 * be NULL until all queues reach eof */
@@ -174,7 +154,8 @@ bool VideoTransport::advance()
 
 		/* advance the read-ahead frame num counter, to the next frame to load */
 		while (!future_frame_num_counter.advance());
-		future_frame_num_list[future_frame_num_list_head_idx] = future_frame_num_counter.getCurrentFrameNum();
+		int next_frame_num  = future_frame_num_counter.getCurrentFrameNum();
+		future_frame_num_list[future_frame_num_list_head_idx] = next_frame_num;
 
 		future_frame_num_list_head_idx += 1;
 		future_frame_num_list_head_idx %= future_frame_num_list.size();
@@ -233,6 +214,8 @@ VideoTransport::VideoTransport(ReaderInterface *r, int read_ahead, int lru_cache
 	, transport_jog(0)
 {
 	num_listeners = 2; /* 1 framequeue + this */
+
+	current_frame_num.setInterlaced(true);
 
 	advance_ok =1;
 	looping=true;

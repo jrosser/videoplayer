@@ -38,11 +38,17 @@ public:
 
 	virtual VideoData* pullFrame(int wantedFrame) = 0;
 
+	virtual void setFPS(double x) { fps = x; }
+	virtual double getFPS(int) { return fps; }
+
 	bool randomAccess;
 
 private:
 	ReaderInterface(ReaderInterface const&);
 	ReaderInterface& operator=(ReaderInterface const&);
+
+private:
+	double fps;
 };
 
 #endif

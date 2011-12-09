@@ -54,6 +54,8 @@ public:
 		reader = r;
 	}
 
+	ReaderInterface* getReader() { return reader; }
+
 	VideoData *getFrame(int frame_num);
 
 private:

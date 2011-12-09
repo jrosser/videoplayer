@@ -40,7 +40,9 @@ class ReaderInterface;
 class FrameNumCounter {
 public:
 	FrameNumCounter()
-		: repeats(1)
+		: fps_out(1.)
+		, fps_src(1.)
+		, fps_accum(0.)
 		, is_interlaced(0)
 		, current_frame_number(0)
 		, current_field(0)
@@ -53,7 +55,9 @@ public:
 	void setFrameNum(int num) { current_frame_number = num; steady_state = false; }
 	void setInterlaced(bool interlaced) { is_interlaced = interlaced; }
 	void setSpeed(int speed) { transport_speed = speed; }
-	void setRepeats(int r) { repeats = r; }
+	void setRepeats(int r) { fps_out = 1.; fps_src = 1./r; }
+	void setOutFPS(double fps) { fps_out = fps; }
+	void setSrcFPS(double fps) { fps_src = fps; }
 	bool advance();
 
 	int getCurrentFrameNum() { return current_frame_number; }
@@ -61,7 +65,9 @@ public:
 
 private:
 	/* number of times to repeat each frame */
-	int repeats;
+	double fps_out;
+	double fps_src;
+	double fps_accum;
 
 	/* current frame is interlaced: causes any repeats to be
 	 * divided into two field periods */
@@ -92,6 +98,7 @@ public:
 	void setLooping(bool l) { looping = l; }
 	void setRepeats(unsigned r) { current_frame_num.setRepeats(r); }
 	void setSpeed(int s, bool jog = 0);
+	void setVDUfps(double fps) { current_frame_num.setOutFPS(fps); }
 	/* if using an interlaced source but not deinterlacing, set the following */
 	void setSteppingIgnoreInterlace(bool b) { ignore_interlaced_when_stepping = b; }
 
@@ -187,6 +194,8 @@ public:
 
 	int num_listeners;
 	bool advance_ok;
+
+	double prev_fps;
 
 	/**
 	 * direction of playback
