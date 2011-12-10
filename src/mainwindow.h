@@ -31,7 +31,7 @@
 
 #include "GLvideo_params.h"
 
-class VideoTransport;
+class VideoTransportQT;
 
 class GLvideo_mt;
 struct GLvideo_params;
@@ -45,7 +45,7 @@ class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 public:
-	MainWindow(GLvideo_params&, Qt_params&, VideoTransport*);
+	MainWindow(GLvideo_params&, Qt_params&, VideoTransportQT*);
 
 protected:
 
@@ -74,7 +74,7 @@ private:
 	GLvideo_params& vr_params;
 	GLvideo_params vr_params_orig;
 
-	VideoTransport  *video_transport;
+	VideoTransportQT *video_transport;
 };
 
 #endif

@@ -29,7 +29,6 @@
 
 #include <vector>
 
-#include <QObject>
 #include <QSemaphore>
 #include <QWaitCondition>
 
@@ -89,10 +88,8 @@ private:
 	bool steady_state;
 };
 
-class VideoTransport : public QObject
+class VideoTransport
 {
-	Q_OBJECT
-
 public:
 	VideoTransport(ReaderInterface *r, int read_ahead=16, int lru_cache_len=16);
 	void setLooping(bool l) { looping = l; }
@@ -106,35 +103,14 @@ public:
 	VideoData* getFrame(); //the frame that is currently being displayed
 	bool advance(); //advance to the next frame (in the correct directon @ speed).
 
-protected:
-
-	signals:
-	void endOfFile(void);
-
-public slots:
-	//slots to connect keys / buttons to play and scrub controls
-	void transportFwd100();
-	void transportFwd50();
-	void transportFwd20();
-	void transportFwd10();
-	void transportFwd5();
-	void transportFwd2();
-	void transportFwd1();
+	void transportPlay(int speed);
 	void transportStop();
-	void transportRev1();
-	void transportRev2();
-	void transportRev5();
-	void transportRev10();
-	void transportRev20();
-	void transportRev50();
-	void transportRev100();
-
-	//frame jog controls
 	void transportJogFwd();
 	void transportJogRev();
-
-	//play / pause
 	void transportPlayPause();
+
+protected:
+	virtual void notifyEndOfFile() {};
 
 public:
 	FrameQueue *frame_queue;

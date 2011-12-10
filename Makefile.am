@@ -43,6 +43,7 @@ videoplayer_SOURCES = \
 	src/program_options_lite.h \
 	src/videoTransport.cpp \
 	src/videoTransport.h \
+	src/videoTransportQT.h \
 	src/readerInterface.h \
 	src/yuvReader.cpp \
 	src/yuvReader.h \
@@ -52,7 +53,7 @@ videoplayer_SOURCES = \
 nodist_videoplayer_SOURCES = \
 	src/moc_fileDialog.cpp \
 	src/moc_mainwindow.cpp \
-	src/moc_videoTransport.cpp \
+	src/moc_videoTransportQT.cpp \
 	$(NULL)
 
 if LINUX

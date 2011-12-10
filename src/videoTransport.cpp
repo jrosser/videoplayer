@@ -143,7 +143,7 @@ bool VideoTransport::advance()
 		} else {
 			//transportStop();
 			transport_pause = 1; // fixme: transportStop() causes things to hang.
-			emit(endOfFile());
+			notifyEndOfFile();
 		}
 		/* todo: tail recurse, so that frames can be returned after this
 		 * advance call */
@@ -234,22 +234,12 @@ VideoData *VideoTransport::getFrame()
 	return output_frame;
 }
 
-#define TRANSPORT_MODE(name, speed) \
-	void VideoTransport::transport ## name () { transport_jog = transport_pause = 0; setSpeed(speed); }
-TRANSPORT_MODE(Fwd100, 100);
-TRANSPORT_MODE(Fwd50, 50);
-TRANSPORT_MODE(Fwd20, 20);
-TRANSPORT_MODE(Fwd10, 10);
-TRANSPORT_MODE(Fwd5, 5);
-TRANSPORT_MODE(Fwd2, 2);
-TRANSPORT_MODE(Fwd1, 1);
-TRANSPORT_MODE(Rev1, -1);
-TRANSPORT_MODE(Rev2, -2);
-TRANSPORT_MODE(Rev5, -5);
-TRANSPORT_MODE(Rev10, -10);
-TRANSPORT_MODE(Rev20, -20);
-TRANSPORT_MODE(Rev50, -50);
-TRANSPORT_MODE(Rev100, -100);
+void VideoTransport::transportPlay(int speed)
+{
+	transport_jog = 0;
+	transport_pause = 0;
+	setSpeed(speed);
+}
 
 void VideoTransport::transportStop()
 {

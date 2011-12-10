@@ -29,9 +29,9 @@
 #include "mainwindow.h"
 
 #include "GLvideo_mt.h"
-#include "videoTransport.h"
+#include "videoTransportQT.h"
 
-MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTransport *vt) :
+MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTransportQT *vt) :
 	vr_params(vr_params), vr_params_orig(vr_params), video_transport(vt)
 {
 	QPalette p = palette();

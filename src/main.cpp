@@ -46,7 +46,7 @@ using namespace std;
 #include "yuvReader.h"
 #include "yuvReaderMmap.h"
 
-#include "videoTransport.h"
+#include "videoTransportQT.h"
 #ifdef Q_OS_LINUX
 #include "QShuttlePro.h"
 #endif
@@ -376,7 +376,7 @@ int main(int argc, char **argv)
 	}
 
 	//object controlling the video playback 'transport'
-	VideoTransport* vt = new VideoTransport(reader, t_params.read_ahead, t_params.lru_cache);
+	VideoTransportQT* vt = new VideoTransportQT(reader, t_params.read_ahead, t_params.lru_cache);
 	//vt->setRepeats(t_params.frame_repeats);
 	vt->setVDUfps(t_params.vdu_fps);
 	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
