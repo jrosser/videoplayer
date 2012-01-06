@@ -151,9 +151,16 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	QTime timer;
 	timer.restart();
 
-	int rret = read(fd, data, frame_size);
-	if (!rret)
-		perror("READ");
+	for (unsigned done = 0; done < frame_size;) {
+		int len = read(fd, (uint8_t*) data + done, frame_size - done);
+		if (len <= 0) {
+			std::stringstream ss;
+			ss << "read() @ frame" << frameNumber << "(" << offset << "+" << done << " of " << frame_size << ")";
+			perror(ss.str().c_str());
+			break;
+		}
+		done += len;
+	}
 
 	addStat(*stats, "Read", timer.elapsed(), "ms");
 
