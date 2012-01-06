@@ -21,7 +21,7 @@ SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp vid
 SOURCES += stats.cpp util.cpp version.c program_options_lite.cpp fileDialog.cpp
 
 # openGL video widget source files
-HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_rtAdaptor.h GLvideo_renderer.h shaders.h
+HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_rtAdaptor.h shaders.h
 SOURCES += GLvideo_mt.cpp GLvideo_rt.cpp GLvideo_rtAdaptor.cpp
 
 # GL utility functions
@@ -32,9 +32,6 @@ SOURCES += GLutil.cpp colourMatrix.cpp
 HEADERS += GLfrontend_old.h
 SOURCES += GLfrontend_old.cpp
 
-# video texture transfer engines
-HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
-SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp
 
 contains(DEFINES, WITH_OSD) {
   SOURCES += GLvideo_osd.cpp

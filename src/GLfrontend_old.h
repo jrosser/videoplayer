@@ -27,10 +27,6 @@
 #ifndef GLFRONTEND_OLD_H
 #define GLFRONTEND_OLD_H
 
-namespace GLVideoRenderer
-{
-class GLVideoRenderer;
-};
 class VideoTransport;
 struct GLvideo_params;
 
@@ -66,9 +62,6 @@ private:
 
 	/* shader programs */
 	unsigned int programs[4];
-
-	/* Old style uploader & renderer */
-	GLVideoRenderer::GLVideoRenderer *renderer;
 };
 
 #endif

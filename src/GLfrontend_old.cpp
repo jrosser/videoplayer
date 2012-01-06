@@ -30,9 +30,6 @@
 #include <GL/glew.h>
 
 #include "GLfrontend_old.h"
-#include "GLvideo_renderer.h"
-#include "GLvideo_tradtex.h"
-#include "GLvideo_pbotex.h"
 #include "GLvideo_params.h"
 #include "GLutil.h"
 #include "shaders.h"
@@ -72,7 +69,6 @@ GLfrontend_old::GLfrontend_old(GLvideo_params& params, VideoTransport* vt)
 }
 
 GLfrontend_old::~GLfrontend_old() {
-	if (renderer) delete renderer;
 }
 
 void GLfrontend_old::init() {
@@ -80,8 +76,6 @@ void GLfrontend_old::init() {
 	programs[shaderPlanar | Deinterlace] = compileFragmentShader(shaderPlanarDeintSrc);
 	programs[shaderUYVY | Progressive] = compileFragmentShader(shaderUYVYProSrc);
 	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
-
-	renderer = new GLVideoRenderer::PboTex();
 
 	lastsrcwidth = 0;
 	lastsrcheight = 0;
@@ -95,6 +89,208 @@ void GLfrontend_old::resizeViewport(int width, int height)
 	displaywidth = width;
 	displayheight = height;
 	doResize = true;
+}
+
+/* structure to inform on the best way to upload a particular
+ * data representation. */
+struct UploadSpec {
+	/* the combination of src_type and src_grouping would effectively
+	 * be "src_storage".  src_type also acts as a hint to GL if dst_storage
+	 * was an unsized value. */
+	GLuint src_type;     /* gl:type */
+	GLuint src_grouping; /* gl:format */
+	GLuint dst_storage;  /* gl:internalformat */
+	unsigned notional_width_div; /* amount to divide plane's notional width by
+	                                to obtain the texture width */
+} upload_spec[] = {
+	/*   P8 */ { GL_UNSIGNED_BYTE,  GL_LUMINANCE, GL_LUMINANCE8, 1 },
+	/*  P16 */ { GL_UNSIGNED_SHORT, GL_LUMINANCE, GL_LUMINANCE16, 1 },
+	/* UYVY */ { GL_UNSIGNED_BYTE,  GL_RGBA,      GL_RGBA8, 2 },
+	/* V216 */ { GL_UNSIGNED_SHORT, GL_RGBA,      GL_RGBA16, 2 },
+	/* V210 */ { GL_UNSIGNED_INT_2_10_10_10_REV, GL_RGBA, GL_RGB10_A2, 2 },
+};
+
+GLuint
+alloc_texture_new(UploadSpec *upload, unsigned width, unsigned height)
+{
+	GLuint texture;
+	glGenTextures(1, &texture);
+
+	/* The explicit bind to the zero pixel unpack buffer object allows
+	 * passing NULL in glTexImage2d() to be unspecified texture data
+	 * (ie, create the storage for the texture but don't upload antything
+	 */
+	glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
+
+	/* create the texture */
+	/* this should be part of alloc texture */
+	/* xxx: technically, src_grouping doesn't matter here */
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, texture);
+	glTexImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, upload->dst_storage,
+	             width, height, 0,
+	             upload->src_grouping, upload->src_type, NULL);
+
+	return texture;
+}
+
+GLuint
+alloc_texture(UploadSpec *upload, unsigned width, unsigned height)
+{
+	GLuint texture;
+	texture = alloc_texture_new(upload, width, height);
+	return texture;
+}
+
+void unref_texture(GLuint texture)
+{
+	if (!glIsTexture(texture))
+		return;
+	glDeleteTextures(1, &texture);
+}
+
+/* upload a single texture */
+PictureData<GLuint>::Plane<GLuint>
+upload(PackingFmt fmt, PictureData<DataPtr>::Plane<DataPtr>& src)
+{
+	UploadSpec* upload = &upload_spec[fmt];
+	/* in the case of packed formats, eg UYVY, the upload is done as
+	 * RGBA-tuples.  The notional width is the expected width of the
+	 * luma.  however, the texture width is half as wide (two luma
+	 * values per tuple). */
+	unsigned width = src.width / upload->notional_width_div;
+	unsigned height = src.height;
+	void* data = src.data->ptr;
+
+	GLuint texture = alloc_texture(upload, width, height);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	/* upload data to the texture */
+	glTexSubImage2D(GL_TEXTURE_RECTANGLE_ARB, 0, 0, 0,
+	                width, height,
+	                upload->src_grouping, upload->src_type, data);
+
+	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+
+	PictureData<GLuint>::Plane<GLuint> plane = {
+		std::tr1::shared_ptr<GLuint>(new GLuint(texture)),
+		width,
+		height,
+		0,
+	};
+
+	return plane;
+}
+
+void
+upload(VideoData* vd)
+{
+	if (!vd->gl_data.plane.empty()) {
+		/* data has already been uploaded and is still avaliable */
+		return;
+	}
+
+	QTime perfTimer;
+	perfTimer.start();
+	//perform any format conversions
+	if (vd->data.packing_format == V210) {
+		/* convert v210 to uyvy */
+		/* todo: refactor this into a shader */
+		convertV210toUYVY(vd->data);
+	}
+	else
+	if (vd->data.packing_format == V216) {
+		/* convert 16bit data to 8bit */
+		/* todo: refactor into a shader */
+		/* this avoids endian-ness issues between the host and the GPU
+		 * and reduces the bandwidth to the GPU */
+		convertV216toUYVY(vd->data);
+	}
+	else
+	if (vd->data.packing_format == V16P) {
+		convertPlanar16toPlanar8(vd->data);
+	}
+	addStatPerfInt("Convert", perfTimer.elapsed());
+
+	perfTimer.restart();
+	vd->gl_data.packing_format = vd->data.packing_format;
+	vd->gl_data.chroma_format = vd->data.chroma_format;
+	vd->gl_data.plane.resize(vd->data.plane.size());
+	for (unsigned i = 0; i < vd->data.plane.size(); i++) {
+		vd->gl_data.plane[i] = upload(vd->data.packing_format, vd->data.plane[i]);
+	}
+	addStatPerfInt("Upload", perfTimer.elapsed());
+}
+
+void unref_texture(VideoData* vd)
+{
+	for (unsigned i = 0; i < vd->gl_data.plane.size(); i++) {
+		unref_texture(*vd->gl_data.plane[i].data);
+	}
+	vd->gl_data.plane.clear();
+}
+
+void render(VideoData *vd, GLuint shader_prog)
+{
+	glUseProgramObjectARB(shader_prog);
+
+	for (unsigned i = 0; i < vd->gl_data.plane.size(); i++) {
+		static const char* texture_names[] = {"Ytex", "Utex", "Vtex"};
+		/* bind texture_name of shader_prog, to texture unit idx
+		 * which can access texture[idx] */
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, *vd->gl_data.plane[i].data);
+		GLuint loc = glGetUniformLocationARB(shader_prog, texture_names[i]);
+		glUniform1iARB(loc, i);
+	}
+
+	/* NB, texture coordinates are relative to the texture data, (0,0)
+	 * is the first texture pixel uploaded, since we use two different
+	 * coordinate systems, the texture appears to be upside down */
+	/* xxx, move above description to texgen */
+	/* xxx, why isn't this the case? */
+#if 0
+	static const float s_plane[] = {1, 0, 0, 0};
+	static const float t_plane[] = {0, 1, 0, 0};
+	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	glTexGenfv(GL_S, GL_OBJECT_PLANE, s_plane);
+	glTexGenfv(GL_T, GL_OBJECT_PLANE, t_plane);
+	glMatrixMode(GL_TEXTURE);
+		/* xxx:
+		 *  either need to scale the texture access by notional_width_div
+		 *  or, need to scale the vertex coords. */
+	glMatrixMode(GL_MODELVIEW);
+	glEnable(GL_TEXTURE_GEN_S);
+	glEnable(GL_TEXTURE_GEN_T);
+#endif
+
+	unsigned tex_width = vd->gl_data.plane[0].width;
+	unsigned tex_height = vd->gl_data.plane[0].height;
+	unsigned width = vd->data.plane[0].width;
+	unsigned height = vd->data.plane[0].height;
+
+	/* NB, colours below are as a diagnostic to show when texturing has failed */
+	glBegin(GL_QUADS);
+		glTexCoord2i(0, tex_height);
+		glColor3f(1., 0., 0.);
+		glVertex2i(0, 0);
+
+		glTexCoord2i(tex_width, tex_height);
+		glColor3f(0., 1., 0.);
+		glVertex2i(width, 0);
+
+		glTexCoord2i(tex_width, 0);
+		glColor3f(0., 0., 1.);
+		glVertex2i(width, height);
+
+		glTexCoord2i(0, 0);
+		glColor3f(0., 0., 0.);
+		glVertex2i(0, height);
+	glEnd();
+	glDisable(GL_TEXTURE_GEN_S);
+	glDisable(GL_TEXTURE_GEN_T);
+	glUseProgramObjectARB(0);
 }
 
 void GLfrontend_old::render()
@@ -112,26 +308,6 @@ void GLfrontend_old::render()
 		return;
 	}
 
-	if (video_data->data.packing_format == V210) {
-		/* convert v210 to uyvy */
-		/* todo: refactor this into a shader */
-		convertV210toUYVY(video_data->data);
-	}
-	else
-	if (video_data->data.packing_format == V216) {
-		/* convert 16bit data to 8bit */
-		/* todo: refactor into a shader */
-		/* this avoids endian-ness issues between the host and the GPU
-		 * and reduces the bandwidth to the GPU */
-		convertV216toUYVY(video_data->data);
-	}
-	else
-	if (video_data->data.packing_format == V16P) {
-		convertPlanar16toPlanar8(video_data->data);
-	}
-
-	VideoDataOld videoData(video_data);
-
 	unsigned video_data_width = video_data->data.plane[0].width;
 	unsigned video_data_height = video_data->data.plane[0].height;
 
@@ -144,14 +320,12 @@ void GLfrontend_old::render()
 	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
 	perfTimer.start();
 
-	bool createGLTextures = false;
 	//check for video dimensions changing
 	if ((lastsrcwidth != video_data_width)
 	|| (lastsrcheight != video_data_height))
 	{
 		if (DEBUG)
 			printf("Changing video dimensions to %dx%d\n", video_data_width, video_data_height);
-		createGLTextures = true;
 
 		lastsrcwidth = video_data_width;
 		lastsrcheight = video_data_height;
@@ -168,12 +342,6 @@ void GLfrontend_old::render()
 		currentShader |= Deinterlace;
 	else
 		currentShader &= ~Deinterlace;
-
-	if (createGLTextures) {
-		if (DEBUG)
-			printf("Creating GL textures\n");
-		renderer->createTextures(&videoData);
-	}
 
 	if (params.matrix_valid == false) {
 		buildColourMatrix(colour_matrix, params);
@@ -196,15 +364,14 @@ void GLfrontend_old::render()
 	}
 
 	perfTimer.restart();
-	/* only upload new frames (old ones stay in the GL) */
-	if(video_data_is_new_frame) {
-		renderer->uploadTextures(&videoData);
-	}
+	upload(video_data);
 	addStatPerfInt("Upload", perfTimer.elapsed());
 
 	perfTimer.restart();
-		renderer->renderVideo(&videoData, programs[currentShader]);
+	::render(video_data, programs[currentShader]);
 	addStatPerfInt("RenderVid", perfTimer.elapsed());
+
+	unref_texture(video_data);
 }
 
 static void

@@ -89,8 +89,6 @@ libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \
 	src/GLvideo_rt.cpp \
 	src/GLvideo_mt.cpp \
 	src/GLvideo_rtAdaptor.cpp \
-	src/GLvideo_pbotex.cpp \
-	src/GLvideo_tradtex.cpp \
 	src/GLfrontend_old.cpp \
 	src/GLfrontend_old.h \
 	src/colourMatrix.cpp \
@@ -115,11 +113,8 @@ pkginclude_HEADERS = \
 	src/GLvideo_mt.h \
 	src/GLvideo_osd.h \
 	src/GLvideo_params.h \
-	src/GLvideo_renderer.h \
 	src/GLvideo_rt.h \
 	src/GLvideo_rtAdaptor.h \
-	src/GLvideo_tradtex.h \
-	src/GLvideo_pbotex.h \
 	src/colourMatrix.h \
 	src/shaders.h \
 	src/stats.h \
