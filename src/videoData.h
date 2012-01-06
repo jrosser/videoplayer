@@ -104,47 +104,6 @@ struct VideoData : public GLvideo_data {
 	bool is_last_frame;
 };
 
-
-class VideoDataOld {
-public:
-
-	VideoDataOld(VideoData*);
-
-	unsigned long frameNum;
-	bool fieldNum; //< the current field number (only valid if isInterlaced)
-	bool isInterlaced; //< this frame is formed of two fields
-	bool isLastFrame; //mark the first and last frames in a sequence
-	bool isFirstFrame;
-
-	bool isPlanar; //flag to indicate that we have a seperate texture for each component to copy to the GPU
-
-	GLenum glInternalFormat; //format used to describe which components of the texture are applied to the texels
-	GLenum glFormat; //format of the texture data, GL_LUMINANCE or GL_RGBA in these applications
-	GLenum glType; //the data type for the texture, GL_UNSIGNED_BYTE, GL_INT etc...
-	int glMinMaxFilter; //filter type for scaling the pixel data GL_LINEAR for planar, or GL_NEAREST for packed
-	int glYTextureWidth; //the width of the Y texture, which may actually be UYVY data packed as RGBA. There
-	//will be half the number of RGBA quads as Y pixels across the image as each quad
-	//stores two luminance samples
-
-	int Ywidth; //luminance dimensions in pixels
-	int Yheight;
-
-	int Cwidth; //chrominance dimensions in pixels
-	int Cheight;
-
-	int YdataSize; //number of bytes for each component
-	int UdataSize;
-	int VdataSize;
-
-	unsigned char *Ydata; //pointer to luminance, or multiplexed YCbCr
-	unsigned char *Udata; //pointers to planar chrominance components, if format is planar
-	unsigned char *Vdata;
-
-private:
-	VideoDataOld(const VideoDataOld&);
-	void operator= (const VideoDataOld&);
-};
-
 GLvideo::PackingFmt fourccToPacking(FourCC fourcc);
 GLvideo::ChromaFmt fourccToChroma(FourCC fourcc);
 
