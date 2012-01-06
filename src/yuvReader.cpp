@@ -43,6 +43,8 @@
 #define read _read
 #define open _open
 #define off64_t qint64
+#else
+#define _O_BINARY 0
 #endif
 
 #ifdef Q_OS_MAC
@@ -73,7 +75,7 @@ void YUVReader::setFileName(const QString &fn)
 	fileName = fn;
 	QFileInfo info(fileName);
 
-	fd = open(fileName.toLatin1().data(), O_RDONLY);
+	fd = open(fileName.toLatin1().data(), O_RDONLY | _O_BINARY);
 	if (fd < 0) {
 		fprintf(stderr, "Failed to open '%s': %s\n", fileName.toLatin1().data(), strerror(errno));
 		exit(1);
