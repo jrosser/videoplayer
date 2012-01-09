@@ -40,7 +40,7 @@ class GLfrontend_old;
 class GLvideo_rt : public QThread {
 public:
 
-	GLvideo_rt(GLvideo_rtAdaptor* gl, VideoTransport *vt, GLvideo_params& params);
+	GLvideo_rt(GLvideo_rtAdaptor* gl, VideoTransport *vt, GLvideo_params& params, GLfrontend_old* frontend);
 	~GLvideo_rt();
 	void resizeViewport(int w, int h);
 	void run();

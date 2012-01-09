@@ -32,6 +32,7 @@
 #include <QGLWidget>
 
 class GLvideo_rt;
+class GLfrontend_old;
 class VideoTransport;
 struct GLvideo_params;
 
@@ -40,7 +41,7 @@ class GLvideo_mt : public QGLWidget
 	Q_OBJECT
 
 public:
-	GLvideo_mt(QWidget *p, VideoTransport *vt, GLvideo_params& vr_params);
+	GLvideo_mt(QWidget *p, VideoTransport *vt, GLvideo_params& vr_params, GLfrontend_old* frontend);
 	~GLvideo_mt();
 	void setFrameRepeats(int repeats);
 	void setFontFile(QString &fontFile);

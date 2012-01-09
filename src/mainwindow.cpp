@@ -29,10 +29,11 @@
 #include "mainwindow.h"
 
 #include "GLvideo_mt.h"
+#include "GLfrontend_old.h"
 #include "videoTransportQT.h"
 
-MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTransportQT *vt) :
-	vr_params(vr_params), vr_params_orig(vr_params), video_transport(vt)
+MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTransportQT *vt, GLfrontend_old *frontend) :
+	vr_params(vr_params), vr_params_orig(vr_params), video_transport(vt), gl_frontend(frontend)
 {
 	QPalette p = palette();
 	p.setColor(QPalette::Window, Qt::black);
@@ -49,7 +50,7 @@ MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTra
 	//central widget is the threaded openGL video widget
 	//which pulls video from the videoRead
 	//and gets stats for the OSD from the readThread
-	glvideo_mt = new GLvideo_mt(this, vt, vr_params);
+	glvideo_mt = new GLvideo_mt(this, vt, vr_params, gl_frontend);
 
 	setCentralWidget(glvideo_mt);
 

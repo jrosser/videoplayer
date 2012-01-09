@@ -57,6 +57,7 @@ using namespace std;
 #endif
 
 #include "GLvideo_params.h"
+#include "GLfrontend_old.h"
 
 #include "version.h"
 #include "fileDialog.h"
@@ -392,7 +393,9 @@ int main(int argc, char **argv)
 	vt->setVDUfps(t_params.vdu_fps);
 	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
 
-	MainWindow* window = new MainWindow(vr_params, qt_params, vt);
+	GLfrontend_old gl_frontend(vr_params, vt);
+
+	MainWindow* window = new MainWindow(vr_params, qt_params, vt, &gl_frontend);
 
 #ifdef Q_OS_LINUX
 	//shuttlePro jog dial - linux only native support at the moment

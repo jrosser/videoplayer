@@ -34,6 +34,7 @@
 class VideoTransportQT;
 
 class GLvideo_mt;
+class GLfrontend_old;
 struct GLvideo_params;
 
 struct Qt_params {
@@ -45,7 +46,7 @@ class MainWindow : public QMainWindow
 {
 	Q_OBJECT
 public:
-	MainWindow(GLvideo_params&, Qt_params&, VideoTransportQT*);
+	MainWindow(GLvideo_params&, Qt_params&, VideoTransportQT*, GLfrontend_old*);
 
 protected:
 
@@ -75,6 +76,8 @@ private:
 	GLvideo_params vr_params_orig;
 
 	VideoTransportQT *video_transport;
+
+	GLfrontend_old *gl_frontend;
 };
 
 #endif

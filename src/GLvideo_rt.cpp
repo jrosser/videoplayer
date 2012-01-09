@@ -55,11 +55,11 @@
 #define DEBUG 0
 
 
-GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params& params)
+GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params& params, GLfrontend_old* frontend)
 	: QThread()
 	, gl(gl)
 	, vt(vt)
-	, frontend(0)
+	, frontend(frontend)
 	, params(params)
 	, stats(Stats::getInstance().newSection("OpenGL", this))
 {
@@ -97,9 +97,6 @@ void GLvideo_rt::run()
 	/* initialize the gl windowing adaptor */
 	gl->init();
 
-	/* create a frontend */
-	/* todo: this should happen outside of this class */
-	frontend = new GLfrontend_old(params, vt);
 	frontend->resizeViewport(viewport_width, viewport_height);
 
 	//monitoring
