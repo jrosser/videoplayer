@@ -1,6 +1,6 @@
 #include <Carbon/Carbon.h>
 #include <AGL/agl.h>
-#include <OpenGL.h>
+#include <OpenGL/OpenGL.h>
 
 CFBundleRef gBundleRefOpenGL = NULL;
 
