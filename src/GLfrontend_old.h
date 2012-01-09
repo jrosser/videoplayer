@@ -40,6 +40,7 @@ public:
 
 	void render();
 	void resizeViewport(int w, int h);
+	void getOptimalDimensions(unsigned& w, unsigned& h);
 
 private:
 	void init();

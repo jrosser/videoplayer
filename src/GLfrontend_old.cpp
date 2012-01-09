@@ -70,6 +70,17 @@ GLfrontend_old::GLfrontend_old(GLvideo_params& params, VideoTransport* vt)
 GLfrontend_old::~GLfrontend_old() {
 }
 
+void GLfrontend_old::getOptimalDimensions(unsigned& w, unsigned& h)
+{
+	/* xxx: this causes a frame to be dropped at start of file */
+	if (!vt->getFrame(0))
+		while (!vt->advance());
+
+	VideoData *vd = vt->getFrame(0);
+	w = vd->data.plane[0].width;
+	h = vd->data.plane[0].height;
+}
+
 void GLfrontend_old::init() {
 	programs[shaderPlanar | Progressive] = compileFragmentShader(shaderPlanarProSrc);
 	programs[shaderPlanar | Deinterlace] = compileFragmentShader(shaderPlanarDeintSrc);

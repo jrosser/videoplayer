@@ -44,6 +44,7 @@ MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTra
 		setCursor(QCursor(Qt::BlankCursor));
 	}
 
+	gl_frontend->getOptimalDimensions(size_hint_w, size_hint_h);
 	setWindowTitle("VideoPlayer");
 	setFullScreen(qt_params.start_fullscreen);
 

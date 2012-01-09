@@ -48,6 +48,10 @@ class MainWindow : public QMainWindow
 public:
 	MainWindow(GLvideo_params&, Qt_params&, VideoTransportQT*, GLfrontend_old*);
 
+	QSize sizeHint() const {
+		return QSize(size_hint_w, size_hint_h);
+	}
+
 protected:
 
 private slots:
@@ -78,6 +82,9 @@ private:
 	VideoTransportQT *video_transport;
 
 	GLfrontend_old *gl_frontend;
+
+	unsigned size_hint_w; /* ideal window width */
+	unsigned size_hint_h; /* ideal window height */
 };
 
 #endif
