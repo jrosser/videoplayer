@@ -27,6 +27,8 @@
 #include <QTime>
 #include <stdio.h>
 
+#include <algorithm>
+
 #include <GL/glew.h>
 
 #include "GLfrontend_old.h"
@@ -43,9 +45,11 @@
 
 #define DEBUG 0
 
+static int chooseShader(VideoData *video_data, GLvideo_params& params);
 static void updateShaderVars(int program, VideoData *video_data, float colour_matrix[4][4]);
 
 using namespace GLvideo;
+using namespace std;
 
 enum ShaderPrograms {
 	Progressive = 0x0,
@@ -62,23 +66,80 @@ GLfrontend_old::GLfrontend_old(GLvideo_params& params, VideoTransport* vt)
 	, vt(vt)
 	, params(params)
 	, doResize(0)
+	, layouts(0)
 	, stats(Stats::getInstance().newSection("OpenGL", this))
 {
-	return;
+	setLayoutGrid(1, 1);
 }
 
 GLfrontend_old::~GLfrontend_old() {
 }
 
+void GLfrontend_old::setLayoutGrid(int h, int v)
+{
+	delete[] layouts;
+
+	layout_grid_h = h;
+	layout_grid_v = v;
+
+	layouts = new Layout[h * v];
+
+	for (int y = 0; y < layout_grid_v; y++) {
+		for (int x = 0; x < layout_grid_h; x++) {
+			Layout& l = layouts[layout_grid_h * y + x];
+			l.source = layout_grid_h * y + x;
+		}
+	}
+}
+
 void GLfrontend_old::getOptimalDimensions(unsigned& w, unsigned& h)
 {
+	int num_layouts = layout_grid_h * layout_grid_v;
+	VideoData *frames[16];
+
 	/* xxx: this causes a frame to be dropped at start of file */
 	if (!vt->getFrame(0))
 		while (!vt->advance());
 
-	VideoData *vd = vt->getFrame(0);
-	w = vd->data.plane[0].width;
-	h = vd->data.plane[0].height;
+	/* load the next frame, spinning until it is available.
+	 * handling the case when nothing is attached to the framequeue */
+	for (int i = 0; i < num_layouts; i++) {
+		frames[i] = NULL;
+		try {
+			frames[i] = vt->getFrame(layouts[i].source);
+		} catch (...) {
+			/* nothing attached to ith source */
+		}
+	}
+
+	/* work out the maximum width of each column and sum */
+	unsigned width = 0;
+	for (int x = 0; x < layout_grid_h; x++) {
+		unsigned col_width_max = 0;
+		for (int y = 0; y < layout_grid_v; y++) {
+			VideoData *vd = frames[layout_grid_h * y + x];
+			if (!vd)
+				continue;
+			col_width_max = max(col_width_max, vd->data.plane[0].width);
+		}
+		width += col_width_max;
+	}
+
+	/* work out the maximum height of each column and sum */
+	unsigned height = 0;
+	for (int y = 0; y < layout_grid_v; y++) {
+		unsigned row_height_max = 0;
+		for (int x = 0; x < layout_grid_h; x++) {
+			VideoData *vd = frames[layout_grid_h * y + x];
+			if (!vd)
+				continue;
+			row_height_max = max(row_height_max, vd->data.plane[0].height);
+		}
+		height += row_height_max;
+	}
+
+	w = width;
+	h = height;
 }
 
 void GLfrontend_old::init() {
@@ -86,8 +147,6 @@ void GLfrontend_old::init() {
 	programs[shaderPlanar | Deinterlace] = compileFragmentShader(shaderPlanarDeintSrc);
 	programs[shaderUYVY | Progressive] = compileFragmentShader(shaderUYVYProSrc);
 	programs[shaderUYVY | Deinterlace] = compileFragmentShader(shaderUYVYDeintSrc);
-
-	currentShader = 0;
 }
 
 void GLfrontend_old::resizeViewport(int width, int height)
@@ -305,59 +364,89 @@ void GLfrontend_old::render()
 		init_done = true;
 	}
 
-	/* obtain the current frame.  NB, this may be the same frame as last time */
-	/* xxx, this will eventually be moved into an action */
-	VideoData* video_data = vt->getFrame(0);
-	if (!video_data) {
-		return;
-	}
-
 	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
 	perfTimer.start();
-
-	if (video_data->data.packing_format == V8P
-	||  video_data->data.packing_format == V16P) {
-		currentShader = shaderPlanar;
-	}
-	else
-		currentShader = shaderUYVY;
-
-	if (params.deinterlace)
-		currentShader |= Deinterlace;
-	else
-		currentShader &= ~Deinterlace;
 
 	if (params.matrix_valid == false) {
 		buildColourMatrix(colour_matrix, params);
 		params.matrix_valid = true;
 	}
 
-	//update the uniform variables in the fragment shader
+	int num_layouts = layout_grid_h * layout_grid_v;
+	VideoData* frames[16];
+
 	perfTimer.restart();
-	updateShaderVars(programs[currentShader], video_data, colour_matrix);
-	addStat(*stats, "UpdateVars", perfTimer.elapsed(), "ms");
-
-	/* setup viewport for rendering (letter/pillarbox) */
-	unsigned video_data_width = video_data->data.plane[0].width;
-	unsigned video_data_height = video_data->data.plane[0].height;
-	aspectBox(video_data_width, video_data_height, displaywidth, displayheight, !params.aspect_ratio_lock, params.zoom_1to1);
-
-	if (params.deinterlace) {
-		glUseProgramObjectARB(programs[currentShader]);
-		int i = glGetUniformLocationARB(programs[currentShader], "field");
-		glUniform1fARB(i, (float)video_data->is_field1);
-		glUseProgramObjectARB(0);
+	for (int i = 0; i < num_layouts; i++) {
+		try {
+			frames[i] = vt->getFrame(i);
+			upload(frames[i]);
+		} catch (...) {
+			frames[i] = NULL;
+		}
 	}
-
-	perfTimer.restart();
-	upload(video_data);
 	addStat(*stats, "Upload", perfTimer.elapsed(), "ms");
 
-	perfTimer.restart();
-	::render(video_data, programs[currentShader]);
-	addStat(*stats, "Render", perfTimer.elapsed(), "ms");
+	for (int x = 0; x < layout_grid_h; x++) {
+		for (int y = 0; y < layout_grid_v; y++) {
+			VideoData *video_data = frames[layout_grid_h * y + x];
 
-	unref_texture(video_data);
+			int vp_x_left = x * displaywidth / layout_grid_h;
+			int vp_x_right = (x+1) * displaywidth / layout_grid_h;
+			int vp_y_bot = y * displayheight / layout_grid_v;
+			int vp_y_top = (y+1) * displayheight / layout_grid_v;
+			int vp_width = vp_x_right - vp_x_left;
+			int vp_height = vp_y_top - vp_y_bot;
+
+			/* setup viewport for rendering (letter/pillarbox) */
+			if (!video_data) {
+				aspectBox(1, 1, vp_x_left, vp_y_bot, vp_width, vp_height, !params.aspect_ratio_lock, params.zoom_1to1);
+				continue;
+			}
+
+			unsigned video_data_width = video_data->data.plane[0].width;
+			unsigned video_data_height = video_data->data.plane[0].height;
+			aspectBox(video_data_width, video_data_height, vp_x_left, vp_y_bot, vp_width, vp_height, !params.aspect_ratio_lock, params.zoom_1to1);
+
+			//update the uniform variables in the fragment shader
+			perfTimer.restart();
+			int currentShader = chooseShader(video_data, params);
+			updateShaderVars(programs[currentShader], video_data, colour_matrix);
+			addStat(*stats, "UpdateVars", perfTimer.elapsed(), "ms");
+
+			if (params.deinterlace) {
+				glUseProgramObjectARB(programs[currentShader]);
+				int i = glGetUniformLocationARB(programs[currentShader], "field");
+				glUniform1fARB(i, (float)video_data->is_field1);
+				glUseProgramObjectARB(0);
+			}
+
+			perfTimer.restart();
+			::render(video_data, programs[currentShader]);
+			addStat(*stats, "Render", perfTimer.elapsed(), "ms");
+
+			unref_texture(video_data);
+		}
+	}
+}
+
+static int
+chooseShader(VideoData *video_data, GLvideo_params& params)
+{
+	int current_shader;
+
+	if (video_data->data.packing_format == V8P
+	||  video_data->data.packing_format == V16P) {
+		current_shader = shaderPlanar;
+	}
+	else
+		current_shader = shaderUYVY;
+
+	if (params.deinterlace)
+		current_shader |= Deinterlace;
+	else
+		current_shader &= ~Deinterlace;
+
+	return current_shader;
 }
 
 static void

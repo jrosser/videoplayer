@@ -107,6 +107,8 @@ static void setCoordSystem(unsigned video_data_width, unsigned video_data_height
 void
 aspectBox(unsigned video_data_width
          ,unsigned video_data_height
+         ,unsigned display_xoff
+         ,unsigned display_yoff
          ,unsigned display_width
          ,unsigned display_height
          ,bool force_display_aspect
@@ -116,7 +118,7 @@ aspectBox(unsigned video_data_width
 	float display_aspect = (float)display_width / display_height;
 
 	/* set full viewport for drawing of black bars */
-	glViewport(0, 0, display_width, display_height);
+	glViewport(display_xoff, display_yoff, display_width, display_height);
 
 	glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
@@ -197,7 +199,7 @@ aspectBox(unsigned video_data_width
 		glVertex2i(display_width, display_height - y_or_h);
 	glEnd();
 	/* set viewport to required area for video rendering */
-	glViewport(viewport_x, viewport_y, viewport_w, viewport_h);
+	glViewport(display_xoff+viewport_x, display_yoff+viewport_y, viewport_w, viewport_h);
 
 	if (zoom_1to1) {
 		int xoff = max(0, ((int)video_data_width - (int)display_width)/2);

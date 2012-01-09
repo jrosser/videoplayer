@@ -80,6 +80,24 @@ struct Transport_params {
 	int lru_cache;
 };
 
+struct NxM {
+	unsigned n;
+	unsigned m;
+};
+
+istream& operator>> (istream& is, struct NxM& val)
+{
+	is >> val.n;
+	char dummy;
+	is >> dummy;
+	is >> val.m;
+	return is;
+}
+
+struct Misc_params {
+	NxM gridsize;
+};
+
 static void
 version()
 {
@@ -150,7 +168,7 @@ namespace df { namespace program_options_lite {
 }}
 
 bool
-parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp, Qt_params& qt)
+parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp, Qt_params& qt, Misc_params &xx)
 {
 	bool allParsed = true; //default to command line parsing succeeding
 	int cols = 81;
@@ -187,6 +205,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("pixelmapped",   vp.zoom_1to1,                   "Pixel map video, rather than scailing to viewport")
 		("vt.readahead",  tp.read_ahead,                  "Video transport read ahead list length")
 		("vt.lrucache",   tp.lru_cache,                   "Video transport least recently used cache length")
+		("gl.gridsize",   xx.gridsize,                    "Video output layout numHxnumV")
 #if WITH_OSD
 		("fontfile",      vp.font_file,                   "TrueType font file for OSD")
 		("osdscale",      vp.osd_scale,                   "OSD size scaling factor")
@@ -334,12 +353,16 @@ int main(int argc, char **argv)
 	qt_params.hidemouse = false;
 	qt_params.start_fullscreen = false;
 
+	struct Misc_params misc_params;
+	misc_params.gridsize.n = 1;
+	misc_params.gridsize.m = 1;
+
 	/* QApplication will munge argc/argv, needs to be called before
 	 * parseCommandLine. Eg, useful for X11's -display :0 convention */
 	QApplication app(argc, argv);
 
 	//override settings with command line
-	if (parseCommandLine(argc, argv, vr_params, t_params, qt_params) == false) {
+	if (parseCommandLine(argc, argv, vr_params, t_params, qt_params, misc_params) == false) {
 		return -1;
 	}
 
@@ -396,6 +419,13 @@ int main(int argc, char **argv)
 	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
 
 	GLfrontend_old gl_frontend(vr_params, vt);
+
+	if (readers.size() > misc_params.gridsize.n * misc_params.gridsize.m) {
+		printf("warning: more input files specified than display grid has positions; adjusting...\n");
+		misc_params.gridsize.n = readers.size();
+		misc_params.gridsize.m = 1;
+	}
+	gl_frontend.setLayoutGrid(misc_params.gridsize.n, misc_params.gridsize.m);
 
 	MainWindow* window = new MainWindow(vr_params, qt_params, vt, &gl_frontend);
 

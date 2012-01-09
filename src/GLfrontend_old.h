@@ -40,6 +40,7 @@ public:
 
 	void render();
 	void resizeViewport(int w, int h);
+	void setLayoutGrid(int h, int v);
 	void getOptimalDimensions(unsigned& w, unsigned& h);
 
 private:
@@ -53,7 +54,17 @@ private:
 	int displaywidth;
 	int displayheight;
 
-	int currentShader;
+	int layout_grid_h;
+	int layout_grid_v;
+
+	struct Layout {
+		int xoff; /* window coordinate of viewport origin */
+		int yoff; /* window coordinate of viewport origin */
+		int width; /* width of viewport area */
+		int height; /* height of viewport area */
+		int source; /* video transport queue number */
+	} *layouts;
+
 	/* Y'CbCr->RGB matrix */
 	float colour_matrix[4][4];
 
