@@ -338,7 +338,9 @@ void GLfrontend_old::render()
 	addStat(*stats, "UpdateVars", perfTimer.elapsed(), "ms");
 
 	/* setup viewport for rendering (letter/pillarbox) */
-	aspectBox(video_data, displaywidth, displayheight, !params.aspect_ratio_lock, params.zoom_1to1);
+	unsigned video_data_width = video_data->data.plane[0].width;
+	unsigned video_data_height = video_data->data.plane[0].height;
+	aspectBox(video_data_width, video_data_height, displaywidth, displayheight, !params.aspect_ratio_lock, params.zoom_1to1);
 
 	if (params.deinterlace) {
 		glUseProgramObjectARB(programs[currentShader]);

@@ -30,6 +30,6 @@
 unsigned compileFragmentShader(const char *src);
 
 struct VideoData;
-void aspectBox(VideoData* video_data, unsigned display_width, unsigned display_height, bool force_display_aspect, bool zoom_1to1);
+void aspectBox(unsigned video_data_width, unsigned video_data_height, unsigned display_width, unsigned display_height, bool force_display_aspect, bool zoom_1to1);
 
 #endif

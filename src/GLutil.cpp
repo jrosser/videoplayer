@@ -87,11 +87,8 @@ unsigned compileFragmentShader(const char *src)
  * set the co-ordinate system to match the integer coordinates of
  * video_data's geometry.
  */
-static void setCoordSystem(VideoData* video_data)
+static void setCoordSystem(unsigned video_data_width, unsigned video_data_height)
 {
-	unsigned video_data_width = video_data->data.plane[0].width;
-	unsigned video_data_height = video_data->data.plane[0].height;
-
 	glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
 		glOrtho(0, video_data_width, 0, video_data_height, -1, 1);
@@ -108,15 +105,13 @@ static void setCoordSystem(VideoData* video_data)
  * destination are identical
  */
 void
-aspectBox(VideoData* video_data
+aspectBox(unsigned video_data_width
+         ,unsigned video_data_height
          ,unsigned display_width
          ,unsigned display_height
          ,bool force_display_aspect
          ,bool zoom_1to1)
 {
-	unsigned video_data_width = video_data->data.plane[0].width;
-	unsigned video_data_height = video_data->data.plane[0].height;
-
 	float source_aspect = (float)video_data_width / video_data_height;
 	float display_aspect = (float)display_width / display_height;
 
@@ -129,7 +124,7 @@ aspectBox(VideoData* video_data
 	glMatrixMode(GL_MODELVIEW);
 
 	if (source_aspect == display_aspect || force_display_aspect) {
-		setCoordSystem(video_data);
+		setCoordSystem(video_data_width, video_data_height);
 		return;
 	}
 
@@ -145,14 +140,12 @@ aspectBox(VideoData* video_data
 		/* place video in middle of display, and postagestamp */
 		int display_centre_x = display_width / 2;
 		int display_centre_y = display_height / 2;
-		int video_width = video_data->data.plane[0].width;
-		int video_height = video_data->data.plane[0].height;
-		int video_centre_x = video_width / 2;
-		int video_centre_y = video_height / 2;
+		int video_centre_x = video_data_width / 2;
+		int video_centre_y = video_data_height / 2;
 		/* if video narrower than display: we need to shrink the viewport
 		 * if       wider,                 we limit to the dispay width */
-		viewport_w = min(video_width, (int) display_width);
-		viewport_h = min(video_height, (int) display_height);
+		viewport_w = min(video_data_width, display_width);
+		viewport_h = min(video_data_height, display_height);
 		viewport_x = max(0, display_centre_x - video_centre_x);
 		viewport_y = max(0, display_centre_y - video_centre_y);
 
@@ -207,18 +200,16 @@ aspectBox(VideoData* video_data
 	glViewport(viewport_x, viewport_y, viewport_w, viewport_h);
 
 	if (zoom_1to1) {
-		int video_width = video_data->data.plane[0].width;
-		int video_height = video_data->data.plane[0].height;
-		int xoff = max(0, (video_width - (int)display_width)/2);
-		int yoff = max(0, (video_height - (int)display_height)/2);
-		int width = xoff ? display_width : video_width;
-		int height = yoff ? display_height : video_height;
+		int xoff = max(0, ((int)video_data_width - (int)display_width)/2);
+		int yoff = max(0, ((int)video_data_height - (int)display_height)/2);
+		int width = xoff ? display_width : video_data_width;
+		int height = yoff ? display_height : video_data_height;
 		glMatrixMode(GL_PROJECTION);
 			glLoadIdentity();
 			glOrtho(0,width,0,height,-1, 1);
 		glMatrixMode(GL_MODELVIEW);
 	}
 	else {
-		setCoordSystem(video_data);
+		setCoordSystem(video_data_width, video_data_height);
 	}
 }
