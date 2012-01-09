@@ -98,6 +98,13 @@ libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \
 	src/version.c \
 	$(NULL)
 
+if OSX
+libqttv_@QTTV_MAJORMINOR@_la_SOURCES += \
+	src/agl_getproc.cpp \
+	src/agl_getproc.h \
+	$(NULL)
+endif
+
 if WITH_OSD
 libqttv_@QTTV_MAJORMINOR@_la_SOURCES += src/GLvideo_osd.cpp
 libqttv_@QTTV_MAJORMINOR@_la_LIBADD += $(FTGL_LIBS)
