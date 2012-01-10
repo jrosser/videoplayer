@@ -7,10 +7,6 @@ unix { CONFIG += link_pkgconfig }
 # enable or disable the optional features here
 DEFINES += WITH_OSD
 
-unix  { DEFINES += DEFAULT_FONTFILE=\\\"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf\\\" }
-macx  { DEFINES += DEFAULT_FONTFILE=\\\"/Library/Fonts/GillSans.dfont\\\" }
-win32 { DEFINES += DEFAULT_FONTFILE=\\\"c:\\\\windows\\\\fonts\\\\arial.ttf\\\" }
-
 include(local.pro)
 
 # source files
@@ -131,6 +127,12 @@ win32 {
 		}
 	}
 	LIBS += -lopengl32 -lglu32
+}
+
+app_bundle {
+  EXTRADIST.files = $${_PRO_FILE_PWD_}/../redist/Vera.ttf $${_PRO_FILE_PWD_}/../redist/COPYING.Vera
+  EXTRADIST.path = Contents/
+  QMAKE_BUNDLE_DATA += EXTRADIST
 }
 
 VersionGen.name = Generate version.c based on git describe

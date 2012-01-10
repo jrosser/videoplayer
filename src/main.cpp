@@ -35,6 +35,7 @@
 #endif
 
 #include <QApplication>
+#include <QLibraryInfo>
 
 #include <string>
 using namespace std;
@@ -243,21 +244,9 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 	}
 
 #ifdef WITH_OSD
-	if (1) {
-		/* unconditionally verify this, even if the default */
-
-		//check OSD font file exists
-		QFileInfo fi(vp.font_file);
-		if(fi.exists() == false) {
-			printf("Cannot find OSD font file %s\n", vp.font_file.toLatin1().data());
-			allParsed = false;
-		}
-		else {
-			if(fi.isReadable() == false) {
-				printf("Cannot read OSD font file %s\n", vp.font_file.toLatin1().data());
-				allParsed = false;
-			}
-		}
+	QFileInfo fi(vp.font_file);
+	if (!fi.exists() || !fi.isReadable()) {
+		printf("warning: Cannot read OSD font file '%s'\n", vp.font_file.toLatin1().data());
 	}
 #endif
 
@@ -308,6 +297,10 @@ int main(int argc, char **argv)
 	XInitThreads();
 #endif
 
+	/* QApplication will munge argc/argv, needs to be called before
+	 * parseCommandLine. Eg, useful for X11's -display :0 convention */
+	QApplication app(argc, argv);
+
 	struct GLvideo_params vr_params;
 	/* some defaults in the abscence of any settings */
 	vr_params.caption = "";
@@ -317,7 +310,7 @@ int main(int argc, char **argv)
 	vr_params.osd_perf = false;
 	vr_params.osd_bot = OSD_NONE;
 	vr_params.osd_valid = false;
-	vr_params.font_file = DEFAULT_FONTFILE;
+	vr_params.font_file = QLibraryInfo::location(QLibraryInfo::DataPath) + "/Vera.ttf";
 	vr_params.input_luma_range = 220;
 	vr_params.input_luma_blacklevel = 16;
 	vr_params.input_chroma_blacklevel = 128;
@@ -356,10 +349,6 @@ int main(int argc, char **argv)
 	struct Misc_params misc_params;
 	misc_params.gridsize.n = 1;
 	misc_params.gridsize.m = 1;
-
-	/* QApplication will munge argc/argv, needs to be called before
-	 * parseCommandLine. Eg, useful for X11's -display :0 convention */
-	QApplication app(argc, argv);
 
 	//override settings with command line
 	if (parseCommandLine(argc, argv, vr_params, t_params, qt_params, misc_params) == false) {

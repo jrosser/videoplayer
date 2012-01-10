@@ -72,13 +72,5 @@ AS_IF([test x$enable_osd = xyes], AC_DEFINE([WITH_OSD], [1]))
 AH_TEMPLATE([WITH_OSD], [Define to enable execution of the on-screen display code])
 AM_CONDITIONAL([WITH_OSD], [test x$enable_osd = xyes])
 
-# choose which font to use
-AH_TEMPLATE([DEFAULT_FONTFILE], [Platform specific path to a ttf font])
-AS_CASE([$host],
-	[*-*-linux*],[AC_DEFINE([DEFAULT_FONTFILE], ["/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf"])],
-	[*-*-darwin*],[AC_DEFINE([DEFAULT_FONTFILE], ["/Library/Fonts/GillSans.dfont"])],
-	[*-mingw*|*-winnt*],[AC_DEFINE([DEFAULT_FONTFILE], ["c:\\windows\\fonts\\arial.ttf"])])
-
-
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile qt.conf])
 AC_OUTPUT
