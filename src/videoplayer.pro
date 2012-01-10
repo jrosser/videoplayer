@@ -3,6 +3,15 @@ TEMPLATE = app
 QT += opengl
 CONFIG += thread console debug_and_release
 
+# enable or disable the optional features here
+DEFINES += WITH_OSD
+
+unix  { DEFINES += DEFAULT_FONTFILE=\\\"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf\\\" }
+macx  { DEFINES += DEFAULT_FONTFILE=\\\"/Library/Fonts/GillSans.dfont\\\" }
+win32 { DEFINES += DEFAULT_FONTFILE=\\\"c:\\\\windows\\\\fonts\\\\arial.ttf\\\" }
+
+include(local.pro)
+
 # source files
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h
 HEADERS += stats.h version.h program_options_lite.h fileDialog.h
@@ -22,17 +31,10 @@ SOURCES += GLutil.cpp colourMatrix.cpp
 HEADERS += GLvideo_tradtex.h GLvideo_pbotex.h
 SOURCES += GLvideo_tradtex.cpp GLvideo_pbotex.cpp
 
-# enable or disable the optional features here
-DEFINES += WITH_OSD
-
 contains(DEFINES, WITH_OSD) {
   SOURCES += GLvideo_osd.cpp
   HEADER += GLvideo_osd.h
 }
-
-unix  { DEFINES += DEFAULT_FONTFILE=\\\"/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans-Bold.ttf\\\" }
-macx  { DEFINES += DEFAULT_FONTFILE=\\\"/Library/Fonts/GillSans.dfont\\\" }
-win32 { DEFINES += DEFAULT_FONTFILE=\\\"c:\\\\windows\\\\fonts\\\\arial.ttf\\\" }
 
 unix {
   SOURCES += QConsoleInput.cpp
@@ -76,37 +78,34 @@ macx {
 }
 
 win32 {
-
 	contains(QMAKE_CXX, cl) {
 		#win32 builds using the msvc toolchain
 		message("configuring for win32 msvc build")
 
-		WINLIBS = c:\libs-msvc2008
 		QMAKE_LFLAGS += /VERBOSE:LIB
 		DEFINES += _CRT_SECURE_NO_WARNINGS
 
 		#----------------------------------------------------
 		# glew
 		DEFINES += GLEW_STATIC
-		LIBS += $$WINLIBS\glew\lib\glew32s.lib
-		INCLUDEPATH += $$WINLIBS\glew\include
+		LIBS += $$GLEWDIR/lib/glew32s.lib
+		INCLUDEPATH += $$GLEWDIR/include
 
 		contains(DEFINES, WITH_OSD) {
 			#----------------------------------------------------
 			# freetype
-			FT_LIB = $$WINLIBS\freetype-2.3.5\objs\freetype235
-			CONFIG(debug, debug|release):FT_LIB = $$join(FT_LIB,,, MT_D.lib)
-			else:FT_LIB = $$join(FT_LIB,,, MT.lib)
+			CONFIG(debug, debug|release):FT_LIB = $$join($$FREETYPEDIR/lib,,, MT_D.lib)
+			else:FT_LIB = $$join($$FREETYPEDIR/lib,,, MT.lib)
 			LIBS += $$FT_LIB
-			INCLUDEPATH += $$WINLIBS\freetype-2.3.5\include
+			INCLUDEPATH += $$FREETYPEDIR/include
 
 			#----------------------------------------------------
 			# ftgl
-			FTGL_LIB += $$WINLIBS\FTGL\win32_vcpp\build\ftgl_static
-			CONFIG(debug, debug|release):FTGL_LIB = $$join(FTGL_LIB,,, _d.lib)
-			else:FTGL_LIB = $$join(FTGL_LIB,,, .lib)
+			FTGL_LIB += $$FTGLLIBDIR
+			CONFIG(debug, debug|release):FTGL_LIB = $$join(FTGL_LIB,,, ftgl_static_d.lib)
+			else:FTGL_LIB = $$join(FTGL_LIB,,, ftgl_static.lib)
 			LIBS += $$FTGL_LIB
-			INCLUDEPATH += $$WINLIBS\ftgl
+			INCLUDEPATH += $$FTGLINCDIR
 			DEFINES += FTGL_LIBRARY_STATIC
 		}
 
@@ -114,30 +113,29 @@ win32 {
 		#win32 builds using the mingw toolchain
 		message("configuring for win32 mingw build")
 
-		MINGWLIBS = c:\libs-mingw
-
 		#----------------------------------------------------
 		# glew
 		DEFINES += GLEW_STATIC
-		LIBS = $$MINGWLIBS\glew\lib\libglew32.a
-		INCLUDEPATH += $$MINGWLIBS\glew\include
+		LIBS = $$GLEWDIR/lib/libglew32.a
+		INCLUDEPATH += $$GLEWDIR/include
 
 		contains(DEFINES, WITH_OSD) {
 			#----------------------------------------------------
 			# ftgl
-			LIBS += $$MINGWLIBS\FTGL\src\libftgl.a
-			INCLUDEPATH += $$MINGWLIBS\FTGL
+			LIBS += $$FTGLLIBDIR\libftgl.a
+			INCLUDEPATH += $$FTGLINCDIR
 			DEFINES += HAVE_FTGL
 
 			#----------------------------------------------------
 			# freetype
-			LIBS += $$MINGWLIBS\freetype-2.3.5\lib\libfreetype.a
-			INCLUDEPATH += $$MINGWLIBS\freetype-2.3.5\include
+			LIBS += $$FREETYPEDIR/lib/libfreetype.a
+			INCLUDEPATH += $$FREETYPEDIR/include
 
 			#doh! these need to be on the linker command line after the freetype and ftgl .a files
 			LIBS += -lopengl32 -lglu32
 		}
 	}
+	LIBS += -lopengl32 -lglu32
 }
 
 VersionGen.name = Generate version.c based on git describe
