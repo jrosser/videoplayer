@@ -2,6 +2,7 @@ TEMPLATE = app
 
 QT += opengl
 CONFIG += thread console debug_and_release
+unix { CONFIG += link_pkgconfig }
 
 # enable or disable the optional features here
 DEFINES += WITH_OSD
@@ -48,29 +49,24 @@ unix {
 linux-g++ {
   SOURCES += QShuttlePro.cpp
   HEADERS += QShuttlePro.h
-
-  # GLEW is not managed by pkgconfig
-  LIBS += -lGLEW
-
-  contains(DEFINES, WITH_OSD) {
-    CONFIG += link_pkgconfig
-    PKGCONFIG += ftgl
-  }
 }
 
 macx {
   #helper functions for OS X openGL
   SOURCES += agl_getproc.cpp
   HEADERS += agl_getproc.h
+}
 
+link_pkgconfig {
+  # override in local.pro by specifying CONFIG-=link_pkgconfig,
+  # and then adding manual paths
+  PKGCONFIG += glew
   contains(DEFINES, WITH_OSD) {
-    CONFIG += link_pkgconfig
     PKGCONFIG += ftgl
   }
+}
 
-  #glew
-  LIBS += -lGLEW
-
+macx {
   #see http://developer.apple.com/qa/qa2007/qa1567.html
   QMAKE_LFLAGS += -dylib_file \
     /System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/libGL.dylib:\
