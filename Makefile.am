@@ -16,7 +16,7 @@ else
 VERSION_STRING_ = $(VERSION_STRING)
 endif
 
-EXTRA_DIST = src/version.c version-gen.sh
+EXTRA_DIST = src/version.c version-gen.sh redist/Vera.ttf redist/COPYING.Vera
 
 VERSION = $(VERSION_STRING_)
 
