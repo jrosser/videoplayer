@@ -354,6 +354,12 @@ void render(VideoData *vd, GLuint shader_prog)
 	glDisable(GL_TEXTURE_GEN_S);
 	glDisable(GL_TEXTURE_GEN_T);
 	glUseProgramObjectARB(0);
+
+	for (unsigned i = 0; i < vd->gl_data.plane.size(); i++) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
+	}
+	glActiveTexture(GL_TEXTURE0);
 }
 
 void GLfrontend_old::render()
