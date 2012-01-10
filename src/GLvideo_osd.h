@@ -27,13 +27,22 @@
 #ifndef GLVIDEO_OSD_H_
 #define GLVIDEO_OSD_H_
 
-class FTFont;
+#include "freetype-gl/freetype-gl.h"
+#include "freetype-gl/vertex-buffer.h"
+
+typedef struct { float r; float g; float b;  float a; } rgba_t;
+
+typedef struct markup {
+	texture_font_t* font;
+	rgba_t foreground_colour;
+} markup_t;
+
 struct VideoData;
 struct GLvideo_params;
 
 class GLvideo_osd {
 public:
-	GLvideo_osd();
+	GLvideo_osd(GLvideo_params& );
 
 	void render(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params);
 	~GLvideo_osd();
@@ -41,11 +50,14 @@ public:
 private:
 
 	void renderOSD(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params);
-	void drawText(const char *str);
-	void draw2Text(const char *str1, const char *str2, float h_spacing);
-	void drawPerfTimer(const char *str, int num, const char *units, float h_spacing);
 	void renderStats(unsigned viewport_width, unsigned viewport_height, GLvideo_params &);
-	FTFont *font;
+
+	texture_atlas_t* font_atlas;
+	vertex_buffer_t* vertex_buffer;
+	markup_t markup_normal;
+	markup_t markup_stats;
+
+	float text_val_start_pos;
 };
 
 #endif /*GLVIDEO_OSD_H_*/

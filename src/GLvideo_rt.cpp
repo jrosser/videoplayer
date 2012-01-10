@@ -65,7 +65,7 @@ GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params
 	, stats(Stats::getInstance().newSection("OpenGL", this))
 {
 #ifdef WITH_OSD
-	osd = new GLvideo_osd();
+	osd = new GLvideo_osd(params);
 #else
 	osd = NULL;
 #endif

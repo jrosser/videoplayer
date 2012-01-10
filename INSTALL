@@ -17,9 +17,7 @@ Prerequisites: Mac OS X 10.5 / Leopard
     Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com/
     Xcode toolchain
 			   
-    Optionally FTGL text rendering library, can be installed with MacPorts www.macports.org
-    If you do not want to use FTGL, the on screen display can be disabled by commenting out the
-    lines in the macx/ftgl section of videoplayer.pro
+    Optionally Freetype font library, can be installed with MacPorts www.macports.org
 
 qmake -spec macx-g++    #generate makefile from videoplayer.pro
 make                    #compile videoplayer executable

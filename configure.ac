@@ -46,7 +46,7 @@ PKG_CHECK_MODULES(QTGL, QtOpenGL > 4.7)
 QT4_MOC=`$PKG_CONFIG --variable=moc_location QtGui`
 AC_SUBST(QT4_MOC)
 
-PKG_CHECK_MODULES(FTGL, ftgl)
+PKG_CHECK_MODULES(FREETYPE, freetype2)
 PKG_CHECK_MODULES(GLEW, glew)
 
 # Checks for header files.

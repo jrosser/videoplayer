@@ -13,7 +13,7 @@ visual studio project file to compile the videplayer program within the
 MSVC gui if required. 
 
 You may change the path names described as you need to, but ensure that
-the videoplayer.pro file and FTGL makefile are updated to suit.
+the videoplayer.pro file is updated to suit.
 
 Prerequisites: Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com
                A c++ compiler, Microsoft Visual C++ (Express is ok) or the mingw/msys suite
@@ -21,7 +21,6 @@ Prerequisites: Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltec
                
 Optionally for on-screen-display rendering:
                The FreeType library freetype.sourceforge.net
-               The FTGL library ftgl.wiki.sourceforge.net
                
 
 Building with the Microsoft Visual C++ tools
@@ -51,32 +50,8 @@ b) FreeType
 	Build the debug and release version of freetype using the MSVC gui
 	
 
-c) FTGL
 
-	Download the FTGL library. I got ftgl-2.1.3~rc5.tar.gz
-	You can use winzip or another suitable tool to decompress the .tar.gh archive
-	Unpack the archive into c:\libs-msvc2008
-
-	Open  C:\libs-msvc2008\ftgl-2.1.3~rc5\msvc\vc8\ftgl_static.vcproj
-	
-	Right click 'ftgl_static_lib' in the Solution and select 'properties'
-	Select 'All Configurations' in the 'Configuration' drop down box
-
-	Select the C/C++ / General properties
-	Modify 'Additional include directories' to point to the previously compiled
-	freetype library, 'c:\libs-msvc2008\freetype-2.3.5\include' in my case.
-	Apply the configuration changes
-
-	Build the debug and release versions of FTGL using the MSVC gui
-
-	mkdir c:\libs-msvc2008\FTGL\FTGL
-	copy c:\libs-msvc2008\ftgl-2.1.3~rc5\src\FTGL\*.h  c:\libs-msvc2008\FTGL\FTGL
-
-	mkdir c:\libs-msvc2008\FTGL\win32_vcpp\build
-	copy c:\libs-msvc2008\ftgl-2.1.3~rc5\msvc\build\*.lib  c:\libs-msvc2008\FTGL\win32_vcpp\build
-
-
-d) Build videoplayer
+c) Build videoplayer
 
 	cd path\to\videoplayer\source
 	qmake -tp vc
@@ -135,26 +110,7 @@ b) FreeType
 
 	The compiled freetype library should now be in /c/libs-mingw/freetype-2.3.5/lib
 
-c) FTGL
-
-
-	Download the FTGL library. I got ftgl-2.1.2.tgz
-	Unpack the archive into /c/libs-mingw
-
-	The FTGL unix build system does not work under mingw, so a simple makefile based
-	approach can be used to build a static library.
-
-	Copy Makefile.ftgl to /c/libs-mingw/FTGL/src
-
-	cd src
-	make
-	
-	To make #include <FTGL/...> work, the FTGL headers must live in /c/libs-mingw/FTGL/FTGL/
-	
-	mkdir /c/libs-mingw/FTGL/FTGL
-	cp /c/libs-mingw/include/*.h /c/libs-mingw/FTGL
-
-d) Build videoplayer
+c) Build videoplayer
 
 either build in the source directory
 

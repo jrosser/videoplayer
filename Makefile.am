@@ -98,7 +98,20 @@ libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \
 	src/fourcc.h \
 	src/videoData.cpp \
 	src/version.c \
+	src/freetype-gl/freetype-gl.h \
+	src/freetype-gl/texture-atlas.c \
+	src/freetype-gl/texture-atlas.h \
+	src/freetype-gl/texture-font.c \
+	src/freetype-gl/texture-font.h \
+	src/freetype-gl/utf8.c \
+	src/freetype-gl/utf8.h \
+	src/freetype-gl/vec234.h \
+	src/freetype-gl/vector.c \
+	src/freetype-gl/vector.h \
+	src/freetype-gl/vertex-buffer.c \
+	src/freetype-gl/vertex-buffer.h \
 	$(NULL)
+
 
 if OSX
 libqttv_@QTTV_MAJORMINOR@_la_SOURCES += \
@@ -109,8 +122,8 @@ endif
 
 if WITH_OSD
 libqttv_@QTTV_MAJORMINOR@_la_SOURCES += src/GLvideo_osd.cpp
-libqttv_@QTTV_MAJORMINOR@_la_LIBADD += $(FTGL_LIBS)
-libqttv_@QTTV_MAJORMINOR@_la_CPPFLAGS += $(FTGL_CFLAGS)
+libqttv_@QTTV_MAJORMINOR@_la_LIBADD += $(FREETYPE_LIBS)
+libqttv_@QTTV_MAJORMINOR@_la_CPPFLAGS += $(FREETYPE_CFLAGS)
 endif
 
 nodist_libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \

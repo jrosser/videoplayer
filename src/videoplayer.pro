@@ -35,7 +35,23 @@ SOURCES += GLfrontend_old.cpp
 
 contains(DEFINES, WITH_OSD) {
   SOURCES += GLvideo_osd.cpp
-  HEADER += GLvideo_osd.h
+  HEADERS += GLvideo_osd.h
+
+  SOURCES += \
+    freetype-gl/texture-atlas.c \
+    freetype-gl/texture-font.c \
+    freetype-gl/utf8.c \
+    freetype-gl/vector.c \
+    freetype-gl/vector.h \
+    freetype-gl/vertex-buffer.c
+
+  HEADERS += \
+    freetype-gl/freetype-gl.h \
+    freetype-gl/texture-atlas.h \
+    freetype-gl/texture-font.h \
+    freetype-gl/utf8.h \
+    freetype-gl/vec234.h \
+    freetype-gl/vertex-buffer.h
 }
 
 unix {
@@ -63,7 +79,7 @@ link_pkgconfig {
   # and then adding manual paths
   PKGCONFIG += glew
   contains(DEFINES, WITH_OSD) {
-    PKGCONFIG += ftgl
+    PKGCONFIG += freetype2
   }
 }
 
@@ -95,15 +111,6 @@ win32 {
 			else:FT_LIB = $$join($$FREETYPEDIR/lib,,, MT.lib)
 			LIBS += $$FT_LIB
 			INCLUDEPATH += $$FREETYPEDIR/include
-
-			#----------------------------------------------------
-			# ftgl
-			FTGL_LIB += $$FTGLLIBDIR
-			CONFIG(debug, debug|release):FTGL_LIB = $$join(FTGL_LIB,,, ftgl_static_d.lib)
-			else:FTGL_LIB = $$join(FTGL_LIB,,, ftgl_static.lib)
-			LIBS += $$FTGL_LIB
-			INCLUDEPATH += $$FTGLINCDIR
-			DEFINES += FTGL_LIBRARY_STATIC
 		}
 
 	} else {
@@ -118,18 +125,9 @@ win32 {
 
 		contains(DEFINES, WITH_OSD) {
 			#----------------------------------------------------
-			# ftgl
-			LIBS += $$FTGLLIBDIR\libftgl.a
-			INCLUDEPATH += $$FTGLINCDIR
-			DEFINES += HAVE_FTGL
-
-			#----------------------------------------------------
 			# freetype
 			LIBS += $$FREETYPEDIR/lib/libfreetype.a
 			INCLUDEPATH += $$FREETYPEDIR/include
-
-			#doh! these need to be on the linker command line after the freetype and ftgl .a files
-			LIBS += -lopengl32 -lglu32
 		}
 	}
 	LIBS += -lopengl32 -lglu32

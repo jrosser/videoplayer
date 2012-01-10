@@ -1,72 +1,120 @@
 
+#include <algorithm>
+
 #include <GL/glew.h>
-#include <FTGL/ftgl.h>
+
+#include "freetype-gl/freetype-gl.h"
+#include "freetype-gl/vertex-buffer.h"
+#include "freetype-gl/utf8.h"
 
 #include "GLvideo_osd.h"
 #include "GLvideo_params.h"
 #include "videoData.h"
 #include "stats.h"
 
+using namespace std;
+
 #define DEBUG 0
 
-GLvideo_osd::GLvideo_osd()
-	: font(0)
+static const rgba_t WHITE = {1., 1., 1., 1.};
+static const rgba_t GREEN = {0., 1., 0., 1.};
+
+typedef struct {
+	float x, y, z;
+	float s, t;
+	float r, g, b, a;
+} vertex_t;
+
+static ivec4
+prepare_string(vertex_buffer_t* buffer, markup_t* markup, vec2* pen, const char *str)
 {
+	utf8conv_state_t utf8state;
+	init_utf8tounicode(&utf8state, str);
+
+	ivec4 bbox = {0,0,0,0};
+
+	unsigned previous = 0;
+	while (unsigned current = utf8conv_getnext(&utf8state)) {
+		texture_glyph_t *glyph = texture_font_get_glyph(markup->font, current);
+		if (previous) {
+			pen->x += texture_glyph_get_kerning(glyph, previous);
+		} else {
+			/* move origin so bounding box is tight around glyph */
+			pen->x -= glyph->offset_x;
+		}
+		int x0  = pen->x + glyph->offset_x;
+		int y0  = pen->y + glyph->offset_y;
+		int x1  = x0 + glyph->width;
+		int y1  = y0 - glyph->height;
+		float s0 = glyph->s0;
+		float t0 = glyph->t0;
+		float s1 = glyph->s1;
+		float t1 = glyph->t1;
+		GLuint index = buffer->vertices->size;
+		GLuint indices[] = {index, index+1, index+2,
+		                    index, index+2, index+3};
+
+		float r = markup->foreground_colour.r;
+		float g = markup->foreground_colour.g;
+		float b = markup->foreground_colour.b;
+		float a = markup->foreground_colour.a;
+		vertex_t vertices[] = { { x0,y0,0,  s0,t0,  r,g,b,a },
+		                        { x0,y1,0,  s0,t1,  r,g,b,a },
+		                        { x1,y1,0,  s1,t1,  r,g,b,a },
+		                        { x1,y0,0,  s1,t0,  r,g,b,a } };
+		vertex_buffer_push_back_indices( buffer, indices, 6 );
+		vertex_buffer_push_back_vertices( buffer, vertices, 4 );
+
+		/* bounding box */
+		bbox.width = max(bbox.width, x1);
+		bbox.height = max(bbox.height, y0);
+		bbox.y = min(bbox.y, y1);
+		bbox.x = min(bbox.x, x0);
+
+		pen->x += glyph->advance_x;
+		pen->y += glyph->advance_y;
+
+		previous = current;
+	}
+
+	return bbox;
+}
+
+GLvideo_osd::GLvideo_osd(GLvideo_params &params)
+{
+	//const char *ttf = "./Vera.ttf";
+	char *ttf = strdup(params.font_file.toLatin1().constData());
+	font_atlas = texture_atlas_new( 512, 512, 1 );
+	markup_normal.font = texture_font_new(font_atlas, ttf, params.osd_caption_ptsize);
+	markup_stats.font = texture_font_new(font_atlas, ttf, 13);
+	vertex_buffer = vertex_buffer_new( "v3f:t2f:c4f" );
+	free(ttf);
 	return;
 }
 
 GLvideo_osd::~GLvideo_osd()
 {
-	if(font)
-		delete font;
 }
 
 void GLvideo_osd::render(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params)
 {
-	if (!params.osd_valid) {
-		if (DEBUG)
-			printf("Changing font\n");
-		if (font)
-			delete font;
+	if (params.osd_bot != OSD_NONE)
+		renderOSD(viewport_width, viewport_height, videoData, params);
 
-		font = new FTGLPolygonFont(params.font_file.toLatin1().constData());
-		if (!font->Error()) {
-			font->CharMap(ft_encoding_unicode);
-		}
-		else {
-			delete font;
-			font = NULL;
-		}
-		
-		params.osd_valid = true;
-	}
-
-	if(font) {
-
-		if(params.osd_bot != OSD_NONE)
-			renderOSD(viewport_width, viewport_height, videoData, params);
-
-		if(params.osd_perf)
-			renderStats(viewport_width, viewport_height, params);
-	}
+	if (params.osd_perf)
+		renderStats(viewport_width, viewport_height, params);
 }
 
 void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, VideoData *videoData, GLvideo_params &params)
 {
-	//bounding box of text
-	float cx1, cy1, cz1, cx2, cy2, cz2;
-
 	//text string
-	font->FaceSize(params.osd_caption_ptsize);
 	char str[255];
 	switch (params.osd_bot) {
 	case OSD_FRAMENUM:
 		if (!videoData->is_interlaced) {
 			sprintf(str, "%06ld", videoData->frame_number);
-			font->BBox("000000", cx1, cy1, cz1, cx2, cy2, cz2);
 		} else {
 			sprintf(str, "%06ld.%1d", videoData->frame_number, videoData->is_field1);
-			font->BBox("000000.0", cx1, cy1, cz1, cx2, cy2, cz2);
 		}
 		break;
 
@@ -74,12 +122,17 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 		if (params.caption.isEmpty())
 			return;
 		sprintf(str, "%s", params.caption.toLatin1().constData());
-		font->BBox(str, cx1, cy1, cz1, cx2, cy2, cz2);
 		break;
 
 	default:
 		return;
 	}
+
+	vertex_buffer_clear(vertex_buffer);
+
+	vec2 pen = {0.,0.};
+	markup_normal.foreground_colour = WHITE;
+	ivec4 bbox = prepare_string(vertex_buffer, &markup_normal, &pen, str);
 
 	//text box location, defaults to bottom left
 	float tx = 0.05 * viewport_width;
@@ -87,16 +140,16 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 
 	if (params.osd_bot==OSD_CAPTION) {
 		//put the caption in the middle of the screen
-		tx = (viewport_width - (cx2 - cx1)) / 2.0;
+		tx = ((int)viewport_width - (bbox.width)) / 2.0;
 	}
 
 	//black box that text is rendered onto, larger than the text by 'border'
 	float border = 10;
 	float bx1, by1, bx2, by2;
-	bx1 = cx1 - border;
-	by1 = cy1 - border;
-	bx2 = cx2 + border;
-	by2 = cy2 + border;
+	bx1 = 0           - border;
+	by1 = bbox.y      - border;
+	bx2 = bbox.width  + border;
+	by2 = bbox.height + border;
 
 	//box beind text
 	glPushMatrix();
@@ -115,64 +168,68 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 
 	//text
 	glColor4f(1.0, 1.0, 1.0, params.osd_text_alpha);
-	glEnable(GL_POLYGON_SMOOTH);
-	glEnable(GL_BLEND);
-	font->Render(str);
-	glDisable(GL_POLYGON_SMOOTH);
+	glEnable(GL_TEXTURE_2D);
+	vertex_buffer_render(vertex_buffer, GL_TRIANGLES, "vtc");
+	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
 	glPopMatrix();
 }
 
-void GLvideo_osd::drawText(const char *str)
+static ivec4
+mergeBox(ivec4 a, ivec4 b)
 {
-	glPushMatrix();
-	font->Render(str);
-	glPopMatrix();
-}
-
-void GLvideo_osd::draw2Text(const char *str1, const char *str2, float h_spacing)
-{
-	glPushMatrix();
-
-	glPushMatrix();
-	font->Render(str1);
-	glPopMatrix();
-
-	glTranslatef(h_spacing, 0, 0);
-
-	glPushMatrix();
-	font->Render(str2);
-	glPopMatrix();
-
-	glPopMatrix();
-}
-
-void GLvideo_osd::drawPerfTimer(const char *str, int num, const char *units, float h_spacing)
-{
-	char str2[255];
-	sprintf(str2, "%d%s", num, units);
-	draw2Text(str, str2, h_spacing);
+	ivec4 r;
+	r.x = min(a.x, b.x);
+	r.y = min(a.y, b.y);
+	r.width = max(a.width, b.width);
+	r.height = max(a.height, b.height);
+	return r;
 }
 
 void GLvideo_osd::renderStats(unsigned viewport_width, unsigned viewport_height, GLvideo_params &params)
 {
-	//determine approx character size
-	float cx1, cy1, cz1, cx2, cy2, cz2;
+	vertex_buffer_clear(vertex_buffer);
+	ivec4 total_bbox = {0,0,0,0};
+	vec2 pen = {0.,0.};
 
-	font->FaceSize(12);
-	font->BBox("0", cx1, cy1, cz1, cx2, cy2, cz2);
-	float spacing = (cy2-cy1) * 1.5;
-	float width = cx2 - cx1;
-	float gap = width * 17;
+	//render the stats text
+	int new_key_width = 0;
+	Stats &s = Stats::getInstance();
+	s.mutex.lock();
+	for (Stats::const_iterator it = s.begin();
+	     it != s.end();
+	     it++)
+	{
+		markup_stats.foreground_colour = GREEN;
+		ivec4 bbox = prepare_string(vertex_buffer, &markup_stats, &pen, (*it).first.c_str());
+		total_bbox = mergeBox(total_bbox, bbox);
 
-	//black box that text is rendered onto, larger than the text by 'border'
-	float border = 10;
-	float bx1, by1, bx2, by2;
-	static int n_lines;	//remember how many lines of stats there were last time
-	bx1 = -border;
-	by1 = spacing;
-	bx2 = width * 25;
-	by2 = (spacing * n_lines * -1) - border*2;
+		pen.y -= markup_stats.font->height - markup_stats.font->linegap;
+		pen.x = 0;
+		markup_stats.foreground_colour = WHITE;
+
+		QMutexLocker(&(*it).second->mutex);
+		for (Stats::Section::const_iterator it2 = (*it).second->begin();
+		     it2 != (*it).second->end();
+		     it2++)
+		{
+			bbox = prepare_string(vertex_buffer, &markup_stats, &pen, (*it2).first.c_str());
+			total_bbox = mergeBox(total_bbox, bbox);
+			new_key_width = max(new_key_width, bbox.width);
+
+			/* gap between columns */
+			pen.x = text_val_start_pos;
+
+			bbox = prepare_string(vertex_buffer, &markup_stats, &pen, (*it2).second.c_str());
+			total_bbox = mergeBox(total_bbox, bbox);
+
+			pen.y -= markup_stats.font->height - markup_stats.font->linegap;
+			pen.x = 0;
+		}
+	}
+	s.mutex.unlock();
+
+	text_val_start_pos = new_key_width * 1.1;
 
 	glPushMatrix();
 	glTranslated(0.025 * viewport_width, (1 - 0.025) * viewport_height, 0); //near the top left corner
@@ -180,43 +237,25 @@ void GLvideo_osd::renderStats(unsigned viewport_width, unsigned viewport_height,
 	//box beind text
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
-	glEnable(GL_POLYGON_SMOOTH);
 	glColor4f(0.0, 0.0, 0.0, 0.7f);
 
+	// black box that text is rendered onto, larger than the text by 'border'
+	float border = 10;
+	float bx1 = 0                 - border;
+	float by1 = total_bbox.y      - border;
+	float bx2 = total_bbox.width  + border;
+	float by2 = total_bbox.height + border;
 	glBegin(GL_QUADS);
 	glVertex2f(bx1, by1);
 	glVertex2f(bx1, by2);
 	glVertex2f(bx2, by2);
 	glVertex2f(bx2, by1);
 	glEnd();
-	
-	//render the stats text
-	Stats &s = Stats::getInstance();
-	s.mutex.lock();
-	n_lines = 0;
-	for (Stats::const_iterator it = s.begin();
-	     it != s.end();
-	     it++)
-	{
-		glColor4f(0.0, 1.0, 0.0, 0.5);
-		drawText((*it).first.c_str());
-		glTranslated(0, -spacing, 0);
-		glColor4f(1.0, 1.0, 1.0, 0.5);
-		n_lines++;
 
-		QMutexLocker(&(*it).second->mutex);
-		for (Stats::Section::const_iterator it2 = (*it).second->begin();
-		     it2 != (*it).second->end();
-		     it2++)
-		{
-			draw2Text((*it2).first.c_str(), (*it2).second.c_str(), gap);
-			glTranslated(0, -spacing, 0);
-			n_lines++;
-		}
-	}
-	s.mutex.unlock();
-
+	glColor4f(1.0, 1.0, 1.0, params.osd_text_alpha);
+	glEnable(GL_TEXTURE_2D);
+	vertex_buffer_render(vertex_buffer, GL_TRIANGLES, "vtc");
+	glDisable(GL_TEXTURE_2D);
 	glDisable(GL_BLEND);
-	glDisable(GL_POLYGON_SMOOTH);
 	glPopMatrix();
 }
