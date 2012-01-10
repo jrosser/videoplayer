@@ -29,7 +29,7 @@ struct GLvideo_params {
 	bool osd_valid;
 	QString font_file;
 	QString caption;
-	float osd_scale;
+	int osd_caption_ptsize;
 	OSDmode osd_bot;
 	bool osd_perf;
 	float osd_back_alpha;

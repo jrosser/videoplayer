@@ -57,7 +57,7 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 	float cx1, cy1, cz1, cx2, cy2, cz2;
 
 	//text string
-	font->FaceSize(72);
+	font->FaceSize(params.osd_caption_ptsize);
 	char str[255];
 	switch (params.osd_bot) {
 	case OSD_FRAMENUM:

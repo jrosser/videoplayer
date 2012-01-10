@@ -208,7 +208,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("gl.gridsize",   xx.gridsize,                    "Video output layout numHxnumV")
 #if WITH_OSD
 		("fontfile",      vp.font_file,                   "TrueType font file for OSD")
-		("osdscale",      vp.osd_scale,                   "OSD size scaling factor")
+		("osdptsize",     vp.osd_caption_ptsize,          "OSD caption size (pt)")
 		("osdbackalpha",  vp.osd_back_alpha,              "Transparency for OSD background")
 		("osdtextalpha",  vp.osd_text_alpha,              "Transparency for OSD text")
 		("osdstate",      (int&)vp.osd_bot,               "OSD initial state")
@@ -310,8 +310,8 @@ int main(int argc, char **argv)
 
 	struct GLvideo_params vr_params;
 	/* some defaults in the abscence of any settings */
-	vr_params.caption = "hello world";
-	vr_params.osd_scale = 1.;
+	vr_params.caption = "";
+	vr_params.osd_caption_ptsize = 72;
 	vr_params.osd_back_alpha = 0.7f;
 	vr_params.osd_text_alpha = 0.5f;
 	vr_params.osd_perf = false;
