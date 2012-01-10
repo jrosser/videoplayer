@@ -40,8 +40,6 @@
 #include "videoData.h"
 
 #include "stats.h"
-#define addStatPerfFloat(name, val) addStat("OpenGL", name, val)
-#define addStatPerfInt(name, val) addStatUnit("OpenGL", name, val, "ms")
 
 #define DEBUG 0
 
@@ -64,6 +62,7 @@ GLfrontend_old::GLfrontend_old(GLvideo_params& params, VideoTransport* vt)
 	, vt(vt)
 	, params(params)
 	, doResize(0)
+	, stats(Stats::getInstance().newSection("OpenGL", this))
 {
 	return;
 }
@@ -206,7 +205,6 @@ upload(VideoData* vd)
 	if (vd->data.packing_format == V16P) {
 		convertPlanar16toPlanar8(vd->data);
 	}
-	addStatPerfInt("Convert", perfTimer.elapsed());
 
 	perfTimer.restart();
 	vd->gl_data.packing_format = vd->data.packing_format;
@@ -215,7 +213,6 @@ upload(VideoData* vd)
 	for (unsigned i = 0; i < vd->data.plane.size(); i++) {
 		vd->gl_data.plane[i] = upload(vd->data.packing_format, vd->data.plane[i]);
 	}
-	addStatPerfInt("Upload", perfTimer.elapsed());
 }
 
 void unref_texture(VideoData* vd)
@@ -327,7 +324,7 @@ void GLfrontend_old::render()
 	//update the uniform variables in the fragment shader
 	perfTimer.restart();
 	updateShaderVars(programs[currentShader], video_data, colour_matrix);
-	addStatPerfInt("UpdateVars", perfTimer.elapsed());
+	addStat(*stats, "UpdateVars", perfTimer.elapsed(), "ms");
 
 	/* setup viewport for rendering (letter/pillarbox) */
 	aspectBox(video_data, displaywidth, displayheight, !params.aspect_ratio_lock);
@@ -341,11 +338,11 @@ void GLfrontend_old::render()
 
 	perfTimer.restart();
 	upload(video_data);
-	addStatPerfInt("Upload", perfTimer.elapsed());
+	addStat(*stats, "Upload", perfTimer.elapsed(), "ms");
 
 	perfTimer.restart();
 	::render(video_data, programs[currentShader]);
-	addStatPerfInt("RenderVid", perfTimer.elapsed());
+	addStat(*stats, "Render", perfTimer.elapsed(), "ms");
 
 	unref_texture(video_data);
 }

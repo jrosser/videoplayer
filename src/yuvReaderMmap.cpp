@@ -77,6 +77,7 @@ private:
 };
 
 YUVReaderMmap::YUVReaderMmap()
+	: stats(Stats::getInstance().newSection("YUV Reader(mmap)", this))
 {
 	randomAccess = true;
 	interlacedSource = false;
@@ -110,28 +111,11 @@ void YUVReaderMmap::setFileName(const QString &fn)
 	lastFrameNum = info.size() / frame_size;
 	lastFrameNum--;
 
-	{
-		Stats &stat = Stats::getInstance();
-		std::stringstream ss;
-
-		ss.str("");
-		ss << videoWidth;
-		stat.addStat("YUVReader (mmap)", "VideoWidth", ss.str());
-
-		ss.str("");
-		ss << videoHeight;
-		stat.addStat("YUVReader (mmap)", "VideoHeight", ss.str());
-
-		ss.str("");
-		ss << firstFrameNum;
-		stat.addStat("YUVReader (mmap)", "FirstFrame", ss.str());
-
-		ss.str("");
-		ss << lastFrameNum;
-		stat.addStat("YUVReader (mmap)", "LastFrame", ss.str());
-
-		stat.addStat("YUVReader (mmap)", "VideoFormat", type.toLatin1().data());
-	}
+	addStat(*stats, "VideoWidth", videoWidth);
+	addStat(*stats, "VideoHeight", videoHeight);
+	addStat(*stats, "FirstFrame", firstFrameNum);
+	addStat(*stats, "LastFrame", lastFrameNum);
+	addStat(*stats, "VideoFormat", type.toLatin1().data());
 }
 
 //called from the frame queue controller to get frame data for display
@@ -183,23 +167,10 @@ VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 	frame->is_last_frame = (frameNumber == lastFrameNum);
 	frame->is_interlaced = interlacedSource;
 
-	if(0){
-		Stats &stat = Stats::getInstance();
-		std::stringstream ss;
-
-		ss.str("");
-		ss << readtime << "ms";
-		stat.addStat("YUVReader (mmap)", "Read", ss.str());
-
-		ss.str("");
-		int rate = frame_size / (readtime * 1024);
-		ss << rate << " MB/s";
-		stat.addStat("YUVReader (mmap)", "Peak Rate", ss.str());
-
-		ss.str("");
-		int avgrate = frame_size / ((readtime + idletime) * 1024);
-		ss << avgrate << "MB/s";
-		stat.addStat("YUVReader (mmap)", "Avg Rate", ss.str());
+	addStat(*stats, "Read", readtime, "ms");
+	if (0) {
+		addStat(*stats, "Peak Rate", frame_size / (readtime * 1024), "MiB/s");
+		addStat(*stats, "Mean Rate", frame_size / ((readtime + idletime) * 1024), "MiB/s");
 	}
 
 	return frame;

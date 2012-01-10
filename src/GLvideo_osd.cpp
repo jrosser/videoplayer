@@ -196,9 +196,11 @@ void GLvideo_osd::renderStats(VideoData *videoData)
 	
 	//render the stats text
 	Stats &s = Stats::getInstance();
-	Stats::section_t::const_iterator it = s.get_section_begin();
+	s.mutex.lock();
 	n_lines = 0;
-	while(it != s.get_section_end())
+	for (Stats::const_iterator it = s.begin();
+	     it != s.end();
+	     it++)
 	{
 		glColor4f(0.0, 1.0, 0.0, 0.5);
 		drawText((*it).first.c_str());
@@ -206,18 +208,17 @@ void GLvideo_osd::renderStats(VideoData *videoData)
 		glColor4f(1.0, 1.0, 1.0, 0.5);
 		n_lines++;
 
-		Stats::inner_t::const_iterator it2 = (*it).second->begin();
-
-		while(it2 != (*it).second->end()) {
-
+		QMutexLocker(&(*it).second->mutex);
+		for (Stats::Section::const_iterator it2 = (*it).second->begin();
+		     it2 != (*it).second->end();
+		     it2++)
+		{
 			draw2Text((*it2).first.c_str(), (*it2).second.c_str(), gap);
 			glTranslated(0, -spacing, 0);
 			n_lines++;
-			it2++;
 		}
-
-		it++;
 	}
+	s.mutex.unlock();
 
 	glDisable(GL_BLEND);
 	glDisable(GL_POLYGON_SMOOTH);

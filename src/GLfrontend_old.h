@@ -27,6 +27,8 @@
 #ifndef GLFRONTEND_OLD_H
 #define GLFRONTEND_OLD_H
 
+#include "stats.h"
+
 class VideoTransport;
 struct GLvideo_params;
 
@@ -56,6 +58,8 @@ private:
 
 	/* shader programs */
 	unsigned int programs[4];
+
+	Stats::Section* stats;
 };
 
 #endif

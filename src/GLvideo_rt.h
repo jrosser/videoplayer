@@ -29,6 +29,8 @@
 
 #include <QThread>
 
+#include "stats.h"
+
 class GLvideo_rtAdaptor;
 class VideoTransport;
 struct GLvideo_params;
@@ -56,6 +58,8 @@ private:
 
 	GLvideo_osd *osd;
 	GLvideo_params& params;
+
+	Stats::Section* stats;
 };
 
 #endif /*GLVIDEO_RT_H_*/

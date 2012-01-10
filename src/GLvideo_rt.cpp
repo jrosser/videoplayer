@@ -52,14 +52,16 @@
 
 #include "GLvideo_params.h"
 
-#define addStatPerfFloat(name, val) addStat("OpenGL", name, val)
-#define addStatPerfInt(name, val) addStatUnit("OpenGL", name, val, "ms")
-
 #define DEBUG 0
 
 
-GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params& params) :
-	QThread(), gl(gl), vt(vt), frontend(0), params(params)
+GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params& params)
+	: QThread()
+	, gl(gl)
+	, vt(vt)
+	, frontend(0)
+	, params(params)
+	, stats(Stats::getInstance().newSection("OpenGL", this))
 {
 #ifdef WITH_OSD
 	osd = new GLvideo_osd();
@@ -145,32 +147,31 @@ void GLvideo_rt::run()
 		 * frames will be uploaded by GLactions called by the frontend */
 		bool is_new_frame_period = vt->advance();
 		VideoData* videoData = vt->getFrame();
-		addStatPerfInt("GetFrame", perfTimer.elapsed());
 
 		perfTimer.restart();
 		frontend->render();
-		addStatPerfInt("Frontend", perfTimer.elapsed());
+		addStat(*stats, "Frontend", perfTimer.elapsed(), "ms");
 
 #ifdef WITH_OSD
 		perfTimer.restart();
 		if(osd && videoData) osd->render(videoData, params);
-		addStatPerfInt("RenderOSD", perfTimer.elapsed());
+		addStat(*stats, "OSD", perfTimer.elapsed(), "ms");
 #endif
 
 		perfTimer.restart();
 		gl->swapBuffers();
-		addStatPerfInt("SwapBuffers", perfTimer.elapsed());
+		addStat(*stats, "SwapBuffers", perfTimer.elapsed(), "ms");
 
 		if (is_new_frame_period) {
 			//measure overall frame period
-			addStatPerfInt("Interval", frameIntervalTime.elapsed());
+			addStat(*stats, "Interval", perfTimer.elapsed(), "ms");
 			frameIntervalTime.restart();
 
 			//calculate FPS
 			if (fpsAvgPeriod == 0) {
 				int fintvl = fpsIntervalTime.elapsed();
 				if (fintvl)
-					addStatPerfFloat("RenderRate", 10*1e3/fintvl);
+					addStat(*stats, "RenderRate", perfTimer.elapsed(), "Hz");
 				fpsIntervalTime.start();
 			}
 			fpsAvgPeriod = (fpsAvgPeriod + 1) %10;

@@ -62,6 +62,7 @@
 #define DEBUG 0
 
 YUVReader::YUVReader()
+	: stats(Stats::getInstance().newSection("YUV Reader", this))
 {
 	randomAccess = true;
 	interlacedSource = false;
@@ -90,28 +91,11 @@ void YUVReader::setFileName(const QString &fn)
 	lastFrameNum = info.size() / frame_size;
 	lastFrameNum--;
 
-	{
-		Stats &stat = Stats::getInstance();
-		std::stringstream ss;
-
-		ss.str("");
-		ss << videoWidth;
-		stat.addStat("YUVReader", "VideoWidth", ss.str());
-
-		ss.str("");
-		ss << videoHeight;
-		stat.addStat("YUVReader", "VideoHeight", ss.str());
-
-		ss.str("");
-		ss << firstFrameNum;
-		stat.addStat("YUVReader", "FirstFrame", ss.str());
-
-		ss.str("");
-		ss << lastFrameNum;
-		stat.addStat("YUVReader", "LastFrame", ss.str());
-
-		stat.addStat("YUVReader", "VideoFormat", type.toLatin1().data());
-	}
+	addStat(*stats, "VideoWidth", videoWidth);
+	addStat(*stats, "VideoHeight", videoHeight);
+	addStat(*stats, "FirstFrame", firstFrameNum);
+	addStat(*stats, "LastFrame", lastFrameNum);
+	addStat(*stats, "VideoFormat", type.toLatin1().data());
 }
 
 //called from the frame queue controller to get frame data for display
@@ -169,16 +153,7 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	if (!rret)
 		perror("READ");
 
-	int readtime = timer.elapsed();
-
-	{
-		Stats &stat = Stats::getInstance();
-		std::stringstream ss;
-
-		ss.str("");
-		ss << readtime << "ms";
-		stat.addStat("YUVReader", "Read", ss.str());
-	}
+	addStat(*stats, "Read", timer.elapsed(), "ms");
 
 	return frame;
 }

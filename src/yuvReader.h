@@ -31,6 +31,7 @@
 
 #include "readerInterface.h"
 #include "videoData.h"
+#include "stats.h"
 
 class YUVReader : public ReaderInterface {
 public:
@@ -66,10 +67,7 @@ private:
 	int firstFrameNum;
 	unsigned frame_size;
 
-	//bandwidth counter
-	int bandwidth_count;
-	int ioLoad;
-	int ioBandwidth;
+	Stats::Section* stats;
 };
 
 #endif
