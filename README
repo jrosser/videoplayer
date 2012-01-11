@@ -43,43 +43,38 @@ Operating System Compatibility
 
 Videoplayer has been developed using the Qt cross platform toolkit.
 
-Ubuntu Linux 7.10 has been the main development platform. Linux is the most
-stable platform for runnung Videoplayer.
+The software has been tested on:
+ - Linux/X11 (with nVidia and Intel graphics drivers)
+ - OSX 10.5  (with nVidia and ATI graphics drivers)
+ - WindowsXP (with nVidia and Intel graphics drivers)
 
-Videoplayer can be compiled and run on OS X 10.5. Stability problems exist
-with the ATI graphics in Intel iMacs, which may be resolved with the release
-of Qt 4.4. Apple specific OpenGL optimisations have not been done.
-As a result, playback of full screen 1920x1080 video is currently limited to
-30fps on a Power Mac G5 with NVIDIA GeForce 6600 graphics. Smaller windows will
-play at 60fps. A more modern GPU may allow higher frame rates
+Primary development occurs on a Linux/X11 platform.
 
-Videoplayer can be compiled and run on the Windows platform. Testing has been
-done on Windows XP SP2 with both NVidia and ATI Radeon HD2400PRO graphics
-cards. Windows appears to use 100% CPU whilst waiting for VSYNC. This does
-not appear to affect performance, with NVidia GeForce 6600GT easily able to
-show 1920x1080x60fps video without dropping frames.
+There is a known issue with playback on Windows systems with Intel graphics
+drivers.  On these systems the WGL SwapBuffers call does not block, which is
+required for moderating the playback speed.
 
 Hardware Requirements
 ---------------------
 
 Playing uncompressed video sources requires significant read bandwidth from
-a storage device.
+a storage device:
 
-Standard Definition video can be played from a single HDD.
-1920x1080 HDTV at 25/30fps can be played from four HDDs in software RAID-0.
-1920x1080 HDTV at 50/60fps can be played from eight HDDs in software RAID-0.
+            ||              FourCC
+  Standard  ||   I420   |   UYVY   |   V210   |   V216
+  ----------++----------+----------+----------+----------
+    576i25  ||  15 MB/s |  20 MB/s |  27 MB/s |  41 MB/s
+   1080p25  ||  77 MB/s | 103 MB/s | 138 MB/s | 207 MB/s
+   1080p50  || 155 MB/s | 207 MB/s | 276 MB/s | 414 MB/s
+   3260p60  || 746 MB/s | 995 MB/s | 1.3 GB/s | 1.6 GB/s
 
 It should be noted that the continuous read rate of a HDD varies across the
 platters. It may be possible to play back from fewer disks than described
 above, but frames may be dropped at certain filesystem occupancies.
 
-If a large disk array is not available, system RAM can be used to cache video
-files if enough is available. Source video can be copied to /tmp and then
-played. Alternatively, video can be played from a slow HDD and will stutter
-on the first loop of the file. Subsequent loops will play in real time as the
-video data is now cached by the operating system.
+The videoplayer will attempt to use a read ahead buffer to aid guaranteeing
+average throughput.  The size of the buffer is customizable.
 
 Videoplayer uses OpenGL to accelerate playback. Development has been done with
 NVidia QuadroFX3450, 6600GT, 8600GT and 8800GT cards. Recent PCIe graphics cards
 are recommended, but no testing of other models has been done.
-
