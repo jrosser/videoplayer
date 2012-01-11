@@ -390,7 +390,9 @@ texture_font_load_glyphs( texture_font_t * self,
             flags |= FT_LOAD_TARGET_LCD;
             if( self->filtering )
             {
+#if (FREETYPE_MAJOR >= 2) && (FREETYPE_MINOR >= 4)
                 FT_Library_SetLcdFilterWeights( library, self->lcd_weights );
+#endif
             }
         }
         error = FT_Load_Glyph( face, glyph_index, flags );

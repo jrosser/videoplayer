@@ -40,10 +40,10 @@
 
 // ----------------------------------------------------------------------------
 vertex_buffer_t *
-vertex_buffer_new( char *format )
+vertex_buffer_new( const char *format )
 {
     size_t i, index = 0, stride = 0;
-    char *start = 0, *end = 0;
+    const char *start = 0, *end = 0;
     GLvoid *pointer = 0;
 
     vertex_buffer_t *self = (vertex_buffer_t *) malloc (sizeof(vertex_buffer_t));
@@ -70,7 +70,8 @@ vertex_buffer_new( char *format )
         }
         else
         {
-            desc = strndup(start, end-start);
+            desc = strdup(start);
+            desc[end-start] = '0';
         }
         vertex_attribute_t *attribute = vertex_attribute_parse( desc );
         start = end+1;
@@ -251,7 +252,7 @@ vertex_buffer_clear( vertex_buffer_t *self )
 void
 vertex_buffer_render ( vertex_buffer_t *self,
                        GLenum mode,
-                       char *what )
+                       const char *what )
 { 
     assert( self );
 

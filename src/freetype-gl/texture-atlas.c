@@ -31,6 +31,8 @@
  * policies, either expressed or implied, of Nicolas P. Rougier.
  * ============================================================================
  */
+
+#include <GL/glew.h>
 #if defined(__APPLE__)
     #include <OpenGL/gl.h>
 #else
@@ -43,8 +45,12 @@
 #include <limits.h>
 #include "texture-atlas.h"
 
-#define max(a,b) (a)>(b)?(a):(b)
-#define min(a,b) (a)<(b)?(a):(b)
+#ifndef MAX
+# define MAX(a,b) (a)>(b)?(a):(b)
+#endif
+#ifndef MIN
+# define MIN(a,b) (a)<(b)?(a):(b)
+#endif
 
 
 // ------------------------------------------------------ texture_atlas_new ---
@@ -145,7 +151,7 @@ texture_atlas_fit( texture_atlas_t * self,
 	while( width_left > 0 )
 	{
         node = (ivec3 *) (vector_get( self->nodes, i ));
-		y = max( y, node->y );
+		y = MAX( y, node->y );
 		if( (y + height) > self->height )
         {
 			return -1;

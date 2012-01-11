@@ -37,6 +37,7 @@
 extern "C" {
 #endif
 
+#include <GL/glew.h>
 #if defined(__APPLE__)
     #include <OpenGL/gl.h>
 #else
@@ -144,7 +145,7 @@ typedef struct
  * @return        an empty vertex buffer.
  */
   vertex_buffer_t *
-  vertex_buffer_new( char *format );
+  vertex_buffer_new( const char *format );
 
 
 /**
@@ -224,7 +225,7 @@ typedef struct
   void
   vertex_buffer_render ( vertex_buffer_t *self,
                          GLenum mode,
-                         char *what );
+                         const char *what );
 
 
 /**

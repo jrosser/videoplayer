@@ -49,8 +49,7 @@ typedef union
     float rgba[4];
     float rgb[3];
     float xyz[3];
-	struct { float x;   float y;     float z;     float w;      };
-	struct { float x;   float y;     float width; float height; };
+	struct { float x;   float y;     union {float z; float width;};  union {float w; float height;}; };
 	struct { float r;   float g;     float b;     float a;      };
 	struct { float red; float green; float blue;  float alpha;  };
 } vec4;
@@ -93,8 +92,7 @@ typedef union
     int rgba[4];
     int rgb[3];
     int xyz[3];
-	struct { int x;   int y;     int z;     int w;      };
-	struct { int x;   int y;     int width; int height; };
+	struct { int x;   int y;     union {int z; int width;};  union {int w; int height;}; };
 	struct { int r;   int g;     int b;     int a;      };
 	struct { int red; int green; int blue;  int alpha;  };
 } ivec4;

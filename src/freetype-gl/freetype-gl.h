@@ -33,12 +33,11 @@
  */
 #ifndef __FREETYPE_GL_H__
 #define __FREETYPE_GL_H__
+
 #if defined(__APPLE__)
     #include <OpenGL/gl.h>
-    #include <Glut/glut.h>
 #else
     #include <GL/gl.h>
-    #include <GL/glut.h>
 #endif
 #include <math.h>
 #include <wchar.h>
@@ -52,8 +51,5 @@
 #include "vector.h"
 #include "texture-atlas.h"
 #include "texture-font.h"
-
-#define max(a,b) ((a) > (b) ? (a) : (b))
-#define min(a,b) ((a) < (b) ? (a) : (b))
 
 #endif /* FREETYPE_GL_H */
