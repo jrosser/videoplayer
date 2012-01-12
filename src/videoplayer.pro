@@ -38,7 +38,6 @@ contains(DEFINES, WITH_OSD) {
     freetype-gl/texture-font.c \
     freetype-gl/utf8.c \
     freetype-gl/vector.c \
-    freetype-gl/vector.h \
     freetype-gl/vertex-buffer.c
 
   HEADERS += \
@@ -47,6 +46,7 @@ contains(DEFINES, WITH_OSD) {
     freetype-gl/texture-font.h \
     freetype-gl/utf8.h \
     freetype-gl/vec234.h \
+    freetype-gl/vector.h \
     freetype-gl/vertex-buffer.h
 }
 
