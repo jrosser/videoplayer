@@ -128,7 +128,7 @@ void GLvideo_rt::run()
 	wglSwapIntervalEXT(1);
 #endif
 #ifdef Q_OS_MAC
-	my_aglSwapInterval(1);
+	osxSwapInterval(1);
 #endif
 
 	/* startup: clear the buffers to stop rubbish being presented
