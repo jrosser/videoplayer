@@ -101,10 +101,13 @@ void GLvideo_rt::run()
 	frontend->resizeViewport(viewport_width, viewport_height);
 
 	//monitoring
-	QTime fpsIntervalTime; //measures FPS, averaged over several frames
-	QTime frameIntervalTime; //measured the total period of each frame
+	QTime fps_timer;
 	QTime perfTimer; //performance timer for measuring indivdual processes during rendering
-	int fpsAvgPeriod=1;
+	int fps_avg_period_actual = 1; /* used to caluclate actual display fps */
+	int fps_avg_period_effective = 1; /* used to calculate video fps */
+	int fps_avg_period_effective_start = 0;
+	int fps_avg_period_actual_start = 0;
+	int fps_period_start = 0;
 
 	doRendering = true;
 
@@ -135,6 +138,8 @@ void GLvideo_rt::run()
 	glClear(GL_COLOR_BUFFER_BIT);
 	glDrawBuffer(GL_BACK);
 	glClear(GL_COLOR_BUFFER_BIT);
+
+	fps_timer.start();
 
 	while (doRendering) {
 
@@ -175,18 +180,18 @@ void GLvideo_rt::run()
 		gl->swapBuffers();
 		addStat(*stats, "SwapBuffers", perfTimer.elapsed(), "ms");
 
-		if (is_new_frame_period) {
-			//measure overall frame period
-			addStat(*stats, "Interval", perfTimer.elapsed(), "ms");
-			frameIntervalTime.restart();
-
-			//calculate FPS
-			if (fpsAvgPeriod == 0) {
-					addStat(*stats, "RenderRate", 10e4/fpsIntervalTime.elapsed(), "Hz");
-				fpsIntervalTime.start();
-			}
-			fpsAvgPeriod = (fpsAvgPeriod + 1) %10;
+		int fps_timer_time = fps_timer.elapsed();
+		if (is_new_frame_period && !(fps_avg_period_effective++ % 10)) {
+			addStat(*stats, "VideoRate", 10e3/(fps_timer_time - fps_avg_period_effective_start), "Hz");
+			fps_avg_period_effective_start = fps_timer_time;
 		}
+		if (!(fps_avg_period_actual++ % 10)) {
+			addStat(*stats, "VDURate", 10e3/(fps_timer_time - fps_avg_period_actual_start), "Hz");
+			fps_avg_period_actual_start = fps_timer_time;
+		}
+		//measure overall frame period
+		addStat(*stats, "Interval", fps_timer_time - fps_period_start, "ms");
+		fps_period_start = fps_timer_time;
 
 		GLenum error;
 		const GLubyte* errStr;
