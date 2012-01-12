@@ -16,7 +16,14 @@ else
 VERSION_STRING_ = $(VERSION_STRING)
 endif
 
-EXTRA_DIST = src/version.c scripts/version-gen.sh scripts/version.c.gen.sh qt.conf.in redist/Vera.ttf redist/COPYING.Vera
+EXTRA_DIST = \
+	src/version.c \
+	scripts/version-gen.sh \
+	scripts/version.c.gen.sh \
+	qt.conf.in \
+	redist/Vera.ttf \
+	redist/COPYING.Vera \
+	$(NULL)
 
 VERSION = $(VERSION_STRING_)
 
