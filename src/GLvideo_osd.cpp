@@ -135,12 +135,12 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 	ivec4 bbox = prepare_string(vertex_buffer, &markup_normal, &pen, str);
 
 	//text box location, defaults to bottom left
-	float tx = 0.05 * viewport_width;
-	float ty = 0.05 * viewport_height;
+	int tx = 5 * viewport_width / 100;
+	int ty = 5 * viewport_height / 100;
 
 	if (params.osd_bot==OSD_CAPTION) {
 		//put the caption in the middle of the screen
-		tx = ((int)viewport_width - (bbox.width)) / 2.0;
+		tx = ((int)viewport_width - (bbox.width)) / 2;
 	}
 
 	//black box that text is rendered onto, larger than the text by 'border'
@@ -232,7 +232,7 @@ void GLvideo_osd::renderStats(unsigned viewport_width, unsigned viewport_height,
 	text_val_start_pos = new_key_width * 1.1;
 
 	glPushMatrix();
-	glTranslated(0.025 * viewport_width, (1 - 0.025) * viewport_height, 0); //near the top left corner
+	glTranslated(25 * viewport_width / 1000, 975 * viewport_height / 1000, 0); //near the top left corner
 
 	//box beind text
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
