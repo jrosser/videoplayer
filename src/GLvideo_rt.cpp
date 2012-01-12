@@ -182,9 +182,7 @@ void GLvideo_rt::run()
 
 			//calculate FPS
 			if (fpsAvgPeriod == 0) {
-				int fintvl = fpsIntervalTime.elapsed();
-				if (fintvl)
-					addStat(*stats, "RenderRate", perfTimer.elapsed(), "Hz");
+					addStat(*stats, "RenderRate", 10e4/fpsIntervalTime.elapsed(), "Hz");
 				fpsIntervalTime.start();
 			}
 			fpsAvgPeriod = (fpsAvgPeriod + 1) %10;
