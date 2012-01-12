@@ -139,5 +139,5 @@ VersionGen.name = Generate version.c based on git describe
 VersionGen.CONFIG += target_predeps
 VersionGen.target = version.c
 VersionGen.depends = FORCE
-VersionGen.commands = sed -e 's!__VERSION_STRING__!'`$${_PRO_FILE_PWD_}/../version-gen.sh raw`'!' < $${_PRO_FILE_PWD_}/version.c.in > version.c
-exists($${_PRO_FILE_PWD_}/../version-gen.sh) { QMAKE_EXTRA_TARGETS += VersionGen }
+VersionGen.commands = sed -e 's!__VERSION_STRING__!'`$${_PRO_FILE_PWD_}/../scripts/version-gen.sh raw`'!' < $${_PRO_FILE_PWD_}/version.c.in > version.c
+exists($${_PRO_FILE_PWD_}/../scripts/version-gen.sh) { QMAKE_EXTRA_TARGETS += VersionGen }

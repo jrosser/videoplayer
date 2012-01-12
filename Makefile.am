@@ -7,7 +7,7 @@ CPPFLAGS += -DWITH_CONFIG_H
 #
 
 if NONDISTVERSION
-VERSION_GEN = $(top_srcdir)/version-gen.sh
+VERSION_GEN = $(top_srcdir)/scripts/version-gen.sh
 VERSION_STRING_ := $(shell $(VERSION_GEN))
 force: ;
 src/version.c: src/version.c.in force
@@ -16,7 +16,7 @@ else
 VERSION_STRING_ = $(VERSION_STRING)
 endif
 
-EXTRA_DIST = src/version.c version-gen.sh qt.conf.in redist/Vera.ttf redist/COPYING.Vera
+EXTRA_DIST = src/version.c scripts/version-gen.sh qt.conf.in redist/Vera.ttf redist/COPYING.Vera
 
 VERSION = $(VERSION_STRING_)
 

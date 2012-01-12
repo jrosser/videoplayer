@@ -1,6 +1,6 @@
 #!/bin/bash
 
-abs_top_srcdir=`dirname $0`
+abs_top_srcdir=`dirname $0`/../
 
 # if version.c.in doesn't exist, extract the version from the distributed version.c
 # otherwise, extract from git

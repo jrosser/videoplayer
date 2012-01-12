@@ -32,7 +32,7 @@ AM_CONDITIONAL([WIN32],[test x$win32 = xtrue])
 if test ! -f ${srcdir}/src/version.c.in
 then
 	distversion=true
-	VERSION_STRING=`${srcdir}/version-gen.sh`
+	VERSION_STRING=`${srcdir}/scripts/version-gen.sh`
 	AC_SUBST(VERSION_STRING)
 fi
 AM_CONDITIONAL([NONDISTVERSION], [test x$distversion = x])
