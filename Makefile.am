@@ -99,16 +99,16 @@ libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \
 	src/videoData.cpp \
 	src/version.c \
 	src/freetype-gl/freetype-gl.h \
-	src/freetype-gl/texture-atlas.c \
+	src/freetype-gl/texture-atlas.cpp \
 	src/freetype-gl/texture-atlas.h \
-	src/freetype-gl/texture-font.c \
+	src/freetype-gl/texture-font.cpp \
 	src/freetype-gl/texture-font.h \
-	src/freetype-gl/utf8.c \
+	src/freetype-gl/utf8.cpp \
 	src/freetype-gl/utf8.h \
 	src/freetype-gl/vec234.h \
-	src/freetype-gl/vector.c \
+	src/freetype-gl/vector.cpp \
 	src/freetype-gl/vector.h \
-	src/freetype-gl/vertex-buffer.c \
+	src/freetype-gl/vertex-buffer.cpp \
 	src/freetype-gl/vertex-buffer.h \
 	$(NULL)
 

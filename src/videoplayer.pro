@@ -34,11 +34,11 @@ contains(DEFINES, WITH_OSD) {
   HEADERS += GLvideo_osd.h
 
   SOURCES += \
-    freetype-gl/texture-atlas.c \
-    freetype-gl/texture-font.c \
-    freetype-gl/utf8.c \
-    freetype-gl/vector.c \
-    freetype-gl/vertex-buffer.c
+    freetype-gl/texture-atlas.cpp \
+    freetype-gl/texture-font.cpp \
+    freetype-gl/utf8.cpp \
+    freetype-gl/vector.cpp \
+    freetype-gl/vertex-buffer.cpp
 
   HEADERS += \
     freetype-gl/freetype-gl.h \
