@@ -94,38 +94,37 @@ win32 {
 		QMAKE_LFLAGS += /VERBOSE:LIB
 		DEFINES += _CRT_SECURE_NO_WARNINGS
 
-		#----------------------------------------------------
-		# glew
-		DEFINES += GLEW_STATIC
-		LIBS += $$GLEWDIR/lib/glew32s.lib
-		INCLUDEPATH += $$GLEWDIR/include
-
-		contains(DEFINES, WITH_OSD) {
-			#----------------------------------------------------
-			# freetype
-			CONFIG(debug, debug|release):FT_LIB = $$join($$FREETYPEDIR/lib,,, MT_D.lib)
-			else:FT_LIB = $$join($$FREETYPEDIR/lib,,, MT.lib)
-			LIBS += $$FT_LIB
-			INCLUDEPATH += $$FREETYPEDIR/include
-		}
-
+		# default library names
+		GLEW_LIB = $$GLEWDIR/lib/glew32s.lib
+		FREETYPE_LIB = $$FREETYPEDIR/lib/freetype.lib
 	} else {
 		#win32 builds using the mingw toolchain
 		message("configuring for win32 mingw build")
 
-		#----------------------------------------------------
-		# glew
-		DEFINES += GLEW_STATIC
-		LIBS = $$GLEWDIR/lib/libglew32.a
-		INCLUDEPATH += $$GLEWDIR/include
-
-		contains(DEFINES, WITH_OSD) {
-			#----------------------------------------------------
-			# freetype
-			LIBS += $$FREETYPEDIR/lib/libfreetype.a
-			INCLUDEPATH += $$FREETYPEDIR/include
-		}
+		# default library names
+		GLEW_LIB = $$GLEWDIR/lib/glew32s.lib
+		FREETYPE_LIB = $$FREETYPEDIR/lib/freetype.lib
 	}
+
+	#
+	# glew
+	#
+	DEFINES += GLEW_STATIC
+	exists($$GLEW_LIB): LIBS += $$GLEW_LIB
+	else: message("$$GLEW_LIB could not be found.  Carrying on regardless")
+	exists($$GLEWDIR/include): INCLUDEPATH += $$GLEWDIR/include
+	else: message("$$GLEWDIR/include could not be found.  Carrying on regardless")
+
+	contains(DEFINES, WITH_OSD) {
+		#
+		# freetype
+		#
+		exists($$FREETYPE_LIB): LIBS += $$FREETYPE_LIB
+		else: message("$$FREETYPE_LIB could not be found.  Carrying on regardless")
+		exists($$FREETYPEDIR/include): INCLUDEPATH += $$FREETYPEDIR/include $$FREETYPEDIR/include/freetype2
+		else: message("$$FREETYPEDIR/include could not be found.  Carrying on regardless")
+	}
+
 	LIBS += -lopengl32 -lglu32
 }
 
