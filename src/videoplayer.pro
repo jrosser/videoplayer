@@ -1,7 +1,7 @@
 TEMPLATE = app
 
 QT += opengl
-CONFIG += thread console debug_and_release
+CONFIG += thread console debug_and_release largefile
 unix { CONFIG += link_pkgconfig }
 
 # enable or disable the optional features here
