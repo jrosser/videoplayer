@@ -14,7 +14,7 @@ REDIST_resources = \
 
 REDIST_txt = \
 	README \
-	COPYING \
+	COPYING.dist \
 	$(NULL)
 
 REDIST_mingw = \
