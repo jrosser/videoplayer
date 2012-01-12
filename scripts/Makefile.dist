@@ -3,6 +3,7 @@ SHELL=/bin/bash
 
 QMAKE=qmake
 NMAKE=nmake
+UPLOAD=@echo not uploading $1
 
 all: all-msvc10 all-msvc10-dbg
 
@@ -79,6 +80,7 @@ package-win32:
 	@echo ============
 	@echo done: $(DESTDIR).zip
 	@echo ============
+	$(call UPLOAD,$(DESTDIR).zip)
 
 .PHONY: package-macx
 package-macx: VERSION=videoplayer-$(ARCH)_$(call GENVERSION,$(VERSION.C))
@@ -93,6 +95,7 @@ package-macx:
 	@echo ============
 	@echo done: Videoplayer-$(VERSION).dmg
 	@echo ============
+	$(call UPLOAD,Videoplayer-$(VERSION).dmg)
 
 .PHONY: clean-macx
 clean-macx:
