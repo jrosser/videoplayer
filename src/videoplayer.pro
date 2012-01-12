@@ -67,8 +67,8 @@ linux-g++ {
 
 macx {
   #helper functions for OS X openGL
-  SOURCES += agl_getproc.cpp
-  HEADERS += agl_getproc.h
+  SOURCES += osx.cpp
+  HEADERS += osx.h
 }
 
 link_pkgconfig {

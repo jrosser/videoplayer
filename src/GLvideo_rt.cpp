@@ -38,7 +38,7 @@
 #endif
 
 #ifdef Q_OS_MACX
-# include "agl_getproc.h"
+# include "osx.h"
 #endif
 #include "GLvideo_rtAdaptor.h"
 

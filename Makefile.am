@@ -124,8 +124,8 @@ libqttv_@QTTV_MAJORMINOR@_la_SOURCES = \
 
 if OSX
 libqttv_@QTTV_MAJORMINOR@_la_SOURCES += \
-	src/agl_getproc.cpp \
-	src/agl_getproc.h \
+	src/osx.cpp \
+	src/osx.h \
 	$(NULL)
 endif
 
