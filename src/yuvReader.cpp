@@ -143,7 +143,7 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	frame->is_interlaced = interlacedSource;
 
 	//seek to requested frame
-	off64_t offset = (off_t)frame_size * (off_t)frameNumber;
+	off64_t offset = (off64_t)frame_size * (off64_t)frameNumber;
 	off64_t sret = lseek64(fd, offset, SEEK_SET);
 	if (!sret && offset != 0)
 		perror("LSEEK");
