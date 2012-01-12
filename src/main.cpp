@@ -113,7 +113,7 @@ void
 usage()
 {
 	version();
-	printf("\nUsage: progname -<flag1> [<flag1_val>] ... <input>");
+	printf("\nUsage: progname -<flag1> [<flag1_val>] ... <input>...");
 	printf("\n");
 	printf("\nSupported file formats:");
 	printf("\n");
