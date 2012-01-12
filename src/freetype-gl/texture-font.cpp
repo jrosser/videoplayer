@@ -54,7 +54,16 @@ const struct {
 } FT_Errors[] =
 #include FT_ERRORS_H
 
+extern "C" {
 
+#ifdef _MSC_VER
+double round(double x) {
+	if (x > 0.) {
+		return floor(x + 0.5);
+	}
+	return -floor(-x + 0.5);
+}
+#endif
 
 
 // ------------------------------------------------- texture_font_load_face ---
@@ -614,4 +623,4 @@ texture_font_get_glyph( texture_font_t * self,
     return NULL;
 }
 
-
+};

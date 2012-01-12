@@ -52,6 +52,7 @@
 # define MIN(a,b) (a)<(b)?(a):(b)
 #endif
 
+extern "C" {
 
 // ------------------------------------------------------ texture_atlas_new ---
 texture_atlas_t *
@@ -321,3 +322,5 @@ texture_atlas_upload( texture_atlas_t * self )
                       0, GL_ALPHA, GL_UNSIGNED_BYTE, self->data );
     }
 }
+
+};

@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include "vertex-buffer.h"
 
-
+extern "C" {
 
 // ----------------------------------------------------------------------------
 vertex_buffer_t *
@@ -44,7 +44,7 @@ vertex_buffer_new( const char *format )
 {
     size_t i, index = 0, stride = 0;
     const char *start = 0, *end = 0;
-    GLvoid *pointer = 0;
+    char *pointer = 0;
 
     vertex_buffer_t *self = (vertex_buffer_t *) malloc (sizeof(vertex_buffer_t));
     if( !self )
@@ -721,3 +721,5 @@ GL_TYPE_STRING( GLenum gtype )
     default:                return "GL_VOID";
     }
 }
+
+};

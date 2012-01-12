@@ -27,6 +27,8 @@
 #include <string.h>
 #include "utf8.h"
 
+extern "C" {
+
 void
 init_utf8tounicode(utf8conv_state_t* state, const char *str)
 {
@@ -87,3 +89,5 @@ unsigned utf8conv_getnext(utf8conv_state_t* state)
 	state->idx = i;
 	return unicode_val;
 }
+
+};
