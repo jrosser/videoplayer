@@ -1,4 +1,5 @@
 TEMPLATE = app
+macx: TARGET = Videoplayer
 
 QT += opengl
 CONFIG += thread console debug_and_release largefile
