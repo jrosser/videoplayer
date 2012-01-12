@@ -1,29 +1,76 @@
-Real Time Video Player for raw YUV files
+Prerequisites
+=============
+There are few pre-requisites for building the application:
+ - Qt: 4.2.3[1] or later, http://qt.nokia.com/
+ - GLEW: OpenGL extension handler, http://glew.sourceforge.net/
+ - Freetype2: for optional On Screen Display, http://www.freetype.org/
 
-To build on Linux systems
--------------------------
-
-Prerequisites:
- - Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com
-
-qmake     #generate makefile from videoplayer.pro
-make      #generate videoplayer execuatable
+ [1] - NB, as of writing, the oldest development system i use has
+       Qt 4.7.x.  Older versions may not work any more.
 
 
-To build on Mac OS X systems
-----------------------------
+Building
+========
+There are two ways to prepare a build environment for videoplayer:
+ - Using configure
+ - Using qmake
 
-Prerequisites: Mac OS X 10.5 / Leopard
-    Qt 4.2.3 or later Commercial or Open Source Edition, www.trolltech.com/
-    Xcode toolchain
-			   
-    Optionally Freetype font library, can be installed with MacPorts www.macports.org
 
-qmake -spec macx-g++    #generate makefile from videoplayer.pro
-make                    #compile videoplayer executable
+Building with qmake
+-------------------
+The general method for using qmake is:
+  $ mkdir /some/build/dir
+  $ cd /some/build/dir
+  $ edit local.pro #if required
+  $ qmake /path/to/videoplayer-source/src/videoplayer.pro
+  $ make
 
-To build on Windows systems
----------------------------
+To disable the OSD, add the following to "local.pro": DEFINES -= WITH_OSD
 
-See INSTALL.win32
+Building with configure
+-----------------------
+The general method for using configure is:
+  $ mkdir /some/build/dir
+  $ cd /some/build/dir
+  $ /path/to/videoplayer-source/configure
+  $ make
 
+To disable the OSD, run configure with --disable-osd
+
+
+Platform specific notes: OSX
+============================
+ - Pre-built Qt binaries are available from the Qt website.
+ - The simplest method for installing GLEW and Freetype is to use macports.
+   Ensure that /opt/local/bin is in $PATH.
+ - With qmake:
+    - Use "qmake -spec macx-g++"
+    - If Videoplayer application will complain that the OSD font cannot be
+      found, run macdeployqt Videoplayer.app
+ - The "configure" script may be used as an alternative to qmake.
+
+
+Platform specific notes: Windows
+================================
+ - Building anything with windows is always an unsatisfying experience.
+ - Pre-built Qt binaries are available from the Qt website.
+ - It is recommended to use the following precompiled libraries:
+     freetype: http://gnuwin32.sourceforge.net/packages/freetype.htm
+         glew: http://glew.sourceforge.net/
+
+   Add the following to "local.pro":
+     GLEWDIR = z:/path/to/glew/
+     FREETYPEDIR = z:/path/to/freetype/
+
+ - If the pre-compiled libraries are not used, "local.pro" may need updating
+   to include suitable "LIBS += ..." and "INCLUDES += ..." directives.
+
+ - MSVC, ICC or Mingw can be used to compile the application.
+ - Use "nmake" instead of "make".
+ - It is not recommended to use the "configure" method.
+
+Platform specific notes: Linux
+==============================
+ - Install the development packages for Qt, GLEW and Freetype from your
+   distribution.
+ - It is suggested to use the "configure" method, although "qmake" works too.
