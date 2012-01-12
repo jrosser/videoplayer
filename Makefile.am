@@ -17,7 +17,11 @@ VERSION_STRING_ = $(VERSION_STRING)
 endif
 
 EXTRA_DIST = \
+	COPYING \
 	COPYING.dist \
+	README \
+	AUTHORS \
+	INSTALL \
 	src/version.c \
 	scripts/version-gen.sh \
 	scripts/version.c.gen.sh \
