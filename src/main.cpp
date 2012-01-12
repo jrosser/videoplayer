@@ -206,7 +206,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("pixelmapped",   vp.zoom_1to1,                   "Pixel map video, rather than scailing to viewport")
 		("vt.readahead",  tp.read_ahead,                  "Video transport read ahead list length")
 		("vt.lrucache",   tp.lru_cache,                   "Video transport least recently used cache length")
-		("gl.gridsize",   xx.gridsize,                    "Video output layout numHxnumV")
+		("gl.grid",       xx.gridsize,                    "Video output layout numHxnumV")
 #if WITH_OSD
 		("fontfile",      vp.font_file,                   "TrueType font file for OSD")
 		("osdptsize",     vp.osd_caption_ptsize,          "OSD caption size (pt)")
