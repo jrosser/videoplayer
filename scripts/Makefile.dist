@@ -1,0 +1,114 @@
+TOP=$(dir $(lastword $(MAKEFILE_LIST)))/../
+SHELL=/bin/bash
+
+QMAKE=qmake
+NMAKE=nmake
+
+all: all-msvc10 all-msvc10-dbg
+
+REDIST_resources = \
+	$(TOP)/redist/Vera.ttf \
+	$(TOP)/redist/COPYING.Vera \
+	$(NULL)
+
+REDIST_txt = \
+	README \
+	COPYING \
+	$(NULL)
+
+REDIST_mingw = \
+	~/env/freetype-2.3.5/bin/freetype6.dll \
+	~/env/qt-4.7.2-mingw32/bin/libgcc_s_dw2-1.dll \
+	~/env/qt-4.7.2-mingw32/bin/mingwm10.dll \
+	~/env/qt-4.7.2-mingw32/bin/QtCore4.dll \
+	~/env/qt-4.7.2-mingw32/bin/QtGui4.dll \
+	~/env/qt-4.7.2-mingw32/bin/QtOpenGL4.dll \
+	~/env/zlib-1.2.3/bin/zlib1.dll \
+	$(NULL)
+
+REDIST_w32_msvc10 = \
+	~/env/qt-4.7.2-msvc9/bin/QtCore4.dll \
+	~/env/qt-4.7.2-msvc9/bin/QtGui4.dll \
+	~/env/qt-4.7.2-msvc9/bin/QtOpenGL4.dll \
+	~/env/freetype-2.3.5/bin/freetype6.dll \
+	~/env/zlib-1.2.3/bin/zlib1.dll \
+	$(NULL)
+
+REDIST_w32_msvc10_debug = \
+	~/env/qt-4.7.2-msvc9/bin/QtCored4.dll \
+	~/env/qt-4.7.2-msvc9/bin/QtGuid4.dll \
+	~/env/qt-4.7.2-msvc9/bin/QtOpenGLd4.dll \
+	~/env/freetype-2.3.5/bin/freetype6.dll \
+	~/env/zlib-1.2.3/bin/zlib1.dll \
+	~/env/msvc10/redist/msvcp100d.dll \
+	~/env/msvc10/redist/msvcr100d.dll \
+	~/env/msvc9/redist/Debug_NonRedist/x86/Microsoft.VC90.DebugCRT/msvcp90d.dll \
+	~/env/msvc9/redist/Debug_NonRedist/x86/Microsoft.VC90.DebugCRT/msvcr90d.dll \
+	~/env/msvc9/redist/Debug_NonRedist/x86/Microsoft.VC90.DebugCRT/Microsoft.VC90.DebugCRT.manifest \
+	$(NULL)
+
+GENVERSION = $(shell perl -n -e 'if (m/BUILD_VERSION = "(.+)"/) { $$_ = $$1; tr!:/!$$~!; print }' $1)
+
+.PHONY: build-nmake
+build-nmake:
+	$(QMAKE) $(TOP)/src/videoplayer.pro
+	MAKEFLAGS= $(NMAKE) $(TARGET)
+
+.PHONY: build-qmake
+build-qmake:
+	$(QMAKE) $(QMAKEFLAGS) $(TOP)/src/videoplayer.pro
+	$(MAKE) $(TARGET)
+
+VERSION.C=$(wildcard version.[c] $(TOP)/src/version.[c])
+
+.PHONY: package-win32
+package-win32: DESTDIR=videoplayer-$(ARCH)_$(call GENVERSION,$(VERSION.C))
+package-win32:
+	mkdir -p $(DESTDIR)
+	cp $(TARGET)/videoplayer.exe $(DESTDIR)/
+	-cp $(TARGET)/videoplayer.pdb $(DESTDIR)/
+	cp $(REDIST_$(subst -,_,$(ARCH))) $(DESTDIR)/
+	
+	mkdir -p $(DESTDIR)/Resources
+	echo -e "[Paths]\nData = Resources" > $(DESTDIR)/qt.conf
+	cp $(REDIST_resources) $(DESTDIR)/Resources
+	for f in $(REDIST_txt) ; do cp ~/project/videoplayer/$$f $(DESTDIR)/$$f.txt ; done
+	unix2dos $(DESTDIR)/*.txt
+	
+	zip -ru $(DESTDIR).zip $(DESTDIR)
+	@echo ============
+	@echo done: $(DESTDIR).zip
+	@echo ============
+
+.PHONY: package-macx
+package-macx: VERSION=videoplayer-$(ARCH)_$(call GENVERSION,$(VERSION.C))
+package-macx: DESTDIR=videoplayer-$(ARCH)_$(VERSION)
+package-macx:
+	macdeployqt Videoplayer.app
+	$(MAKE) -f $(TOP)/scripts/Makefile.dmg \
+		NAME=videoplayer \
+		VERSION=$(VERSION) \
+		SOURCE_FILES="Videoplayer.app $(addprefix $(TOP)/,$(REDIST_txt))"
+	
+	@echo ============
+	@echo done: Videoplayer-$(VERSION).dmg
+	@echo ============
+
+.PHONY: clean-macx
+clean-macx:
+	rm -rf Videoplayer.app
+
+.NOTPARALLEL:
+
+all-msvc10-dbg: ARCH=w32-msvc10-debug
+all-msvc10-dbg: TARGET=debug
+all-msvc10-dbg: build-nmake package-win32
+
+all-msvc10: ARCH=w32-msvc10
+all-msvc10: TARGET=release
+all-msvc10: build-nmake package-win32
+
+all-macx: ARCH=macx
+all-macx: TARGET=release
+all-macx: QMAKEFLAGS=-spec macx-g++42
+all-macx: clean-macx build-qmake package-macx

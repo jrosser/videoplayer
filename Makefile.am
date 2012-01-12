@@ -20,6 +20,8 @@ EXTRA_DIST = \
 	src/version.c \
 	scripts/version-gen.sh \
 	scripts/version.c.gen.sh \
+	scripts/Makefile.dmg \
+	scripts/Makefile.dist \
 	qt.conf.in \
 	redist/Vera.ttf \
 	redist/COPYING.Vera \
