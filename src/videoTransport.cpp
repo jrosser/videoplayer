@@ -231,6 +231,13 @@ VideoTransport::VideoTransport(const list<ReaderInterface*>& readers, int read_a
 	}
 }
 
+VideoTransport::~VideoTransport()
+{
+	for (vector<FrameQueue*>::iterator it = frame_queues.begin(); it != frame_queues.end(); it++) {
+		delete *it;
+	}
+}
+
 VideoData *VideoTransport::getFrame(int queue)
 {
 	return output_frames.at(queue);

@@ -93,6 +93,8 @@ class VideoTransport
 {
 public:
 	VideoTransport(const std::list<ReaderInterface*>& rs, int read_ahead=16, int lru_cache_len=16);
+	~VideoTransport();
+
 	void setLooping(bool l) { looping = l; }
 	void setRepeats(unsigned r) { current_frame_num.setRepeats(r); }
 	void setSpeed(int s, bool jog = 0);
