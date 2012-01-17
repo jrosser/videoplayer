@@ -407,7 +407,7 @@ int main(int argc, char **argv)
 	vt.setVDUfps(t_params.vdu_fps);
 	vt.setSteppingIgnoreInterlace(!vr_params.deinterlace);
 
-	GLfrontend_old gl_frontend(vr_params, vt);
+	GLfrontend_old gl_frontend(vr_params, &vt);
 
 	if (readers.size() > misc_params.gridsize.n * misc_params.gridsize.m) {
 		printf("warning: more input files specified than display grid has positions; adjusting...\n");
