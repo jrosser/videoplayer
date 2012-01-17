@@ -402,10 +402,10 @@ int main(int argc, char **argv)
 
 
 	//object controlling the video playback 'transport'
-	VideoTransportQT* vt = new VideoTransportQT(readers, t_params.read_ahead, t_params.lru_cache);
-	//vt->setRepeats(t_params.frame_repeats);
-	vt->setVDUfps(t_params.vdu_fps);
-	vt->setSteppingIgnoreInterlace(!vr_params.deinterlace);
+	VideoTransportQT vt(readers, t_params.read_ahead, t_params.lru_cache);
+	//vt.setRepeats(t_params.frame_repeats);
+	vt.setVDUfps(t_params.vdu_fps);
+	vt.setSteppingIgnoreInterlace(!vr_params.deinterlace);
 
 	GLfrontend_old gl_frontend(vr_params, vt);
 
@@ -416,37 +416,37 @@ int main(int argc, char **argv)
 	}
 	gl_frontend.setLayoutGrid(misc_params.gridsize.n, misc_params.gridsize.m);
 
-	MainWindow* window = new MainWindow(vr_params, qt_params, vt, &gl_frontend);
+	MainWindow* window = new MainWindow(vr_params, qt_params, &vt, &gl_frontend);
 
 #ifdef Q_OS_LINUX
 	//shuttlePro jog dial - linux only native support at the moment
 	QShuttlePro* shuttle = new QShuttlePro();
 
 	//shuttlepro jog wheel
-	QObject::connect(shuttle, SIGNAL(jogForward()), vt, SLOT(transportJogFwd()));
-	QObject::connect(shuttle, SIGNAL(jogBackward()), vt, SLOT(transportJogRev()));
+	QObject::connect(shuttle, SIGNAL(jogForward()), &vt, SLOT(transportJogFwd()));
+	QObject::connect(shuttle, SIGNAL(jogBackward()), &vt, SLOT(transportJogRev()));
 
 	//shuttlepro shuttle dial
-	QObject::connect(shuttle, SIGNAL(shuttleRight7()), vt, SLOT(transportFwd100()));
-	QObject::connect(shuttle, SIGNAL(shuttleRight6()), vt, SLOT(transportFwd50()));
-	QObject::connect(shuttle, SIGNAL(shuttleRight5()), vt, SLOT(transportFwd20()));
-	QObject::connect(shuttle, SIGNAL(shuttleRight4()), vt, SLOT(transportFwd10()));
-	QObject::connect(shuttle, SIGNAL(shuttleRight3()), vt, SLOT(transportFwd5()));
-	QObject::connect(shuttle, SIGNAL(shuttleRight2()), vt, SLOT(transportFwd2()));
-	QObject::connect(shuttle, SIGNAL(shuttleRight1()), vt, SLOT(transportFwd1()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight7()), &vt, SLOT(transportFwd100()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight6()), &vt, SLOT(transportFwd50()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight5()), &vt, SLOT(transportFwd20()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight4()), &vt, SLOT(transportFwd10()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight3()), &vt, SLOT(transportFwd5()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight2()), &vt, SLOT(transportFwd2()));
+	QObject::connect(shuttle, SIGNAL(shuttleRight1()), &vt, SLOT(transportFwd1()));
 
-	QObject::connect(shuttle, SIGNAL(shuttleLeft7()), vt, SLOT(transportRev100()));
-	QObject::connect(shuttle, SIGNAL(shuttleLeft6()), vt, SLOT(transportRev50()));
-	QObject::connect(shuttle, SIGNAL(shuttleLeft5()), vt, SLOT(transportRev20()));
-	QObject::connect(shuttle, SIGNAL(shuttleLeft4()), vt, SLOT(transportRev10()));
-	QObject::connect(shuttle, SIGNAL(shuttleLeft3()), vt, SLOT(transportRev5()));
-	QObject::connect(shuttle, SIGNAL(shuttleLeft2()), vt, SLOT(transportRev2()));
-	QObject::connect(shuttle, SIGNAL(shuttleLeft1()), vt, SLOT(transportRev1()));
-	QObject::connect(shuttle, SIGNAL(shuttleCenter()), vt, SLOT(transportStop()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft7()), &vt, SLOT(transportRev100()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft6()), &vt, SLOT(transportRev50()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft5()), &vt, SLOT(transportRev20()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft4()), &vt, SLOT(transportRev10()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft3()), &vt, SLOT(transportRev5()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft2()), &vt, SLOT(transportRev2()));
+	QObject::connect(shuttle, SIGNAL(shuttleLeft1()), &vt, SLOT(transportRev1()));
+	QObject::connect(shuttle, SIGNAL(shuttleCenter()), &vt, SLOT(transportStop()));
 
 	//shuttlepro buttons
-	QObject::connect(shuttle, SIGNAL(key267Pressed()), vt, SLOT(transportPlayPause()));
-	QObject::connect(shuttle, SIGNAL(key265Pressed()), vt, SLOT(transportFwd1()));
+	QObject::connect(shuttle, SIGNAL(key267Pressed()), &vt, SLOT(transportPlayPause()));
+	QObject::connect(shuttle, SIGNAL(key265Pressed()), &vt, SLOT(transportFwd1()));
 	QObject::connect(shuttle, SIGNAL(key259Pressed()), window, SLOT(toggleFullScreen()));
 	QObject::connect(shuttle, SIGNAL(key256Pressed()), window, SLOT(toggleOSD()));
 	QObject::connect(shuttle, SIGNAL(key257Pressed()), window, SLOT(toggleAspectLock()));
@@ -463,10 +463,10 @@ int main(int argc, char **argv)
 #endif
 
 	if (t_params.quit_at_end) {
-		QObject::connect(vt, SIGNAL(endOfFile()), &app, SLOT(quit()));
+		QObject::connect(&vt, SIGNAL(endOfFile()), &app, SLOT(quit()));
 		t_params.looping = false;
 	}
-	vt->setLooping(t_params.looping);
+	vt.setLooping(t_params.looping);
 
 	window->show();
 	/* app.exec will run until the mainwindow terminates */
