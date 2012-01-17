@@ -74,6 +74,11 @@ FrameNumCounter::advance() {
 
 bool VideoTransport::advance()
 {
+	if (!transport_startup_done) {
+		transport_startup_done = getNumFutureFrames() > future_frame_num_list.size() >> 1;
+		return false;
+	}
+
 	bool paused = transport_pause && !transport_jog;
 	if (paused) {
 		return false;
@@ -212,6 +217,7 @@ VideoTransport::VideoTransport(const list<ReaderInterface*>& readers, int read_a
 	, future_frame_num_list_head_idx_semaphore(readers.size()+1)
 	, transport_pause(0)
 	, transport_jog(0)
+	, transport_startup_done(0)
 {
 	num_listeners = readers.size()+1; /* 1 framequeue + this */
 

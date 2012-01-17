@@ -468,10 +468,6 @@ int main(int argc, char **argv)
 	}
 	vt.setLooping(t_params.looping);
 
-	/* wait until half the frames have been read */
-	while (vt.getNumFutureFrames() < t_params.read_ahead >> 2);
-		1;
-
 	window->show();
 	/* app.exec will run until the mainwindow terminates */
 	app.exec();

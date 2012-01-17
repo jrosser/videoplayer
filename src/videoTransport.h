@@ -174,6 +174,11 @@ public:
 	 */
 	bool transport_pause;
 
+	/**
+	 * sufficient frames have been cached at startup to provide a
+	 * reasonable guarantee of not stuttering */
+	bool transport_startup_done;
+
 	int num_listeners;
 	bool advance_ok;
 
