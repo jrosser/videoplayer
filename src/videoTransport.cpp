@@ -248,6 +248,16 @@ ReaderInterface *VideoTransport::getReader(int queue)
 	return frame_queues.at(queue)->getReader();
 }
 
+int VideoTransport::getNumFutureFrames()
+{
+	int min_num_frames = INT_MAX;
+	for (vector<FrameQueue*>::iterator it = frame_queues.begin(); it != frame_queues.end(); it++) {
+		int n = (*it)->getNumFutureFrames();
+		min_num_frames = min(n, min_num_frames);
+	}
+	return min_num_frames;
+}
+
 void VideoTransport::transportPlay(int speed)
 {
 	transport_jog = 0;

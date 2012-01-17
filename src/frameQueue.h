@@ -43,6 +43,7 @@ public:
 		: QThread()
 		, vt(vt)
 		, frame_map_lru_cache_maxlen(lru_cache_len)
+		, num_future_frames(0)
 		, stats(Stats::getInstance().newSection("FrameQueue", this))
 	{ }
 
@@ -58,6 +59,7 @@ public:
 	ReaderInterface* getReader() { return reader; }
 
 	VideoData *getFrame(int frame_num);
+	int getNumFutureFrames() { return num_future_frames; }
 
 private:
 	bool stop;
@@ -73,6 +75,8 @@ private:
 	frame_map_t frame_map;
 	std::list<int> frame_map_lru;
 	int frame_map_lru_cache_maxlen;
+
+	int num_future_frames;
 
 	QMutex frame_map_mutex;
 

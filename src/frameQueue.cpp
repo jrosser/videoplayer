@@ -63,6 +63,7 @@ void FrameQueue::run()
 				break;
 			}
 		}
+		num_future_frames = last_idx;
 		/* remove anything that is in the future list from the LRU list */
 		for (int i = 0; i < future_list_len; i++) {
 			int future_frame_num = vt.future_frame_num_list[(vt.future_frame_num_list_head_idx+i) % future_list_len];
