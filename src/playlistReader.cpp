@@ -77,14 +77,14 @@ void PlayListReader::setFileName(const QString &fn)
 		/* XXX handle spaces in file names */
 		/* filename type width height fps firstframe lastframe osdtext */
 		char *ptr;
-		char *name = strtok_r(buf, " ", &ptr);
-		char *type = strtok_r(NULL, " ", &ptr);
-		char *width = strtok_r(NULL, " ", &ptr);
-		char *height = strtok_r(NULL, " ", &ptr);
-		char *fps = strtok_r(NULL, " ", &ptr);
-		char *start = strtok_r(NULL, " ", &ptr);
-		char *end = strtok_r(NULL, " ", &ptr);
-		char *osdtext = strtok_r(NULL, " \n", &ptr);
+		char *name = strtok_r(buf, " \t", &ptr);
+		char *type = strtok_r(NULL, " \t", &ptr);
+		char *width = strtok_r(NULL, " \t", &ptr);
+		char *height = strtok_r(NULL, " \t", &ptr);
+		char *fps = strtok_r(NULL, " \t", &ptr);
+		char *start = strtok_r(NULL, " \t", &ptr);
+		char *end = strtok_r(NULL, " \t", &ptr);
+		char *osdtext = strtok_r(NULL, " \r\n", &ptr);
 
 		if (!name || !type || !width || !height || !fps || !start || !end || !type)
 			continue;
