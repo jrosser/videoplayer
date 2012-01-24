@@ -102,6 +102,10 @@ void MainWindow::createActions()
 	ADDACT("Play/Pause", "Space", video_transport, transportPlayPause);
 	ADDACT("Jog Forward", ".", video_transport, transportJogFwd);
 	ADDACT("Jog Reverse", ",", video_transport, transportJogRev);
+
+	ADDACT("Zoom In", "Ctrl++", this, setZoomIn);
+	ADDACT("Zoom Out", "Ctrl+-", this, setZoomOut);
+	ADDACT("Reset Zoom", "Ctrl+0", this, setZoomReset);
 }
 
 //slot to receive full screen toggle command
@@ -219,3 +223,22 @@ void MainWindow::toggleDeinterlace()
 	video_transport->setSteppingIgnoreInterlace(!vr_params.deinterlace);
 }
 
+void MainWindow::setZoomIn()
+{
+	vr_params.zoom += 1.0f;
+}
+
+void MainWindow::setZoomOut()
+{
+	vr_params.zoom -= 1.0f;
+}
+
+void MainWindow::setZoomReset()
+{
+	vr_params.zoom = 1.0f;
+}
+
+void MainWindow::wheelEvent(QWheelEvent *event)
+{
+	vr_params.zoom += event->delta() / 360.f;
+}

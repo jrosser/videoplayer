@@ -53,6 +53,7 @@ public:
 	}
 
 protected:
+	void wheelEvent(QWheelEvent *);
 
 private slots:
 	void toggleFullScreen();
@@ -69,6 +70,9 @@ private slots:
 	void setUserMatrixScaling();
 	void setVideoMatrixScaling();
 	void setCgrMatrixScaling();
+	void setZoomIn();
+	void setZoomOut();
+	void setZoomReset();
 private:
 	void createActions(void);
 

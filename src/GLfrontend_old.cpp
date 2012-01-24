@@ -26,6 +26,7 @@
 
 #include <QTime>
 #include <stdio.h>
+#include <math.h>
 
 #include <algorithm>
 
@@ -433,6 +434,9 @@ void GLfrontend_old::render()
 			int video_y_centre = video_data_height / 2;
 
 			glTranslatef(vp_x_centre, vp_y_centre, 0.f);
+			float zoom = pow(2.f,(params.zoom-1.0f)/2.0f);
+			addStat(*stats, "Zoom", zoom * 100.0f, "%");
+			glScalef(zoom, zoom, 1.0);
 			glTranslatef(-video_x_centre, -video_y_centre, 0.f);
 
 			//update the uniform variables in the fragment shader

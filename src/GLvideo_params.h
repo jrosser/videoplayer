@@ -68,6 +68,7 @@ struct GLvideo_params {
 	/* @zoom_1to1@ forces video to be pixel mapped, even if the
 	 * viewport isn't large enough */
 	bool zoom_1to1;
+	float zoom;
 };
 
 /* SetLumaCoeffsRec709
