@@ -44,6 +44,7 @@
 #endif
 
 #include "playlistReader.h"
+#include "greyFrameReader.h"
 #include "yuvReader.h"
 #include "stats.h"
 
@@ -52,7 +53,7 @@
 struct PlayListItem {
 	unsigned int frame_num;
 	unsigned int num_frames;
-	YUVReader *reader;
+	ReaderInterface *reader;
 	unsigned int reader_start;
 	QString osdtext;
 };
@@ -97,15 +98,19 @@ void PlayListReader::setFileName(const QString &fn)
 		p->num_frames++;
 		printf("-> %d: %s %d %d\n", last_frame_num, name, p->reader_start, p->num_frames);
 
-		YUVReader *r = new YUVReader();
-		r->setVideoWidth(atoi(width));
-		r->setVideoHeight(atoi(height));
-		r->setForceFileType(true);
-		r->setFileType(type);
-		r->setFileName(name);
-		r->setFPS(atof(fps));
-
-		p->reader = r;
+		if (!strcmp("GREY", type)) {
+			p->reader = new GreyFrameReader();
+		}
+		else {
+			YUVReader *r = new YUVReader();
+			r->setVideoWidth(atoi(width));
+			r->setVideoHeight(atoi(height));
+			r->setForceFileType(true);
+			r->setFileType(type);
+			r->setFileName(name);
+			r->setFPS(atof(fps));
+			p->reader = r;
+		}
 
 		play_list.push_back(p);
 	}

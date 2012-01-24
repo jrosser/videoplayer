@@ -13,9 +13,11 @@ include(local.pro)
 # source files
 HEADERS = mainwindow.h videoData.h readerInterface.h yuvReader.h frameQueue.h videoTransport.h videoTransportQT.h
 HEADERS += stats.h util.h version.h program_options_lite.h fileDialog.h playlistreader.h
+HEADERS += greyFrameReader.h
 
 SOURCES = main.cpp mainwindow.cpp videoData.cpp yuvReader.cpp frameQueue.cpp videoTransport.cpp
 SOURCES += stats.cpp util.cpp version.c program_options_lite.cpp fileDialog.cpp playlistreader.cpp
+SOURCES += greyFrameReader.cpp
 
 # openGL video widget source files
 HEADERS += GLvideo_params.h GLvideo_mt.h GLvideo_rt.h GLvideo_rtAdaptor.h shaders.h

@@ -61,6 +61,8 @@ videoplayer_SOURCES = \
 	src/readerInterface.h \
 	src/playlistReader.cpp \
 	src/playlistReader.h \
+	src/greyFrameReader.cpp \
+	src/greyFrameReader.h \
 	src/yuvReader.cpp \
 	src/yuvReader.h \
 	src/yuvReaderMmap.h \
