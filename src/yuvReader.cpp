@@ -82,9 +82,9 @@ void YUVReader::setFileName(const QString &fn)
 		return;
 	}
 
-	QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
+	fileType = forceFileType ? fileType.toLower() : info.suffix().toLower();
 
-	FourCC fourcc = qstringToFourCC(type);
+	FourCC fourcc = qstringToFourCC(fileType);
 	packing_format = fourccToPacking(fourcc);
 	chroma_format = fourccToChroma(fourcc);
 	frame_size = sizeofFrame(packing_format, chroma_format, videoWidth, videoHeight);
@@ -92,12 +92,6 @@ void YUVReader::setFileName(const QString &fn)
 	firstFrameNum = 0;
 	lastFrameNum = info.size() / frame_size;
 	lastFrameNum--;
-
-	addStat(*stats, "VideoWidth", videoWidth);
-	addStat(*stats, "VideoHeight", videoHeight);
-	addStat(*stats, "FirstFrame", firstFrameNum);
-	addStat(*stats, "LastFrame", lastFrameNum);
-	addStat(*stats, "VideoFormat", type.toLatin1().data());
 }
 
 //called from the frame queue controller to get frame data for display
@@ -163,6 +157,11 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	}
 
 	addStat(*stats, "Read", timer.elapsed(), "ms");
+	addStat(*stats, "VideoWidth", videoWidth);
+	addStat(*stats, "VideoHeight", videoHeight);
+	addStat(*stats, "FirstFrame", firstFrameNum);
+	addStat(*stats, "LastFrame", lastFrameNum);
+	addStat(*stats, "VideoFormat", fileType.toLatin1().data());
 
 	return frame;
 }

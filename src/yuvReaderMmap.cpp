@@ -99,10 +99,10 @@ void YUVReaderMmap::setFileName(const QString &fn)
 
 	base_ptr = (char *)mmap64(0, info.size(), PROT_READ, MAP_PRIVATE, fd, 0);
 
-	QString type = forceFileType ? fileType.toLower() : info.suffix().toLower();
-	printf("Playing file with type %s\n", type.toLatin1().data());
+	fileType = forceFileType ? fileType.toLower() : info.suffix().toLower();
+	printf("Playing file with type %s\n", fileType.toLatin1().data());
 
-	FourCC fourcc = qstringToFourCC(type);
+	FourCC fourcc = qstringToFourCC(fileType);
 	packing_format = fourccToPacking(fourcc);
 	chroma_format = fourccToChroma(fourcc);
 	frame_size = sizeofFrame(packing_format, chroma_format, videoWidth, videoHeight);
@@ -110,12 +110,6 @@ void YUVReaderMmap::setFileName(const QString &fn)
 	firstFrameNum = 0;
 	lastFrameNum = info.size() / frame_size;
 	lastFrameNum--;
-
-	addStat(*stats, "VideoWidth", videoWidth);
-	addStat(*stats, "VideoHeight", videoHeight);
-	addStat(*stats, "FirstFrame", firstFrameNum);
-	addStat(*stats, "LastFrame", lastFrameNum);
-	addStat(*stats, "VideoFormat", type.toLatin1().data());
 }
 
 //called from the frame queue controller to get frame data for display
@@ -168,6 +162,11 @@ VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 	frame->is_interlaced = interlacedSource;
 
 	addStat(*stats, "Read", readtime, "ms");
+	addStat(*stats, "VideoWidth", videoWidth);
+	addStat(*stats, "VideoHeight", videoHeight);
+	addStat(*stats, "FirstFrame", firstFrameNum);
+	addStat(*stats, "LastFrame", lastFrameNum);
+	addStat(*stats, "VideoFormat", fileType.toLatin1().data());
 	if (0) {
 		addStat(*stats, "Peak Rate", frame_size / (readtime * 1024), "MiB/s");
 		addStat(*stats, "Mean Rate", frame_size / ((readtime + idletime) * 1024), "MiB/s");
