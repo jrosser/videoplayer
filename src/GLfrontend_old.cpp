@@ -430,13 +430,27 @@ void GLfrontend_old::render()
 
 			int video_data_width = video_data->data.plane[0].width * video_data->data.sar;
 			int video_data_height = video_data->data.plane[0].height;
-			/* xxx: !params.aspect_ratio_lock, params.zoom_1to1 */
+			/* xxx: !params.aspect_ratio_lock */
 			int vp_x_centre = vp_width / 2;
 			int vp_y_centre = vp_height / 2;
 			int video_x_centre = video_data_width / 2;
 			int video_y_centre = video_data_height / 2;
 
 			float zoom = pow(2.f,(params.zoom-1.0f)/2.0f);
+
+			/* calculate a new zoom if filling: expand or shrink the video to
+			 * fit the viewport */
+			if (!params.zoom_1to1) {
+				float source_aspect = video_data_width / video_data_height;
+				float display_aspect = vp_width / vp_height;
+				if (display_aspect > source_aspect) {
+					zoom = (float)vp_height / video_data_height;
+				}
+				else {
+					zoom = (float)vp_width / video_data_width;
+				}
+			}
+
 			/* determine bounding box to limit pan and scan action */
 			int video_scaled_width = video_data_width * zoom;
 			int video_scaled_height = video_data_height * zoom;
