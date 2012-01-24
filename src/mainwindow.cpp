@@ -252,6 +252,7 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 	 *    position */
 	mouse_drag_start_x = event->x();
 	mouse_drag_start_y = event->y();
+	setCursor(Qt::ClosedHandCursor);
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
@@ -262,4 +263,9 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 	vr_params.pan_y += event->y() - mouse_drag_start_y;
 	mouse_drag_start_x = event->x();
 	mouse_drag_start_y = event->y();
+}
+
+void MainWindow::mouseReleaseEvent(QMouseEvent *event)
+{
+	setCursor(Qt::ArrowCursor);
 }
