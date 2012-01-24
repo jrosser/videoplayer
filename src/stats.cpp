@@ -14,14 +14,14 @@ Stats::Stats()
 
 Stats::Section* Stats::newSection(const string &section_name, void* ptr)
 {
-	Section *s = new Stats::Section();
-
 	std::stringstream ss;
 	ss << section_name << "[" << ptr << "]";
 
 	QMutexLocker lock(&mutex);
-	sections[ss.str()] = s;
-	return s;
+	if (sections.find(ss.str()) == sections.end())
+		return sections[ss.str()] = new Stats::Section();
+	else
+		return sections[ss.str()];
 }
 
 void Stats::Section::addStat(const string& name, const string& value)
