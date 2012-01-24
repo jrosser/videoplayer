@@ -168,9 +168,7 @@ void GLvideo_rt::run()
 
 		if (videoData_io && videoData) {
 			const QString& tmp = videoData_io->getCaption(videoData->frame_number);
-			if (!tmp.isEmpty()) {
-				params.caption = tmp;
-			}
+			params.caption = tmp;
 		}
 		if(osd && videoData) osd->render(viewport_width, viewport_height, videoData, params);
 
