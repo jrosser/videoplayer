@@ -71,6 +71,8 @@ struct Transport_params {
 	bool forceFileType;
 	int videoWidth;
 	int videoHeight;
+	int sar_n;
+	int sar_d;
 	int frame_repeats;
 	double vdu_fps;
 	double src_fps;
@@ -339,6 +341,8 @@ int main(int argc, char **argv)
 	t_params.forceFileType = false;
 	t_params.videoWidth = 1920;
 	t_params.videoHeight = 1080;
+	t_params.sar_n = 1;
+	t_params.sar_d = 1;
 	t_params.interlaced_source = false;
 	t_params.frame_repeats = 1;
 	/* in case these aren't specified, assume a 1:1 mapping */
@@ -402,6 +406,7 @@ int main(int argc, char **argv)
 		r->setFileName(*it);
 		r->setInterlacedSource(t_params.interlaced_source);
 		r->setFPS(t_params.src_fps);
+		r->setSAR(t_params.sar_n, t_params.sar_d);
 
 		readers.push_back(r);
 	}

@@ -160,6 +160,10 @@ VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 	frame->is_last_frame = (frameNumber == lastFrameNum);
 	frame->is_interlaced = interlacedSource;
 
+	frame->sample_aspect_ratio_numerator = sample_aspect_ratio_numerator;
+	frame->sample_aspect_ratio_denominator = sample_aspect_ratio_denominator;
+	frame->data.sar = (float)sample_aspect_ratio_numerator / (float)sample_aspect_ratio_denominator;
+
 	Stats::Section& stats = Stats::getSection("YUV Reader(mmap)");
 	addStat(stats, "Read", readtime, "ms");
 	addStat(stats, "VideoWidth", videoWidth);

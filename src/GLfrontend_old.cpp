@@ -280,6 +280,7 @@ upload(VideoData* vd)
 	perfTimer.restart();
 	vd->gl_data.packing_format = vd->data.packing_format;
 	vd->gl_data.chroma_format = vd->data.chroma_format;
+	vd->gl_data.sar = vd->data.sar;
 	vd->gl_data.plane.resize(vd->data.plane.size());
 	for (unsigned i = 0; i < vd->data.plane.size(); i++) {
 		vd->gl_data.plane[i] = upload(vd->data.packing_format, vd->data.plane[i]);
@@ -331,7 +332,7 @@ void render(VideoData *vd, GLuint shader_prog)
 
 	unsigned tex_width = vd->gl_data.plane[0].width;
 	unsigned tex_height = vd->gl_data.plane[0].height;
-	unsigned width = vd->data.plane[0].width;
+	unsigned width = vd->data.plane[0].width * vd->gl_data.sar;
 	unsigned height = vd->data.plane[0].height;
 
 	/* NB, colours below are as a diagnostic to show when texturing has failed */
@@ -427,7 +428,7 @@ void GLfrontend_old::render()
 				continue;
 			}
 
-			int video_data_width = video_data->data.plane[0].width;
+			int video_data_width = video_data->data.plane[0].width * video_data->data.sar;
 			int video_data_height = video_data->data.plane[0].height;
 			/* xxx: !params.aspect_ratio_lock, params.zoom_1to1 */
 			int vp_x_centre = vp_width / 2;

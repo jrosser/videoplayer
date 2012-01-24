@@ -79,6 +79,10 @@ template<typename T>
 struct PictureData {
 	GLvideo::PackingFmt packing_format;
 	GLvideo::ChromaFmt chroma_format;
+
+	/* sample aspect ratio of the luma component*/
+	float sar;
+
 	template<typename T1>
 	struct Plane {
 		std::tr1::shared_ptr<T1> data;
@@ -102,6 +106,9 @@ struct VideoData : public GLvideo_data {
 	unsigned long frame_number;
 	bool is_first_frame;
 	bool is_last_frame;
+
+	int sample_aspect_ratio_numerator;
+	int sample_aspect_ratio_denominator;
 };
 
 GLvideo::PackingFmt fourccToPacking(FourCC fourcc);

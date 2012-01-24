@@ -38,6 +38,7 @@ public:
 
 	virtual VideoData* pullFrame(int wantedFrame) = 0;
 
+	virtual void setSAR(int n, int d) { sample_aspect_ratio_numerator = n; sample_aspect_ratio_denominator = d; }
 	virtual void setFPS(double x) { fps = x; }
 	virtual double getFPS(int) { return fps; }
 
@@ -49,8 +50,10 @@ private:
 	ReaderInterface(ReaderInterface const&);
 	ReaderInterface& operator=(ReaderInterface const&);
 
-private:
+protected:
 	double fps;
+	int sample_aspect_ratio_numerator;
+	int sample_aspect_ratio_denominator;
 };
 
 #endif

@@ -135,6 +135,10 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 	frame->is_last_frame = (frameNumber == lastFrameNum);
 	frame->is_interlaced = interlacedSource;
 
+	frame->sample_aspect_ratio_numerator = sample_aspect_ratio_numerator;
+	frame->sample_aspect_ratio_denominator = sample_aspect_ratio_denominator;
+	frame->data.sar = (float)sample_aspect_ratio_numerator / (float)sample_aspect_ratio_denominator;
+
 	//seek to requested frame
 	off64_t offset = (off64_t)frame_size * (off64_t)frameNumber;
 	off64_t sret = lseek64(fd, offset, SEEK_SET);
