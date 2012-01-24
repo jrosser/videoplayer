@@ -77,7 +77,7 @@ private:
 };
 
 YUVReaderMmap::YUVReaderMmap()
-	: stats(Stats::getInstance().newSection("YUV Reader(mmap)", this))
+	: stats(Stats::getInstance().newSection("YUV Reader(mmap)", QThread::currentThread()))
 {
 	randomAccess = true;
 	interlacedSource = false;

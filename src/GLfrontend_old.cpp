@@ -25,6 +25,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <QTime>
+#include <QThread>
 #include <stdio.h>
 #include <math.h>
 
@@ -68,7 +69,7 @@ GLfrontend_old::GLfrontend_old(GLvideo_params& params, VideoTransport* vt)
 	, params(params)
 	, doResize(0)
 	, layouts(0)
-	, stats(Stats::getInstance().newSection("OpenGL", this))
+	, stats(Stats::getInstance().newSection("OpenGL", QThread::currentThread()))
 {
 	setLayoutGrid(1, 1);
 }

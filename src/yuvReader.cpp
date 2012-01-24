@@ -64,7 +64,7 @@
 #define DEBUG 0
 
 YUVReader::YUVReader()
-	: stats(Stats::getInstance().newSection("YUV Reader", this))
+	: stats(Stats::getInstance().newSection("YUV Reader", QThread::currentThread()))
 {
 	randomAccess = true;
 	interlacedSource = false;

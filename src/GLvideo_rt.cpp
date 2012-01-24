@@ -62,7 +62,7 @@ GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params
 	, vt(vt)
 	, frontend(frontend)
 	, params(params)
-	, stats(Stats::getInstance().newSection("OpenGL", this))
+	, stats(Stats::getInstance().newSection("OpenGL", QThread::currentThread()))
 {
 #ifdef WITH_OSD
 	osd = new GLvideo_osd(params);
