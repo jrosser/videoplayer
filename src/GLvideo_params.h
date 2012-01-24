@@ -74,6 +74,11 @@ struct GLvideo_params {
 	 * viewport is smaller than the video */
 	int pan_x;
 	int pan_y;
+
+	/* @overlay_split_hack@ allows rendering the destination image as a
+	 * composite of multiple source videos, rather than as distinct
+	 * images */
+	bool overlap_split_hack;
 };
 
 /* SetLumaCoeffsRec709

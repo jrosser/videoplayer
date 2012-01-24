@@ -436,6 +436,12 @@ void GLfrontend_old::render()
 			int video_x_centre = video_data_width / 2;
 			int video_y_centre = video_data_height / 2;
 
+			if (params.overlap_split_hack) {
+				/* make it appear as if the view ports overlap */
+				vp_x_centre = displaywidth / 2 - vp_x_left;
+				vp_y_centre = displayheight / 2 - vp_y_bot;
+			}
+
 			float zoom = pow(2.f,(params.zoom-1.0f)/2.0f);
 
 			/* calculate a new zoom if filling: expand or shrink the video to

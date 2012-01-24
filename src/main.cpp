@@ -211,6 +211,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("vt.lrucache",   tp.lru_cache,                   "Video transport least recently used cache length")
 		("gl.grid",       xx.gridsize,                    "Video output layout numHxnumV")
 		("gl.grid.border",xx.grid_border,                 "Video output layout grid internal border width")
+		("gl.wip.overlap",vp.overlap_split_hack,          "Enable overlaped split-screen")
 #if WITH_OSD
 		("fontfile",      vp.font_file,                   "TrueType font file for OSD")
 		("osdptsize",     vp.osd_caption_ptsize,          "OSD caption size (pt)")
@@ -334,6 +335,7 @@ int main(int argc, char **argv)
 	vr_params.zoom = 1.0f;
 	vr_params.pan_x = 0;
 	vr_params.pan_y = 0;
+	vr_params.overlap_split_hack = 0;
 
 	struct Transport_params t_params;
 	t_params.looping = true;
