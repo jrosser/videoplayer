@@ -392,6 +392,7 @@ void GLfrontend_old::render()
 	}
 	addStat(*stats, "Upload", perfTimer.elapsed(), "ms");
 
+	glPushMatrix();
 	for (int x = 0; x < layout_grid_h; x++) {
 		for (int y = 0; y < layout_grid_v; y++) {
 			VideoData *video_data = frames[layout_grid_h * y + x];
@@ -403,15 +404,36 @@ void GLfrontend_old::render()
 			int vp_width = vp_x_right - vp_x_left;
 			int vp_height = vp_y_top - vp_y_bot;
 
+			glViewport(vp_x_left, vp_y_bot, vp_width, vp_height);
+			glMatrixMode(GL_PROJECTION);
+				glLoadIdentity();
+				glOrtho(0, vp_width, 0, vp_height, -1, 1);
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+
+			glBegin(GL_QUADS);
+				glColor3f(0.5f, 0.5f, 0.5f);
+				glVertex2i(0, 0);
+				glVertex2i(vp_width, 0);
+				glVertex2i(vp_width, vp_height);
+				glVertex2i(0, vp_height);
+			glEnd();
+
 			/* setup viewport for rendering (letter/pillarbox) */
 			if (!video_data) {
-				aspectBox(1, 1, vp_x_left, vp_y_bot, vp_width, vp_height, !params.aspect_ratio_lock, params.zoom_1to1);
 				continue;
 			}
 
 			unsigned video_data_width = video_data->data.plane[0].width;
 			unsigned video_data_height = video_data->data.plane[0].height;
-			aspectBox(video_data_width, video_data_height, vp_x_left, vp_y_bot, vp_width, vp_height, !params.aspect_ratio_lock, params.zoom_1to1);
+			/* xxx: !params.aspect_ratio_lock, params.zoom_1to1 */
+			int vp_x_centre = vp_width / 2;
+			int vp_y_centre = vp_height / 2;
+			int video_x_centre = video_data_width / 2;
+			int video_y_centre = video_data_height / 2;
+
+			glTranslatef(vp_x_centre, vp_y_centre, 0.f);
+			glTranslatef(-video_x_centre, -video_y_centre, 0.f);
 
 			//update the uniform variables in the fragment shader
 			perfTimer.restart();
@@ -469,6 +491,8 @@ void GLfrontend_old::render()
 			}
 		}
 	}
+
+	glPopMatrix();
 }
 
 static int
