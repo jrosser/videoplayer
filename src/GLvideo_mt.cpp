@@ -58,11 +58,12 @@ GLvideo_mt::~GLvideo_mt()
  * Cause it to be hidden 1second later */
 void GLvideo_mt::mouseMoveEvent(QMouseEvent *ev)
 {
-	ev=ev;
-
 	if (!mouseHideTimer.isActive() && alwaysHideMouse==false)
 		setCursor(QCursor(Qt::ArrowCursor));
 	mouseHideTimer.start(1000);
+
+	/* allow mouse event to bubble up to next widget */
+	ev->ignore();
 }
 
 void GLvideo_mt::hideMouse()

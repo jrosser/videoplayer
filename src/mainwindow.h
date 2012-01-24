@@ -54,6 +54,8 @@ public:
 
 protected:
 	void wheelEvent(QWheelEvent *);
+	void mousePressEvent(QMouseEvent *);
+	void mouseMoveEvent(QMouseEvent *);
 
 private slots:
 	void toggleFullScreen();
@@ -89,6 +91,9 @@ private:
 
 	unsigned size_hint_w; /* ideal window width */
 	unsigned size_hint_h; /* ideal window height */
+
+	int mouse_drag_start_x;
+	int mouse_drag_start_y;
 };
 
 #endif

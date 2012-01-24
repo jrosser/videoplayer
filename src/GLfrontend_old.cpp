@@ -433,6 +433,7 @@ void GLfrontend_old::render()
 			int video_x_centre = video_data_width / 2;
 			int video_y_centre = video_data_height / 2;
 
+			glTranslatef(params.pan_x, -params.pan_y, 0.f);
 			glTranslatef(vp_x_centre, vp_y_centre, 0.f);
 			float zoom = pow(2.f,(params.zoom-1.0f)/2.0f);
 			addStat(*stats, "Zoom", zoom * 100.0f, "%");

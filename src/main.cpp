@@ -330,6 +330,8 @@ int main(int argc, char **argv)
 	vr_params.show_chroma = true;
 	vr_params.zoom_1to1 = true;
 	vr_params.zoom = 1.0f;
+	vr_params.pan_x = 0;
+	vr_params.pan_y = 0;
 
 	struct Transport_params t_params;
 	t_params.looping = true;

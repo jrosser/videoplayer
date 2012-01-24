@@ -69,6 +69,11 @@ struct GLvideo_params {
 	 * viewport isn't large enough */
 	bool zoom_1to1;
 	float zoom;
+
+	/* @pan_x@, @pan_y@ allow panning of the video when the
+	 * viewport is smaller than the video */
+	int pan_x;
+	int pan_y;
 };
 
 /* SetLumaCoeffsRec709

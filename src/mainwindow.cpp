@@ -242,3 +242,24 @@ void MainWindow::wheelEvent(QWheelEvent *event)
 {
 	vr_params.zoom += event->delta() / 360.f;
 }
+
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+	/* Interpret mouse motion to provide delta movements:
+	 *  - cache initial mouse tracking position for the subsequent MoveEvents.
+	 *    the window is configured to only track pointer motion when a mouse
+	 *    button is pressed.  this function handles the initial press and
+	 *    position */
+	mouse_drag_start_x = event->x();
+	mouse_drag_start_y = event->y();
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event)
+{
+	/* Interpret mouse motion and update pan position with delta since
+	 * last event */
+	vr_params.pan_x += event->x() - mouse_drag_start_x;
+	vr_params.pan_y += event->y() - mouse_drag_start_y;
+	mouse_drag_start_x = event->x();
+	mouse_drag_start_y = event->y();
+}
