@@ -38,6 +38,30 @@
 #define DEBUG 0
 
 using namespace std;
+using namespace std::tr1;
+
+VideoData *grey_frame = 0;
+VideoData *getGreyFrame() {
+	if (grey_frame)
+		return grey_frame;
+
+	VideoData* frame = new VideoData();
+	//frame->data.packing_format = GLvideo::V8P;
+	//frame->data.chroma_format = GLvideo::Cr444;
+	setPlaneDimensions(*(PictureData<void>*)&frame->data, GLvideo::V8P, GLvideo::Cr444, 1, 1);
+	static char data[] = { 0x80 };
+	frame->data.plane[0].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
+	frame->data.plane[1].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
+	frame->data.plane[2].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
+
+	frame->frame_number = -1;
+	frame->is_first_frame = 0;
+	frame->is_last_frame = 0;
+	frame->is_interlaced = 0;
+
+	return grey_frame = frame;
+}
+
 
 #if 0
 class SomeEOF : public exception {
@@ -233,7 +257,7 @@ VideoTransport::VideoTransport(const list<ReaderInterface*>& readers, int read_a
 		fq->setReader(*it);
 		fq->start();
 		frame_queues.push_back(fq);
-		output_frames.push_back(NULL);
+		output_frames.push_back(getGreyFrame());
 	}
 }
 
