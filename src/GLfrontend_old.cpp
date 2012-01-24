@@ -433,6 +433,42 @@ void GLfrontend_old::render()
 			unref_texture(video_data);
 		}
 	}
+
+	/* draw a grid */
+	if (grid_border > 0) {
+		glViewport(0, 0, displaywidth, displayheight);
+		glMatrixMode(GL_PROJECTION);
+			glLoadIdentity();
+			glOrtho(0, displaywidth, 0, displayheight, -1, 1);
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
+
+		for (int y = 0; y < layout_grid_v; y++) {
+			for (int x = 0; x < layout_grid_h; x++) {
+				int vp_x_left = x * displaywidth / layout_grid_h;
+				int vp_x_right = (x+1) * displaywidth / layout_grid_h;
+				int vp_y_bot = y * displayheight / layout_grid_v;
+				int vp_y_top = (y+1) * displayheight / layout_grid_v;
+
+				glBegin(GL_QUADS);
+					glColor3f(0.f, 0.f, 0.f);
+					if (y > 0) {
+						glVertex2i(vp_x_left,  vp_y_bot - grid_border);
+						glVertex2i(vp_x_right, vp_y_bot - grid_border);
+						glVertex2i(vp_x_right, vp_y_bot + grid_border-1);
+						glVertex2i(vp_x_left,  vp_y_bot + grid_border-1);
+					}
+
+					if (x > 0) {
+						glVertex2i(vp_x_left - grid_border,   vp_y_bot);
+						glVertex2i(vp_x_left + grid_border-1, vp_y_bot);
+						glVertex2i(vp_x_left + grid_border-1, vp_y_top);
+						glVertex2i(vp_x_left - grid_border,   vp_y_top);
+					}
+				glEnd();
+			}
+		}
+	}
 }
 
 static int

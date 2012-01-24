@@ -97,6 +97,7 @@ istream& operator>> (istream& is, struct NxM& val)
 
 struct Misc_params {
 	NxM gridsize;
+	int grid_border;
 };
 
 static void
@@ -207,6 +208,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("vt.readahead",  tp.read_ahead,                  "Video transport read ahead list length")
 		("vt.lrucache",   tp.lru_cache,                   "Video transport least recently used cache length")
 		("gl.grid",       xx.gridsize,                    "Video output layout numHxnumV")
+		("gl.grid.border",xx.grid_border,                 "Video output layout grid internal border width")
 #if WITH_OSD
 		("fontfile",      vp.font_file,                   "TrueType font file for OSD")
 		("osdptsize",     vp.osd_caption_ptsize,          "OSD caption size (pt)")
@@ -349,6 +351,7 @@ int main(int argc, char **argv)
 	struct Misc_params misc_params;
 	misc_params.gridsize.n = 1;
 	misc_params.gridsize.m = 1;
+	misc_params.grid_border = 1;
 
 	//override settings with command line
 	if (parseCommandLine(argc, argv, vr_params, t_params, qt_params, misc_params) == false) {
@@ -415,6 +418,7 @@ int main(int argc, char **argv)
 		misc_params.gridsize.m = 1;
 	}
 	gl_frontend.setLayoutGrid(misc_params.gridsize.n, misc_params.gridsize.m);
+	gl_frontend.setLayoutGridBorder(misc_params.grid_border);
 
 	MainWindow* window = new MainWindow(vr_params, qt_params, &vt, &gl_frontend);
 

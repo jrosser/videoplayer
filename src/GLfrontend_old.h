@@ -43,6 +43,9 @@ public:
 	void setLayoutGrid(int h, int v);
 	void getOptimalDimensions(unsigned& w, unsigned& h);
 
+	/** set the internal border width of the layout grid to @b@ px */
+	void setLayoutGridBorder(int b) { grid_border = b; }
+
 private:
 	void init();
 	bool init_done;
@@ -56,6 +59,8 @@ private:
 
 	int layout_grid_h;
 	int layout_grid_v;
+
+	int grid_border; /* width of layout grid internal border in pixels */
 
 	struct Layout {
 		int xoff; /* window coordinate of viewport origin */
