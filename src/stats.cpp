@@ -1,3 +1,6 @@
+
+#include <QThread>
+
 #include "stats.h"
 
 #include <sstream>
@@ -12,16 +15,21 @@ Stats::Stats()
 
 }
 
-Stats::Section* Stats::newSection(const string &section_name, void* ptr)
+Stats::Section& Stats::getSection(const string &section_name, void* ptr)
 {
+	Stats& stats = getInstance();
+
+	if (!ptr)
+		ptr = QThread::currentThread();
+
 	std::stringstream ss;
 	ss << section_name << "[" << ptr << "]";
 
-	QMutexLocker lock(&mutex);
-	if (sections.find(ss.str()) == sections.end())
-		return sections[ss.str()] = new Stats::Section();
+	QMutexLocker lock(&stats.mutex);
+	if (stats.sections.find(ss.str()) == stats.sections.end())
+		return *(stats.sections[ss.str()] = new Stats::Section());
 	else
-		return sections[ss.str()];
+		return *stats.sections[ss.str()];
 }
 
 void Stats::Section::addStat(const string& name, const string& value)

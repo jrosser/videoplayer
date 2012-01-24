@@ -31,8 +31,6 @@
 #include <map>
 #include <list>
 
-#include "stats.h"
-
 class ReaderInterface;
 class VideoTransport;
 struct VideoData;
@@ -44,7 +42,6 @@ public:
 		, vt(vt)
 		, frame_map_lru_cache_maxlen(lru_cache_len)
 		, num_future_frames(0)
-		, stats(Stats::getInstance().newSection("FrameQueue", QThread::currentThread()))
 	{ }
 
 	~FrameQueue();
@@ -79,8 +76,6 @@ private:
 	int num_future_frames;
 
 	QMutex frame_map_mutex;
-
-	Stats::Section* stats;
 };
 
 #endif

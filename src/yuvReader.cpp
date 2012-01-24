@@ -64,7 +64,6 @@
 #define DEBUG 0
 
 YUVReader::YUVReader()
-	: stats(Stats::getInstance().newSection("YUV Reader", QThread::currentThread()))
 {
 	randomAccess = true;
 	interlacedSource = false;
@@ -156,12 +155,13 @@ VideoData* YUVReader::pullFrame(int frameNumber)
 		done += len;
 	}
 
-	addStat(*stats, "Read", timer.elapsed(), "ms");
-	addStat(*stats, "VideoWidth", videoWidth);
-	addStat(*stats, "VideoHeight", videoHeight);
-	addStat(*stats, "FirstFrame", firstFrameNum);
-	addStat(*stats, "LastFrame", lastFrameNum);
-	addStat(*stats, "VideoFormat", fileType.toLatin1().data());
+	Stats::Section& stats = Stats::getSection("YUV Reader");
+	addStat(stats, "Read", timer.elapsed(), "ms");
+	addStat(stats, "VideoWidth", videoWidth);
+	addStat(stats, "VideoHeight", videoHeight);
+	addStat(stats, "FirstFrame", firstFrameNum);
+	addStat(stats, "LastFrame", lastFrameNum);
+	addStat(stats, "VideoFormat", fileType.toLatin1().data());
 
 	return frame;
 }

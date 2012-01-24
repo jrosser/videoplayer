@@ -62,7 +62,6 @@ GLvideo_rt::GLvideo_rt(GLvideo_rtAdaptor *gl, VideoTransport *vt, GLvideo_params
 	, vt(vt)
 	, frontend(frontend)
 	, params(params)
-	, stats(Stats::getInstance().newSection("OpenGL", QThread::currentThread()))
 {
 #ifdef WITH_OSD
 	osd = new GLvideo_osd(params);
@@ -92,6 +91,8 @@ void GLvideo_rt::resizeViewport(int width, int height)
 
 void GLvideo_rt::run()
 {
+	Stats::Section& stats = Stats::getSection("OpenGL");
+
 	if (DEBUG)
 		printf("Starting renderthread\n");
 
@@ -154,7 +155,7 @@ void GLvideo_rt::run()
 
 		perfTimer.restart();
 		frontend->render();
-		addStat(*stats, "Frontend", perfTimer.elapsed(), "ms");
+		addStat(stats, "Frontend", perfTimer.elapsed(), "ms");
 
 #ifdef WITH_OSD
 		perfTimer.restart();
@@ -173,24 +174,24 @@ void GLvideo_rt::run()
 		}
 		if(osd && videoData) osd->render(viewport_width, viewport_height, videoData, params);
 
-		addStat(*stats, "OSD", perfTimer.elapsed(), "ms");
+		addStat(stats, "OSD", perfTimer.elapsed(), "ms");
 #endif
 
 		perfTimer.restart();
 		gl->swapBuffers();
-		addStat(*stats, "SwapBuffers", perfTimer.elapsed(), "ms");
+		addStat(stats, "SwapBuffers", perfTimer.elapsed(), "ms");
 
 		int fps_timer_time = fps_timer.elapsed();
 		if (is_new_frame_period && !(fps_avg_period_effective++ % 10)) {
-			addStat(*stats, "VideoRate", 10e3/(fps_timer_time - fps_avg_period_effective_start), "Hz");
+			addStat(stats, "VideoRate", 10e3/(fps_timer_time - fps_avg_period_effective_start), "Hz");
 			fps_avg_period_effective_start = fps_timer_time;
 		}
 		if (!(fps_avg_period_actual++ % 10)) {
-			addStat(*stats, "VDURate", 10e3/(fps_timer_time - fps_avg_period_actual_start), "Hz");
+			addStat(stats, "VDURate", 10e3/(fps_timer_time - fps_avg_period_actual_start), "Hz");
 			fps_avg_period_actual_start = fps_timer_time;
 		}
 		//measure overall frame period
-		addStat(*stats, "Interval", fps_timer_time - fps_period_start, "ms");
+		addStat(stats, "Interval", fps_timer_time - fps_period_start, "ms");
 		fps_period_start = fps_timer_time;
 
 		GLenum error;

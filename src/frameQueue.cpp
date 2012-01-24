@@ -32,6 +32,8 @@
 #include "videoTransport.h"
 #include "readerInterface.h"
 
+#include "stats.h"
+
 using namespace std;
 
 FrameQueue::~FrameQueue()
@@ -44,6 +46,8 @@ FrameQueue::~FrameQueue()
 void FrameQueue::run()
 {
 	stop = false;
+
+	Stats::Section& stats = Stats::getSection("FrameQueue");
 
 	while (!stop) {
 		/* todo: clean up */
@@ -70,7 +74,7 @@ void FrameQueue::run()
 			frame_map_lru.remove(future_frame_num);
 		}
 		std::stringstream ss; ss << last_idx << "/" << future_list_len << " (" << frame_map.size() << ")";
-		stats->addStat("Future", ss.str());
+		stats.addStat("Future", ss.str());
 		locker.unlock();
 
 		vt.future_frame_num_list_head_idx_semaphore.release();
@@ -91,7 +95,7 @@ void FrameQueue::run()
 		/* purge excess frames from the queue */
 		int num_frames_to_discard = frame_map_lru.size() - frame_map_lru_cache_maxlen;
 		ss.str(""); ss << num_frames_to_discard << "/" << frame_map_lru.size();
-		stats->addStat("LRU discard", ss.str());
+		stats.addStat("LRU discard", ss.str());
 		for (int i = 0; i < num_frames_to_discard; i++) {
 			int frame_to_delete = frame_map_lru.front();
 			frame_map_lru.pop_front();

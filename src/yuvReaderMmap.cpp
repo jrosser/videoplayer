@@ -77,7 +77,6 @@ private:
 };
 
 YUVReaderMmap::YUVReaderMmap()
-	: stats(Stats::getInstance().newSection("YUV Reader(mmap)", QThread::currentThread()))
 {
 	randomAccess = true;
 	interlacedSource = false;
@@ -161,15 +160,16 @@ VideoData* YUVReaderMmap::pullFrame(int frameNumber)
 	frame->is_last_frame = (frameNumber == lastFrameNum);
 	frame->is_interlaced = interlacedSource;
 
-	addStat(*stats, "Read", readtime, "ms");
-	addStat(*stats, "VideoWidth", videoWidth);
-	addStat(*stats, "VideoHeight", videoHeight);
-	addStat(*stats, "FirstFrame", firstFrameNum);
-	addStat(*stats, "LastFrame", lastFrameNum);
-	addStat(*stats, "VideoFormat", fileType.toLatin1().data());
+	Stats::Section& stats = Stats::getSection("YUV Reader(mmap)");
+	addStat(stats, "Read", readtime, "ms");
+	addStat(stats, "VideoWidth", videoWidth);
+	addStat(stats, "VideoHeight", videoHeight);
+	addStat(stats, "FirstFrame", firstFrameNum);
+	addStat(stats, "LastFrame", lastFrameNum);
+	addStat(stats, "VideoFormat", fileType.toLatin1().data());
 	if (0) {
-		addStat(*stats, "Peak Rate", frame_size / (readtime * 1024), "MiB/s");
-		addStat(*stats, "Mean Rate", frame_size / ((readtime + idletime) * 1024), "MiB/s");
+		addStat(stats, "Peak Rate", frame_size / (readtime * 1024), "MiB/s");
+		addStat(stats, "Mean Rate", frame_size / ((readtime + idletime) * 1024), "MiB/s");
 	}
 
 	return frame;

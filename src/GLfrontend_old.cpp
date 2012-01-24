@@ -69,7 +69,6 @@ GLfrontend_old::GLfrontend_old(GLvideo_params& params, VideoTransport* vt)
 	, params(params)
 	, doResize(0)
 	, layouts(0)
-	, stats(Stats::getInstance().newSection("OpenGL", QThread::currentThread()))
 {
 	setLayoutGrid(1, 1);
 }
@@ -366,6 +365,8 @@ void render(VideoData *vd, GLuint shader_prog)
 
 void GLfrontend_old::render()
 {
+	Stats::Section& stats = Stats::getSection("OpenGL");
+
 	if (!init_done) {
 		/* this must be called in a thread with the GL context */
 		init();
@@ -392,7 +393,7 @@ void GLfrontend_old::render()
 			frames[i] = NULL;
 		}
 	}
-	addStat(*stats, "Upload", perfTimer.elapsed(), "ms");
+	addStat(stats, "Upload", perfTimer.elapsed(), "ms");
 
 	glPushMatrix();
 	for (int x = 0; x < layout_grid_h; x++) {
@@ -445,7 +446,7 @@ void GLfrontend_old::render()
 
 			glTranslatef(params.pan_x, -params.pan_y, 0.f);
 			glTranslatef(vp_x_centre, vp_y_centre, 0.f);
-			addStat(*stats, "Zoom", zoom * 100.0f, "%");
+			addStat(stats, "Zoom", zoom * 100.0f, "%");
 			glScalef(zoom, zoom, 1.0);
 			glTranslatef(-video_x_centre, -video_y_centre, 0.f);
 
@@ -453,7 +454,7 @@ void GLfrontend_old::render()
 			perfTimer.restart();
 			int currentShader = chooseShader(video_data, params);
 			updateShaderVars(programs[currentShader], video_data, colour_matrix);
-			addStat(*stats, "UpdateVars", perfTimer.elapsed(), "ms");
+			addStat(stats, "UpdateVars", perfTimer.elapsed(), "ms");
 
 			if (params.deinterlace) {
 				glUseProgramObjectARB(programs[currentShader]);
@@ -464,7 +465,7 @@ void GLfrontend_old::render()
 
 			perfTimer.restart();
 			::render(video_data, programs[currentShader]);
-			addStat(*stats, "Render", perfTimer.elapsed(), "ms");
+			addStat(stats, "Render", perfTimer.elapsed(), "ms");
 
 			unref_texture(video_data);
 		}

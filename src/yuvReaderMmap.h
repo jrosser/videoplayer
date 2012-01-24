@@ -32,7 +32,6 @@
 
 #include "readerInterface.h"
 #include "videoData.h"
-#include "stats.h"
 
 class YUVReaderMmap : public ReaderInterface {
 public:
@@ -71,8 +70,6 @@ private:
 
 	//bandwidth counter
 	QTime timer;
-
-	Stats::Section* stats;
 };
 
 #endif

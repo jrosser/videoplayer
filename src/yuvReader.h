@@ -66,8 +66,6 @@ private:
 	int lastFrameNum;
 	int firstFrameNum;
 	unsigned frame_size;
-
-	Stats::Section* stats;
 };
 
 #endif

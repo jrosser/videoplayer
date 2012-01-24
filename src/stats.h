@@ -43,7 +43,7 @@ public:
 		return *_instance;
 	}
 
-	Section* newSection(const std::string &section_name, void* ptr = 0);
+	static Section& getSection(const std::string &section_name, void* ptr = 0);
 
 	/**
 	 * mutex that should be held when attempting to touch @sections.
