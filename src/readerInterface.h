@@ -33,7 +33,12 @@ struct VideoData;
 
 class ReaderInterface {
 public:
-	ReaderInterface() {}
+	ReaderInterface()
+	: fps(1.0f)
+	, sample_aspect_ratio_numerator(1)
+	, sample_aspect_ratio_denominator(1)
+	{}
+
 	virtual ~ReaderInterface()
 	{
 	}
