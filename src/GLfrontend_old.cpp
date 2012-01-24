@@ -425,17 +425,25 @@ void GLfrontend_old::render()
 				continue;
 			}
 
-			unsigned video_data_width = video_data->data.plane[0].width;
-			unsigned video_data_height = video_data->data.plane[0].height;
+			int video_data_width = video_data->data.plane[0].width;
+			int video_data_height = video_data->data.plane[0].height;
 			/* xxx: !params.aspect_ratio_lock, params.zoom_1to1 */
 			int vp_x_centre = vp_width / 2;
 			int vp_y_centre = vp_height / 2;
 			int video_x_centre = video_data_width / 2;
 			int video_y_centre = video_data_height / 2;
 
+			float zoom = pow(2.f,(params.zoom-1.0f)/2.0f);
+			/* determine bounding box to limit pan and scan action */
+			int video_scaled_width = video_data_width * zoom;
+			int video_scaled_height = video_data_height * zoom;
+			int pan_x_limit = max(0, (video_scaled_width - vp_width) / 2);
+			int pan_y_limit = max(0, (video_scaled_height - vp_height) / 2);
+			params.pan_x = max(-pan_x_limit, min(pan_x_limit, params.pan_x));
+			params.pan_y = max(-pan_y_limit, min(pan_y_limit, params.pan_y));
+
 			glTranslatef(params.pan_x, -params.pan_y, 0.f);
 			glTranslatef(vp_x_centre, vp_y_centre, 0.f);
-			float zoom = pow(2.f,(params.zoom-1.0f)/2.0f);
 			addStat(*stats, "Zoom", zoom * 100.0f, "%");
 			glScalef(zoom, zoom, 1.0);
 			glTranslatef(-video_x_centre, -video_y_centre, 0.f);
