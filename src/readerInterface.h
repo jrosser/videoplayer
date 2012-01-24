@@ -27,6 +27,8 @@
 #ifndef READERINTERFACE_H_
 #define READERINTERFACE_H_
 
+#include <QString>
+
 struct VideoData;
 
 class ReaderInterface {
