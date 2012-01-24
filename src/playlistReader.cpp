@@ -94,8 +94,7 @@ void PlayListReader::setFileName(const QString &fn)
 		p->frame_num = last_frame_num;
 		p->reader_start = atoi(start);
 		p->osdtext = osdtext;
-		last_frame_num += p->num_frames = atoi(end) - p->reader_start;
-		p->num_frames++;
+		last_frame_num += p->num_frames = atoi(end) - p->reader_start + 1;
 		printf("-> %d: %s %d %d\n", last_frame_num, name, p->reader_start, p->num_frames);
 
 		if (!strcmp("GREY", type)) {
@@ -121,7 +120,7 @@ void PlayListReader::setFileName(const QString &fn)
 //called from the frame queue controller to get frame data for display
 VideoData* PlayListReader::pullFrame(int frame_number_raw)
 {
-	unsigned frame_number = frame_number_raw % (last_frame_num+1);
+	unsigned frame_number = frame_number_raw % last_frame_num;
 
 	/* find which playlist item that framenumber is in */
 	typedef std::list<PlayListItem*> PL;
@@ -132,7 +131,7 @@ VideoData* PlayListReader::pullFrame(int frame_number_raw)
 			VideoData *ret = (*li)->reader->pullFrame((*li)->reader_start + frame_number - (*li)->frame_num);
 			ret->frame_number = frame_number;
 			ret->is_first_frame = frame_number == 0;
-			ret->is_last_frame = frame_number == last_frame_num;
+			ret->is_last_frame = frame_number == last_frame_num-1;
 			return ret;
 		}
 	}
@@ -141,7 +140,7 @@ VideoData* PlayListReader::pullFrame(int frame_number_raw)
 
 double PlayListReader::getFPS(int frame_number_raw)
 {
-	unsigned frame_number = frame_number_raw % (last_frame_num+1);
+	unsigned frame_number = frame_number_raw % last_frame_num;
 
 	/* find which playlist item that framenumber is in */
 	typedef std::list<PlayListItem*> PL;
@@ -157,7 +156,7 @@ double PlayListReader::getFPS(int frame_number_raw)
 
 QString PlayListReader::getCaption(int frame_number_raw)
 {
-	unsigned frame_number = frame_number_raw % (last_frame_num+1);
+	unsigned frame_number = frame_number_raw % last_frame_num;
 
 	/* find which playlist item that framenumber is in */
 	typedef std::list<PlayListItem*> PL;
