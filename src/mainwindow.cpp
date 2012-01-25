@@ -39,9 +39,16 @@ MainWindow::MainWindow(GLvideo_params& vr_params, Qt_params& qt_params, VideoTra
 	p.setColor(QPalette::Window, Qt::black);
 	setPalette(p);
 
+	setMouseTracking(true);
+	connect(&mouse_hide_timer, SIGNAL(timeout()), this, SLOT(hideMouse()));
+	mouse_hide_timer.setSingleShot(true);
+
 	if (qt_params.hidemouse) {
-		//hide the mouse pointer from the start if requestes
+		/* hide the mouse pointer from when new window is created, rather
+		 * than waiting for a one second time out */
 		setCursor(QCursor(Qt::BlankCursor));
+	} else {
+		mouse_hide_timer.start(1000);
 	}
 
 	gl_frontend->getOptimalDimensions(size_hint_w, size_hint_h);
@@ -252,11 +259,20 @@ void MainWindow::mousePressEvent(QMouseEvent *event)
 	 *    position */
 	mouse_drag_start_x = event->x();
 	mouse_drag_start_y = event->y();
+	mouse_hide_timer.stop();
 	setCursor(Qt::ClosedHandCursor);
 }
 
 void MainWindow::mouseMoveEvent(QMouseEvent *event)
 {
+	if (event->buttons() == Qt::NoButton) {
+		/* no drag => reveal mouse if hidden, trigger timer to hide
+		 * after one second */
+		if (!mouse_hide_timer.isActive())
+			setCursor(Qt::ArrowCursor);
+		mouse_hide_timer.start(1000);
+		return;
+	}
 	/* Interpret mouse motion and update pan position with delta since
 	 * last event */
 	vr_params.pan_x += event->x() - mouse_drag_start_x;
@@ -268,4 +284,10 @@ void MainWindow::mouseMoveEvent(QMouseEvent *event)
 void MainWindow::mouseReleaseEvent(QMouseEvent *event)
 {
 	setCursor(Qt::ArrowCursor);
+	mouse_hide_timer.start(1000);
+}
+
+void MainWindow::hideMouse()
+{
+	setCursor(Qt::BlankCursor);
 }

@@ -28,7 +28,6 @@
 #define GLVIDEO_MT_H
 
 #include <QObject>
-#include <QTimer>
 #include <QGLWidget>
 
 class GLvideo_rt;
@@ -49,23 +48,12 @@ public:
 	GLvideo_rt* renderThread;
 	GLvideo_params& vr_params;
 
-protected:
-
-public slots:
-	void setAlwaysHideMouse(bool h);
-
-private slots:
-	void hideMouse();
-
 private:
 	void initializeGL();
 	void paintGL();
 	void resizeGL(int, int);
 	void paintEvent(QPaintEvent * event);
 	void resizeEvent(QResizeEvent * event);
-	void mouseMoveEvent(QMouseEvent *ev);
-	bool alwaysHideMouse;
-	QTimer mouseHideTimer;
 	bool done_qt_glinit;
 };
 

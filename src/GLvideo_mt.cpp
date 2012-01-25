@@ -43,40 +43,12 @@ GLvideo_mt::GLvideo_mt(QWidget* parent, VideoTransport *v, GLvideo_params& vr_pa
 , vr_params(vr_params)
 , done_qt_glinit(0)
 {
-	alwaysHideMouse = false;
 	setMouseTracking(true);
-	connect(&mouseHideTimer, SIGNAL(timeout()), this, SLOT(hideMouse()));
-	mouseHideTimer.setSingleShot(true);
 }
 
 GLvideo_mt::~GLvideo_mt()
 {
 	if(renderThread) delete renderThread;
-}
-
-/* Reveal the mouse whenever it is moved,
- * Cause it to be hidden 1second later */
-void GLvideo_mt::mouseMoveEvent(QMouseEvent *ev)
-{
-	if (!mouseHideTimer.isActive() && alwaysHideMouse==false)
-		setCursor(QCursor(Qt::ArrowCursor));
-	mouseHideTimer.start(1000);
-
-	/* allow mouse event to bubble up to next widget */
-	ev->ignore();
-}
-
-void GLvideo_mt::hideMouse()
-{
-	setCursor(QCursor(Qt::BlankCursor));
-}
-
-void GLvideo_mt::setAlwaysHideMouse(bool h)
-{
-	alwaysHideMouse=h;
-
-	if (alwaysHideMouse)
-		hideMouse();
 }
 
 #include <iostream>

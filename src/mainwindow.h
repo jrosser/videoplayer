@@ -76,6 +76,8 @@ private slots:
 	void setZoomIn();
 	void setZoomOut();
 	void setZoomReset();
+	void hideMouse();
+
 private:
 	void createActions(void);
 
@@ -95,6 +97,8 @@ private:
 
 	int mouse_drag_start_x;
 	int mouse_drag_start_y;
+
+	QTimer mouse_hide_timer;
 };
 
 #endif
