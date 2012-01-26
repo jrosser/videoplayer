@@ -37,7 +37,10 @@ prepare_string(vertex_buffer_t* buffer, markup_t* markup, vec2* pen, const char 
 	while (unsigned current = utf8conv_getnext(&utf8state)) {
 		texture_glyph_t *glyph = texture_font_get_glyph(markup->font, current);
 		if (previous) {
+#if WITH_OSD_KERNING
+			/* kerning can make things look odd due to rounding when fitting to a pixel grid */
 			pen->x += texture_glyph_get_kerning(glyph, previous);
+#endif
 		} else {
 			/* move origin so bounding box is tight around glyph */
 			pen->x -= glyph->offset_x;
