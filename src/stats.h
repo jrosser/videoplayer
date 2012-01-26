@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <iomanip>
 
 #include <QMutex>
 
@@ -63,17 +64,14 @@ private:
 template<typename T>
 void addStat(Stats::Section& section, const std::string &name, T d)
 {
-	std::stringstream ss;
-	ss << d;
-
-	section.addStat(name, ss.str());
+	addStat(section, name, d, "");
 }
 
 template<typename T>
 void addStat(Stats::Section& section, const std::string &name, T d, const std::string &unit)
 {
 	std::stringstream ss;
-	ss << d << " " << unit;
+	ss << std::fixed << std::setprecision(1) << d << " " << unit;
 
 	section.addStat(name, ss.str());
 }
