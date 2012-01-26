@@ -135,6 +135,7 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 
 	vec2 pen = {0.,0.};
 	markup_normal.foreground_colour = WHITE;
+	markup_normal.foreground_colour.a = params.osd_text_alpha;
 	ivec4 bbox = prepare_string(vertex_buffer, &markup_normal, &pen, str);
 
 	//text box location, defaults to bottom left
@@ -170,7 +171,6 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 	glEnd();
 
 	//text
-	glColor4f(1.0, 1.0, 1.0, params.osd_text_alpha);
 	glEnable(GL_TEXTURE_2D);
 	vertex_buffer_render(vertex_buffer, GL_TRIANGLES, "vtc");
 	glDisable(GL_TEXTURE_2D);
@@ -204,12 +204,14 @@ void GLvideo_osd::renderStats(unsigned viewport_width, unsigned viewport_height,
 	     it++)
 	{
 		markup_stats.foreground_colour = GREEN;
+		markup_stats.foreground_colour.a = params.osd_text_alpha;
 		ivec4 bbox = prepare_string(vertex_buffer, &markup_stats, &pen, (*it).first.c_str());
 		total_bbox = mergeBox(total_bbox, bbox);
 
 		pen.y -= markup_stats.font->height - markup_stats.font->linegap;
 		pen.x = 0;
 		markup_stats.foreground_colour = WHITE;
+		markup_stats.foreground_colour.a = params.osd_text_alpha;
 
 		QMutexLocker(&(*it).second->mutex);
 		for (Stats::Section::const_iterator it2 = (*it).second->begin();
@@ -255,7 +257,6 @@ void GLvideo_osd::renderStats(unsigned viewport_width, unsigned viewport_height,
 	glVertex2f(bx2, by1);
 	glEnd();
 
-	glColor4f(1.0, 1.0, 1.0, params.osd_text_alpha);
 	glEnable(GL_TEXTURE_2D);
 	vertex_buffer_render(vertex_buffer, GL_TRIANGLES, "vtc");
 	glDisable(GL_TEXTURE_2D);
