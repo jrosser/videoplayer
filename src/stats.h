@@ -38,6 +38,8 @@ public:
 
 	//singleton access and construction
 	static Stats &getInstance() {
+		static QMutex init_mutex;
+		QMutexLocker lock(&init_mutex);
 		if(_instance == 0)
 			_instance = new Stats();
 		
