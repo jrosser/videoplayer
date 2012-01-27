@@ -36,7 +36,9 @@ VideoData *GreyFrameReader::getGreyFrame()
 {
 	VideoData* frame = new VideoData();
 	setPlaneDimensions(*(PictureData<void>*)&frame->data, GLvideo::V8P, GLvideo::Cr444, 1, 1);
-	static char data[] = { 0x80 };
+	static uint8_t data[] = { 0x80u };
+	frame->data.packing_format = GLvideo::V8P;
+	frame->data.chroma_format = GLvideo::Cr444;
 	frame->data.plane[0].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
 	frame->data.plane[1].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
 	frame->data.plane[2].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
