@@ -51,7 +51,7 @@ REDIST_w32_msvc10_debug = \
 GENVERSION = $(shell perl -n -e 'if (m/BUILD_VERSION = "(.+)"/) { $$_ = $$1; tr!:/!$$~!; print }' $1)
 
 .PHONY: build-nmake
-build-nmake:
+build-nmake build-name-dbg:
 	$(QMAKE) $(TOP)/src/videoplayer.pro
 	MAKEFLAGS= $(NMAKE) $(TARGET)
 
@@ -105,7 +105,7 @@ clean-macx:
 
 all-msvc10-dbg: ARCH=w32-msvc10-debug
 all-msvc10-dbg: TARGET=debug
-all-msvc10-dbg: build-nmake package-win32
+all-msvc10-dbg: build-nmake-dbg package-win32
 
 all-msvc10: ARCH=w32-msvc10
 all-msvc10: TARGET=release
