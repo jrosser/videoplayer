@@ -63,7 +63,7 @@ build-qmake:
 VERSION.C=$(wildcard version.[c] $(TOP)/src/version.[c])
 
 .PHONY: package-win32
-package-win32: DESTDIR=videoplayer-$(ARCH)_$(call GENVERSION,$(VERSION.C))
+package-win32: DESTDIR=videoplayer-$(call GENVERSION,$(VERSION.C))-$(ARCH)
 package-win32:
 	mkdir -p $(DESTDIR)
 	cp $(TARGET)/videoplayer.exe $(DESTDIR)/
@@ -83,8 +83,8 @@ package-win32:
 	$(call UPLOAD,$(DESTDIR).zip)
 
 .PHONY: package-macx
-package-macx: VERSION=videoplayer-$(ARCH)_$(call GENVERSION,$(VERSION.C))
-package-macx: DESTDIR=videoplayer-$(ARCH)_$(VERSION)
+package-macx: VERSION=videoplayer-$(call GENVERSION,$(VERSION.C))-$(ARCH)
+package-macx: DESTDIR=videoplayer-$(VERSION)-$(ARCH)
 package-macx:
 	macdeployqt Videoplayer.app
 	$(MAKE) -f $(TOP)/scripts/Makefile.dmg \
