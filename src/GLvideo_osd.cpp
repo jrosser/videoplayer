@@ -134,7 +134,9 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 	vertex_buffer_clear(vertex_buffer);
 
 	vec2 pen = {0.,0.};
-	markup_normal.foreground_colour = WHITE;
+	markup_normal.foreground_colour.r = (float)(((unsigned)params.osd_text_colour >> 16) & 0xff)/255.;
+	markup_normal.foreground_colour.g = (float)(((unsigned)params.osd_text_colour >>  8) & 0xff)/255.;
+	markup_normal.foreground_colour.b = (float)(((unsigned)params.osd_text_colour >>  0) & 0xff)/255.;
 	markup_normal.foreground_colour.a = params.osd_text_alpha;
 	ivec4 bbox = prepare_string(vertex_buffer, &markup_normal, &pen, str);
 

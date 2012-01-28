@@ -34,6 +34,7 @@ struct GLvideo_params {
 	bool osd_perf;
 	float osd_back_alpha;
 	float osd_text_alpha;
+	int osd_text_colour;
 	bool osd_vcentre;
 
 	/* offset1 is the offset applied to src video

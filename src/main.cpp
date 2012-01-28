@@ -217,6 +217,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("osdptsize",     vp.osd_caption_ptsize,          "OSD caption size (pt)")
 		("osdbackalpha",  vp.osd_back_alpha,              "Transparency for OSD background")
 		("osdtextalpha",  vp.osd_text_alpha,              "Transparency for OSD text")
+		("osdtextcolour", vp.osd_text_colour,             "Colour of OSD text")
 		("osdvcentre",    vp.osd_vcentre,                 "Vertically centre OSD text")
 		("osdstate",      (int&)vp.osd_bot,               "OSD initial state")
 		("caption",       vp.caption,                     "OSD Caption text")
@@ -313,6 +314,7 @@ int main(int argc, char **argv)
 	vr_params.osd_caption_ptsize = 72;
 	vr_params.osd_back_alpha = 0.7f;
 	vr_params.osd_text_alpha = 0.5f;
+	vr_params.osd_text_colour = 0xffffff;
 	vr_params.osd_vcentre = false;
 	vr_params.osd_perf = false;
 	vr_params.osd_bot = OSD_NONE;
