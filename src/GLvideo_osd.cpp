@@ -145,6 +145,10 @@ void GLvideo_osd::renderOSD(unsigned viewport_width, unsigned viewport_height, V
 	if (params.osd_bot==OSD_CAPTION) {
 		//put the caption in the middle of the screen
 		tx = ((int)viewport_width - (bbox.width)) / 2;
+
+		if (params.osd_vcentre) {
+			ty = ((int)viewport_height- (bbox.height)) / 2;
+		}
 	}
 
 	//black box that text is rendered onto, larger than the text by 'border'
