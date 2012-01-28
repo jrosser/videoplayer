@@ -102,6 +102,8 @@ inline void
 Option<T>::parse(const std::string& arg)
 {
 	std::istringstream arg_ss (arg,std::istringstream::in);
+	if (arg.size() > 2 && arg[0] == '0' && arg[1] == 'x')
+		arg_ss >> std::hex;
 	arg_ss >> opt_storage;
 }
 
