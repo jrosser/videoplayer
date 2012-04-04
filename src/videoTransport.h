@@ -62,6 +62,7 @@ public:
 
 	int getCurrentFrameNum() { return current_frame_number; }
 	int getCurrentField() { return current_field; }
+	double getSrcFPS() { return fps_src; }
 
 private:
 	/* number of times to repeat each frame */

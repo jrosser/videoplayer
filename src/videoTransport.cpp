@@ -85,9 +85,16 @@ bool VideoTransport::advance()
 		return false;
 	}
 
-	future_frame_num_list_head_idx_semaphore.acquire();
+	int old_src_fps = current_frame_num.getSrcFPS();
+	int new_src_fps = frame_queues[0]->getReader()->getFPS(current_frame_num.getCurrentFrameNum());
 
-	current_frame_num.setSrcFPS(frame_queues[0]->getReader()->getFPS(current_frame_num.getCurrentFrameNum()));
+	if (old_src_fps != new_src_fps) {
+		current_frame_num.setSrcFPS(new_src_fps);
+		/* flush and repopulate the future queue */
+		setSpeed(transport_speed);
+	}
+
+	future_frame_num_list_head_idx_semaphore.acquire();
 
 	if (!advance_ok) {
 		/* don't advance the frame counter: we have unfinished business from
