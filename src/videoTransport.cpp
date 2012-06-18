@@ -220,7 +220,11 @@ void VideoTransport::setSpeed(int new_speed, bool jog)
 }
 
 
-VideoTransport::VideoTransport(const list<ReaderInterface*>& readers, int read_ahead, int lru_cache_len)
+VideoTransport::VideoTransport(
+	const list<ReaderInterface*>& readers,
+	int first_frame_num, int last_frame_num,
+	int read_ahead, int lru_cache_len
+)
 	: future_frame_num_list(read_ahead, 0)
 	, future_frame_num_list_head_idx_semaphore(readers.size()+1)
 	, transport_pause(0)
@@ -229,6 +233,8 @@ VideoTransport::VideoTransport(const list<ReaderInterface*>& readers, int read_a
 {
 	num_listeners = readers.size()+1; /* 1 framequeue + this */
 
+	current_frame_num.setFrameNum(first_frame_num);
+	current_frame_num.setFrameNumLast(last_frame_num);
 	current_frame_num.setInterlaced(true);
 
 	advance_ok =1;

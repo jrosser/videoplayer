@@ -48,11 +48,14 @@ public:
 		, current_field(0)
 		, current_repeats_todo(0)
 		, current_repeats_field1(0)
+		, first_frame_num(0)
+		, last_frame_num_plus1(0)
 		, transport_speed(1)
 		, steady_state(0)
 	{}
 
-	void setFrameNum(int num) { current_frame_number = num; steady_state = false; }
+	void setFrameNum(int num) { first_frame_num = current_frame_number = num; steady_state = false; }
+	void setFrameNumLast(int num) { last_frame_num_plus1 = num+1; }
 	void setInterlaced(bool interlaced) { is_interlaced = interlaced; }
 	void setSpeed(int speed) { transport_speed = speed; }
 	void setRepeats(int r) { fps_out = 1.; fps_src = 1./r; }
@@ -60,7 +63,15 @@ public:
 	void setSrcFPS(double fps) { fps_src = fps; }
 	bool advance();
 
-	int getCurrentFrameNum() { return current_frame_number; }
+	int getCurrentFrameNum() {
+		int frame_num = current_frame_number;
+		if (last_frame_num_plus1 > 0) {
+			frame_num -= first_frame_num;
+			frame_num %= (last_frame_num_plus1 - first_frame_num);
+			frame_num += first_frame_num;
+		}
+		return frame_num;
+	}
 	int getCurrentField() { return current_field; }
 	double getSrcFPS() { return fps_src; }
 
@@ -84,6 +95,12 @@ private:
 	/* when interlaced, number of leftover repeats after previous field */
 	int current_repeats_field1;
 
+	/* first frame number in the sequence */
+	int first_frame_num;
+
+	/* last frame number +1 in the sequence */
+	int last_frame_num_plus1;
+
 	/* speed at wich frames should be advanced */
 	int transport_speed;
 
@@ -93,7 +110,9 @@ private:
 class VideoTransport
 {
 public:
-	VideoTransport(const std::list<ReaderInterface*>& rs, int read_ahead=16, int lru_cache_len=16);
+	VideoTransport(const std::list<ReaderInterface*>& rs,
+	               int first_frame_num = 0, int last_frame_num = -1,
+	               int read_ahead=16, int lru_cache_len=16);
 	~VideoTransport();
 
 	void setLooping(bool l) { looping = l; }

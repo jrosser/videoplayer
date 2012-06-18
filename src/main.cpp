@@ -73,6 +73,8 @@ struct Transport_params {
 	int videoHeight;
 	int sar_n;
 	int sar_d;
+	int frame_num_first;
+	int frame_num_last;
 	int frame_repeats;
 	double vdu_fps;
 	double src_fps;
@@ -188,6 +190,8 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 		("height,h",      tp.videoHeight,                 "Height of video luma component")
 		("vdu-fps",       tp.vdu_fps,                     "Display's frame rate")
 		("fps",           tp.src_fps,                     "Source frame rate")
+		("start",         tp.frame_num_first,             "First frame number to display")
+		("end",           tp.frame_num_last,              "Last frame number to display")
 		("repeats,r",     tp.frame_repeats,               "Frame is repeated r extra times")
 		("loop,l",        tp.looping,                     "Number of times to loop video (1=inf)")
 		("quit,q",        tp.quit_at_end,                 "Exit at end of video file (implies --loop=0)")
@@ -351,6 +355,8 @@ int main(int argc, char **argv)
 	t_params.sar_d = 1;
 	t_params.interlaced_source = false;
 	t_params.frame_repeats = 1;
+	t_params.frame_num_first = 0;
+	t_params.frame_num_last = -1;
 	/* in case these aren't specified, assume a 1:1 mapping */
 	t_params.vdu_fps = 1.;
 	t_params.src_fps = 1.;
@@ -419,7 +425,7 @@ int main(int argc, char **argv)
 
 
 	//object controlling the video playback 'transport'
-	VideoTransportQT vt(readers, t_params.read_ahead, t_params.lru_cache);
+	VideoTransportQT vt(readers, t_params.frame_num_first, t_params.frame_num_last, t_params.read_ahead, t_params.lru_cache);
 	//vt.setRepeats(t_params.frame_repeats);
 	vt.setVDUfps(t_params.vdu_fps);
 	vt.setSteppingIgnoreInterlace(!vr_params.deinterlace);
