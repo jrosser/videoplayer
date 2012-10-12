@@ -20,7 +20,6 @@ config.log
 config.status
 configure
 libtool
-m4
 Makefile.in
 Makefile
 stamp-h1

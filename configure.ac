@@ -50,6 +50,13 @@ AC_SUBST(QT4_MOC)
 
 PKG_CHECK_MODULES(FREETYPE, freetype2)
 PKG_CHECK_MODULES(GLEW, glew)
+PKG_CHECK_MODULES(X11, x11)
+
+dnl pthreads is required
+AX_PTHREAD(HAVE_PTHREADS=yes, HAVE_PTHREADS=no)
+if test "x${HAVE_PTHREADS}" != xyes ; then
+  AC_MSG_ERROR(pthreads is required)
+fi
 
 # Checks for header files.
 AC_PATH_X
