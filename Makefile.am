@@ -42,8 +42,8 @@ bin_PROGRAMS = videoplayer
 
 EXTRA_DIST += src/videoplayer.pro
 
-videoplayer_CPPFLAGS = $(QTGUI_CFLAGS) $(QTGL_CFLAGS) $(GLEW_CFLAGS)
-videoplayer_LDADD = $(QTGUI_LIBS) $(QTGL_LIBS) $(GLEW_LIBS) $(X11_LIBS) $(PTHREAD_LIBS) libqttv-@QTTV_MAJORMINOR@.la
+videoplayer_CPPFLAGS = $(QTGUI_CFLAGS) $(QTGL_CFLAGS) $(GLEW_CFLAGS) $(PTHREAD_CFLAGS)
+videoplayer_LDADD = $(QTGUI_LIBS) $(QTGL_LIBS) $(GLEW_LIBS) $(X11_LIBS) $(PTHREAD_LIBS) $(PTHREAD_CFLAGS) libqttv-@QTTV_MAJORMINOR@.la
 
 videoplayer_SOURCES = \
 	src/fileDialog.cpp \
