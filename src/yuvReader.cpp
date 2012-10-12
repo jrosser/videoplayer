@@ -65,107 +65,125 @@
 
 YUVReader::YUVReader()
 {
-	randomAccess = true;
-	interlacedSource = false;
+  randomAccess = true;
+  interlacedSource = false;
+  bit_shift = 0;
 }
 
 void YUVReader::setFileName(const QString &fn)
 {
-	fileName = fn;
-	QFileInfo info(fileName);
+  fileName = fn;
+  QFileInfo info(fileName);
 
-	fd = open(fileName.toLatin1().data(), O_RDONLY | _O_BINARY);
-	if (fd < 0) {
-		fprintf(stderr, "Failed to open '%s': %s\n", fileName.toLatin1().data(), strerror(errno));
-		exit(1);
-		return;
-	}
+  fd = open(fileName.toLatin1().data(), O_RDONLY | _O_BINARY);
+  if (fd < 0)
+  {
+    fprintf(stderr, "Failed to open '%s': %s\n", fileName.toLatin1().data(),
+        strerror(errno));
+    exit(1);
+    return;
+  }
 
-	fileType = forceFileType ? fileType.toLower() : info.suffix().toLower();
+  fileType = forceFileType ? fileType.toLower() : info.suffix().toLower();
 
-	FourCC fourcc = qstringToFourCC(fileType);
-	packing_format = fourccToPacking(fourcc);
-	chroma_format = fourccToChroma(fourcc);
-	frame_size = sizeofFrame(packing_format, chroma_format, videoWidth, videoHeight);
+  FourCC fourcc = qstringToFourCC(fileType);
+  packing_format = fourccToPacking(fourcc);
+  chroma_format = fourccToChroma(fourcc);
+  bit_shift = fourCCToNumberOfInactiveBits(fourcc);
+  frame_size = sizeofFrame(packing_format, chroma_format, videoWidth,
+      videoHeight);
 
-	firstFrameNum = 0;
-	lastFrameNum = info.size() / frame_size;
-	lastFrameNum--;
+  firstFrameNum = 0;
+  lastFrameNum = info.size() / frame_size;
+  lastFrameNum--;
 }
 
 //called from the frame queue controller to get frame data for display
 VideoData* YUVReader::pullFrame(int frameNumber)
 {
-	if (DEBUG)
-		printf("Getting frame number %d\n", frameNumber);
+  if (DEBUG)
+    printf("Getting frame number %d\n", frameNumber);
 
-	//deal with frame number wrapping
-	if (frameNumber < 0) {
-		frameNumber *= -1;
-		frameNumber %= (lastFrameNum + 1);
-		frameNumber = lastFrameNum - frameNumber;
-	}
+  //deal with frame number wrapping
+  if (frameNumber < 0)
+  {
+    frameNumber *= -1;
+    frameNumber %= (lastFrameNum + 1);
+    frameNumber = lastFrameNum - frameNumber;
+  }
 
-	if (frameNumber > lastFrameNum)
-		frameNumber %= (lastFrameNum + 1);
+  if (frameNumber > lastFrameNum)
+    frameNumber %= (lastFrameNum + 1);
 
-	/* allocate new storage:
-	 *  1) work out dimensions for the planes
-	 *  2) create contiguous storage (we already know the frame_size)
-	 *  3) create aliases for any other planes
-	 */
-	VideoData* frame = new VideoData();
-	frame->data.packing_format = packing_format;
-	frame->data.chroma_format = chroma_format;
-	setPlaneDimensions(*(PictureData<void>*)&frame->data, packing_format, chroma_format, videoWidth, videoHeight);
+  /* allocate new storage:
+   *  1) work out dimensions for the planes
+   *  2) create contiguous storage (we already know the frame_size)
+   *  3) create aliases for any other planes
+   */
+  VideoData* frame = new VideoData();
+  frame->data.packing_format = packing_format;
+  frame->data.chroma_format = chroma_format;
+  setPlaneDimensions(*(PictureData<void>*) &frame->data, packing_format,
+      chroma_format, videoWidth, videoHeight);
 
-	using namespace std::tr1;
-	frame->data.plane[0].data = shared_ptr<DataPtr>(new DataPtr_valloc(frame_size));
-	void* const data = frame->data.plane[0].data->ptr;
-	uint8_t* ptr = (uint8_t*) data;
-	for (unsigned i = 1; i < frame->data.plane.size(); i++) {
-		ptr += frame->data.plane[i-1].length;
-		frame->data.plane[i].data = shared_ptr<DataPtr>(new DataPtr_alias(ptr));
-	}
-	/* xxx: fixup plane numbering if required (eg YV12 vs I420) */
+  using namespace std::tr1;
+  frame->data.plane[0].data = shared_ptr<DataPtr>(
+      new DataPtr_valloc(frame_size));
+  void* const data = frame->data.plane[0].data->ptr;
+  uint8_t* ptr = (uint8_t*) data;
+  for (unsigned i = 1; i < frame->data.plane.size(); i++)
+  {
+    ptr += frame->data.plane[i - 1].length;
+    frame->data.plane[i].data = shared_ptr<DataPtr>(new DataPtr_alias(ptr));
+  }
+  /* xxx: fixup plane numbering if required (eg YV12 vs I420) */
 
-	//set frame number and first/last flags
-	frame->frame_number = frameNumber;
-	frame->is_first_frame = (frameNumber == firstFrameNum);
-	frame->is_last_frame = (frameNumber == lastFrameNum);
-	frame->is_interlaced = interlacedSource;
+  //set frame number and first/last flags
+  frame->frame_number = frameNumber;
+  frame->is_first_frame = (frameNumber == firstFrameNum);
+  frame->is_last_frame = (frameNumber == lastFrameNum);
+  frame->is_interlaced = interlacedSource;
 
-	frame->sample_aspect_ratio_numerator = sample_aspect_ratio_numerator;
-	frame->sample_aspect_ratio_denominator = sample_aspect_ratio_denominator;
-	frame->data.sar = (float)sample_aspect_ratio_numerator / (float)sample_aspect_ratio_denominator;
+  frame->sample_aspect_ratio_numerator = sample_aspect_ratio_numerator;
+  frame->sample_aspect_ratio_denominator = sample_aspect_ratio_denominator;
+  frame->data.sar = (float) sample_aspect_ratio_numerator
+      / (float) sample_aspect_ratio_denominator;
 
-	//seek to requested frame
-	off64_t offset = (off64_t)frame_size * (off64_t)frameNumber;
-	off64_t sret = lseek64(fd, offset, SEEK_SET);
-	if (!sret && offset != 0)
-		perror("LSEEK");
+  //seek to requested frame
+  off64_t offset = (off64_t) frame_size * (off64_t) frameNumber;
+  off64_t sret = lseek64(fd, offset, SEEK_SET);
+  if (!sret && offset != 0)
+    perror("LSEEK");
 
-	QTime timer;
-	timer.restart();
+  QTime timer;
+  timer.restart();
 
-	for (unsigned done = 0; done < frame_size;) {
-		int len = read(fd, (uint8_t*) data + done, frame_size - done);
-		if (len <= 0) {
-			std::stringstream ss;
-			ss << "read() @ frame" << frameNumber << "(" << offset << "+" << done << " of " << frame_size << ")";
-			perror(ss.str().c_str());
-			break;
-		}
-		done += len;
-	}
+  for (unsigned done = 0; done < frame_size;)
+  {
+    int len = read(fd, (uint8_t*) data + done, frame_size - done);
+    if (len <= 0)
+    {
+      std::stringstream ss;
+      ss << "read() @ frame" << frameNumber << "(" << offset << "+" << done
+          << " of " << frame_size << ")";
+      perror(ss.str().c_str());
+      break;
+    }
+    done += len;
+  }
 
-	Stats::Section& stats = Stats::getSection("YUV Reader");
-	addStat(stats, "Read", timer.elapsed(), "ms");
-	addStat(stats, "VideoWidth", videoWidth);
-	addStat(stats, "VideoHeight", videoHeight);
-	addStat(stats, "FirstFrame", firstFrameNum);
-	addStat(stats, "LastFrame", lastFrameNum);
-	addStat(stats, "VideoFormat", fileType.toLatin1().data());
+  if (bit_shift > 0)
+  {
+    shiftPlanar16PixelData(frame->data, bit_shift);
+  }
 
-	return frame;
+  Stats::Section& stats = Stats::getSection("YUV Reader");
+  addStat(stats, "Read", timer.elapsed(), "ms");
+  addStat(stats, "VideoWidth", videoWidth);
+  addStat(stats, "VideoHeight", videoHeight);
+  addStat(stats, "FirstFrame", firstFrameNum);
+  addStat(stats, "LastFrame", lastFrameNum);
+  addStat(stats, "VideoFormat", fileType.toLatin1().data());
+
+  return frame;
 }

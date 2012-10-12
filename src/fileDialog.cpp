@@ -47,8 +47,8 @@ int VideoFileDialog::exec(QString& fileName, QString& fileType, int& width, int&
 	connect(this, SIGNAL(currentChanged(QString)), this, SLOT(selectionChanged(QString)));
 
 	QStringList filters;
-	filters << "All supported files (*.yuv *.i420 *.yv12 *.420p *.422p *.444p *.uyvy *.v210 *.v216 *.16p0 *.16p2 *.16p4 *.plst)"
-	        << "Y'CbCr video files (*.yuv *.i420 *.yv12 *.420p *.422p *.444p *.uyvy *.v210 *.v216 *.16p0 *.16p2 *.16p4)"
+	filters << "All supported files (*.yuv *.i420 *.yv12 *.420p *.422p *.444p *.uyvy *.v210 *.v216 *.16p0 *.16p2 *.16p4 *.10p0 *.10p2 *.10p4 *.plst)"
+	        << "Y'CbCr video files (*.yuv *.i420 *.yv12 *.420p *.422p *.444p *.uyvy *.v210 *.v216 *.16p0 *.16p2 *.16p4 *.10p0 *.10p2 *.10p4)"
 	        << "Playlist (*.plst)"
 	        << "All files (*)";
 	setNameFilters(filters);
@@ -91,6 +91,9 @@ int VideoFileDialog::exec(QString& fileName, QString& fileType, int& width, int&
 	comboType->insertItem(999, "16p0  (4:2:0 Y'CbCr 16 bit planar)");
 	comboType->insertItem(999, "16p2  (4:2:2 Y'CbCr 16 bit planar)");
 	comboType->insertItem(999, "16p4  (4:4:4 Y'CbCr 16 bit planar)");
+    comboType->insertItem(999, "10p0  (4:2:0 Y'CbCr 10 bit planar)");
+    comboType->insertItem(999, "10p2  (4:2:2 Y'CbCr 10 bit planar)");
+    comboType->insertItem(999, "10p4  (4:4:4 Y'CbCr 10 bit planar)");
 	comboType->insertItem(999, "plst  (Playlist)");
 	gridExtras.addWidget(comboType, 1, 1, 1, 2);
 

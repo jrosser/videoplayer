@@ -37,6 +37,12 @@ qstringToFourCC(QString& s)
 		return FOURCC_16p2;
 	if (s == "16p4")
 		return FOURCC_16p4;
+    if (s == "10p0")
+        return FOURCC_10p0;
+    if (s == "10p2")
+        return FOURCC_10p2;
+    if (s == "10p4")
+        return FOURCC_10p4;
 	if (s == "420p")
 		return FOURCC_420p;
 	if (s == "422p")

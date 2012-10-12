@@ -261,7 +261,7 @@ parseCommandLine(int argc, char **argv, GLvideo_params& vp, Transport_params& tp
 	}
 #endif
 
-	QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0 plst");
+	QString known_extensions("i420 yv12 420p 422p 444p uyvy v216 v210 16p4 16p2 16p0 10p4 10p2 10p0 plst");
 
 	if (!tp.fileType.isEmpty()) {
 		if(known_extensions.contains(tp.fileType.toLower(), Qt::CaseInsensitive))

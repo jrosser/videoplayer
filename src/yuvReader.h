@@ -66,6 +66,7 @@ private:
 	int lastFrameNum;
 	int firstFrameNum;
 	unsigned frame_size;
+	unsigned int bit_shift;
 };
 
 #endif

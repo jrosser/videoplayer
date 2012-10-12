@@ -113,6 +113,7 @@ struct VideoData : public GLvideo_data {
 
 GLvideo::PackingFmt fourccToPacking(FourCC fourcc);
 GLvideo::ChromaFmt fourccToChroma(FourCC fourcc);
+unsigned int fourCCToNumberOfInactiveBits(FourCC fourCC);
 
 unsigned sizeofFrame(GLvideo::PackingFmt packing, GLvideo::ChromaFmt chroma ,unsigned width, unsigned height);
 
@@ -120,6 +121,7 @@ PictureData<void>&
 setPlaneDimensions(PictureData<void>& pd, GLvideo::PackingFmt packing, GLvideo::ChromaFmt chroma, unsigned width, unsigned height);
 
 void convertPlanar16toPlanar8(PictureData<DataPtr>& pd);
+void shiftPlanar16PixelData(PictureData<DataPtr>& pd, unsigned int bit_shift);
 void convertV210toUYVY(PictureData<DataPtr>& pd);
 void convertV216toUYVY(PictureData<DataPtr>& pd);
 #endif
