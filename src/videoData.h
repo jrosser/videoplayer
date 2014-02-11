@@ -31,10 +31,9 @@
 #include <memory>
 #if __cplusplus <= 199711L
 # if !defined(_MSC_VER) || _MSC_VER < 1600
-#  include <tr1/memory>
+#  include <memory>
 # endif
 #endif
-
 
 #include <GL/glew.h>
 
@@ -85,7 +84,7 @@ struct PictureData {
 
 	template<typename T1>
 	struct Plane {
-		std::tr1::shared_ptr<T1> data;
+		std::shared_ptr<T1> data;
 		unsigned width; /* notional width of data */
 		unsigned height;
 		unsigned length; /* meaning of length is dependant upon T1 */
