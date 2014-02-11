@@ -28,6 +28,7 @@
 #define MAINWINDOW_H
 
 #include <QtGui>
+#include <QMainWindow>
 
 #include "GLvideo_params.h"
 
