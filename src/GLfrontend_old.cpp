@@ -239,7 +239,7 @@ upload(PackingFmt fmt, PictureData<DataPtr>::Plane<DataPtr>& src)
 	glBindTexture(GL_TEXTURE_RECTANGLE_ARB, 0);
 
 	PictureData<GLuint>::Plane<GLuint> plane = {
-		std::tr1::shared_ptr<GLuint>(new GLuint(texture)),
+		std::shared_ptr<GLuint>(new GLuint(texture)),
 		width,
 		height,
 		0,
