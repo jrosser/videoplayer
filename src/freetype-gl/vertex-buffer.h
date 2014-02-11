@@ -441,7 +441,7 @@ vertex_attribute_new( GLenum target,
  * @return       GL enum type
  */
   GLenum
-  GL_TYPE( char ctype );
+  GLTYPE( char ctype );
 
 
 /**
