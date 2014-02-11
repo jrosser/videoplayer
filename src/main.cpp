@@ -28,6 +28,11 @@
 # include <config.h>
 #endif
 
+#include "readerInterface.h"
+#include "yuvReader.h"
+#include "yuvReaderMmap.h"
+#include "playlistReader.h"
+
 #include "mainwindow.h"
 
 #ifdef Q_OS_LINUX
@@ -42,11 +47,6 @@ using namespace std;
 
 #include <iostream>
 #include "program_options_lite.h"
-
-#include "readerInterface.h"
-#include "yuvReader.h"
-#include "yuvReaderMmap.h"
-#include "playlistReader.h"
 
 #include "videoTransportQT.h"
 #ifdef Q_OS_LINUX
