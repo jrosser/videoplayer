@@ -126,15 +126,14 @@ VideoData* YUVReader::pullFrame(int frameNumber)
   setPlaneDimensions(*(PictureData<void>*) &frame->data, packing_format,
       chroma_format, videoWidth, videoHeight);
 
-  using namespace std::tr1;
-  frame->data.plane[0].data = shared_ptr<DataPtr>(
+  frame->data.plane[0].data = std::shared_ptr<DataPtr>(
       new DataPtr_valloc(frame_size));
   void* const data = frame->data.plane[0].data->ptr;
   uint8_t* ptr = (uint8_t*) data;
   for (unsigned i = 1; i < frame->data.plane.size(); i++)
   {
     ptr += frame->data.plane[i - 1].length;
-    frame->data.plane[i].data = shared_ptr<DataPtr>(new DataPtr_alias(ptr));
+    frame->data.plane[i].data = std::shared_ptr<DataPtr>(new DataPtr_alias(ptr));
   }
   /* xxx: fixup plane numbering if required (eg YV12 vs I420) */
 
