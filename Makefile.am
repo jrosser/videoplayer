@@ -77,10 +77,22 @@ nodist_videoplayer_SOURCES = \
 	src/moc_videoTransportQT.cpp \
 	$(NULL)
 
-if LINUX
+if LINUX 
 videoplayer_SOURCES += \
 	src/QConsoleInput.h \
 	src/QConsoleInput.cpp \
+	$(NULL)
+endif
+
+if OSX
+videoplayer_SOURCES += \
+	src/QConsoleInput.h \
+	src/QConsoleInput.cpp \
+	$(NULL)
+endif
+
+if LINUX
+videoplayer_SOURCES += \
 	src/QShuttlePro.cpp \
 	src/QShuttlePro.h
 	$(NULL)
