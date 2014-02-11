@@ -25,6 +25,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 #include <QtGui>
+#include <QAction>
 
 #include "mainwindow.h"
 
