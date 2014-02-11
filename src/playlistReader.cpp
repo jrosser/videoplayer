@@ -24,7 +24,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#include <QtGui>
+#include <QString>
 
 #include <cassert>
 
@@ -43,9 +43,9 @@
 # define strtok_r(str, delim, saveptr) strtok(str, delim)
 #endif
 
+#include "yuvReader.h"
 #include "playlistReader.h"
 #include "greyFrameReader.h"
-#include "yuvReader.h"
 #include "stats.h"
 
 #define DEBUG 0
