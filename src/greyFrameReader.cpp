@@ -30,8 +30,6 @@
 
 #include <memory>
 
-using namespace std::tr1;
-
 VideoData *GreyFrameReader::getGreyFrame()
 {
 	VideoData* frame = new VideoData();
@@ -39,9 +37,9 @@ VideoData *GreyFrameReader::getGreyFrame()
 	static uint8_t data[] = { 0x80u };
 	frame->data.packing_format = GLvideo::V8P;
 	frame->data.chroma_format = GLvideo::Cr444;
-	frame->data.plane[0].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
-	frame->data.plane[1].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
-	frame->data.plane[2].data = shared_ptr<DataPtr>(new DataPtr_alias(data));
+	frame->data.plane[0].data = std::shared_ptr<DataPtr>(new DataPtr_alias(data));
+	frame->data.plane[1].data = std::shared_ptr<DataPtr>(new DataPtr_alias(data));
+	frame->data.plane[2].data = std::shared_ptr<DataPtr>(new DataPtr_alias(data));
 
 	frame->data.sar = 1.0f;
 	frame->frame_number = 0;
